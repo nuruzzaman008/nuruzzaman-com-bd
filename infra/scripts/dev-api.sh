@@ -21,11 +21,13 @@ DB="apps/api/database/dev.sqlite"
 # spawns per request, and DB_DATABASE is not on it — passing -e would migrate one
 # database and then serve another. So the settings go in an env file that every
 # process reads for itself. APP_ENV *is* forwarded, and that is what makes
-# Laravel load this file ahead of .env.
+# Laravel load this file ahead of .env. APP_ENV=local also lets the admin seeder
+# generate and print a development password, which it refuses to do in any
+# other environment.
 APP_KEY_VALUE="$(grep -E '^APP_KEY=' "${ROOT}/apps/api/.env" | cut -d= -f2-)"
 
-cat > "${ROOT}/apps/api/.env.dev" <<ENV
-APP_ENV=dev
+cat > "${ROOT}/apps/api/.env.local" <<ENV
+APP_ENV=local
 APP_DEBUG=true
 APP_KEY=${APP_KEY_VALUE}
 APP_URL=http://localhost:${PORT}
@@ -48,6 +50,6 @@ fi
 MSYS_NO_PATHCONV=1 docker run --rm ${TTY_FLAG--it} \
   -v "${ROOT}:/repo" -w /repo/apps/api \
   -p "${PORT}:8000" \
-  -e APP_ENV=dev \
+  -e APP_ENV=local \
   --entrypoint sh composer:2 -c \
   "${MIGRATE} && php artisan serve --host=0.0.0.0 --port=8000"

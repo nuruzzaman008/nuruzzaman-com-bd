@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\CourseTracks;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,6 +16,8 @@ class CourseSummaryResource extends JsonResource
             'title' => $this->title,
             'subtitle' => $this->subtitle,
             'level' => $this->level,
+            'track' => $this->track,
+            'track_name' => CourseTracks::name($this->track),
             'language' => $this->language,
             'cover_url' => $this->whenLoaded('cover', fn () => $this->cover?->url()),
             'estimated_minutes' => $this->estimated_minutes,

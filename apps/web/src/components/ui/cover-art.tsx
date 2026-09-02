@@ -186,19 +186,49 @@ const GLYPHS: Record<string, { glyph: Glyph; accent: string }> = {
   'steel-design': { glyph: steel, accent: '#f6b73c' },
 };
 
+/**
+ * Accents used to tell apart several covers from the same topic. All are light
+ * on the navy ground, so the drawing stays legible whichever one is picked.
+ */
+const ACCENTS = ['#4da3ff', '#5ad1c8', '#f6b73c', '#9db8ff'];
+
+/** Small stable hash, so one article always gets the same variant. */
+function hash(value: string): number {
+  let total = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    total = (total * 31 + value.charCodeAt(index)) % 100000;
+  }
+
+  return total;
+}
+
 export type CoverArtProps = {
   /** Category or track slug. Unknown values fall back to the generic drawing. */
   topic?: string | null;
+  /**
+   * The record's own slug. Only used to vary the accent and framing, so several
+   * articles in one category do not render as identical tiles.
+   */
+  seed?: string | null;
   /** Shown inside the drawing so a wall of covers stays scannable. */
   label?: string | null;
   className?: string;
 };
 
-export function CoverArt({ topic, label, className }: CoverArtProps) {
+export function CoverArt({ topic, seed, label, className }: CoverArtProps) {
   const { glyph, accent } = GLYPHS[topic ?? ''] ?? { glyph: generic, accent: '#4da3ff' };
+  const variant = hash(seed ?? topic ?? '');
+  const tint = seed ? ACCENTS[variant % ACCENTS.length] : accent;
+  // A small shift and scale, deterministic per record. Bounded so the drawing
+  // always stays well inside the frame.
+  const shiftX = (variant % 5) - 2;
+  const shiftY = ((variant >> 3) % 5) - 2;
+  const scale = 1 + (((variant >> 6) % 5) - 2) * 0.012;
+
   // Scopes the gradient and pattern ids so several covers on one page cannot
   // collide with each other.
-  const id = `cover-${topic ?? 'generic'}`;
+  const id = `cover-${topic ?? 'generic'}-${variant}`;
 
   return (
     <svg
@@ -223,7 +253,9 @@ export function CoverArt({ topic, label, className }: CoverArtProps) {
       <rect width="400" height="225" fill={`url(#${id}-bg)`} />
       <rect width="400" height="225" fill={`url(#${id}-grid)`} />
 
-      {glyph(accent)}
+      <g transform={`translate(${200 + shiftX} ${112 + shiftY}) scale(${scale}) translate(-200 -112)`}>
+        {glyph(tint)}
+      </g>
 
       {label ? (
         <text

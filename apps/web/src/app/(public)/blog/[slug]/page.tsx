@@ -146,6 +146,7 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
           ) : (
             <CoverArt
               topic={post.categories?.[0]?.slug}
+              seed={post.slug}
               label={post.categories?.[0]?.name}
               className="mt-8 rounded-[--radius-card] border border-line"
             />

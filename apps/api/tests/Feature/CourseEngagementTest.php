@@ -224,4 +224,33 @@ class CourseEngagementTest extends TestCase
             ->getJson('/api/v1/account/wishlist')
             ->assertJsonCount(0, 'data');
     }
+
+    public function test_the_course_list_exposes_the_track_so_the_catalogue_can_group_it(): void
+    {
+        $this->course->update(['track' => 'foundation-geotechnical']);
+
+        $this->getJson('/api/v1/courses')
+            ->assertOk()
+            ->assertJsonPath('data.0.track', 'foundation-geotechnical')
+            // The display name comes from the server, so the front end never has
+            // to keep its own copy of the track vocabulary in sync.
+            ->assertJsonPath('data.0.track_name', 'ফাউন্ডেশন ও জিওটেকনিক্যাল');
+    }
+
+    public function test_the_catalogue_can_be_filtered_by_track(): void
+    {
+        $this->course->update(['track' => 'foundation-geotechnical']);
+
+        $this->getJson('/api/v1/courses?track=foundation-geotechnical')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+
+        $this->getJson('/api/v1/courses?track=steel-design')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        // An unknown track is a validation error, not a silently empty list.
+        $this->getJson('/api/v1/courses?track=not-a-real-track')
+            ->assertStatus(422);
+    }
 }

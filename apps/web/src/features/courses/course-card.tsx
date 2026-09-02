@@ -29,7 +29,11 @@ export function CourseCard({ course }: { course: CourseSummary }) {
           className="aspect-[16/9] w-full object-cover"
         />
       ) : (
-        <CoverArt topic={course.track ?? undefined} label={course.track_name ?? undefined} />
+        <CoverArt
+          topic={course.track ?? undefined}
+          seed={course.slug}
+          label={course.track_name ?? undefined}
+        />
       )}
 
       <div className="flex flex-1 flex-col p-5">

@@ -24,7 +24,11 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
           className="aspect-[16/9] w-full object-cover"
         />
       ) : (
-        <CoverArt topic={post.categories?.[0]?.slug} label={post.categories?.[0]?.name} />
+        <CoverArt
+          topic={post.categories?.[0]?.slug}
+          seed={post.slug}
+          label={post.categories?.[0]?.name}
+        />
       )}
 
       <div className="flex flex-1 flex-col p-5">
