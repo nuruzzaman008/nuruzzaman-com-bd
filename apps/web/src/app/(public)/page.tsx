@@ -82,15 +82,10 @@ export default async function HomePage() {
             <p className="mt-5 text-lg text-white/80">{brand.heroSupport}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="/engineering-tools" size="lg" className="bg-amber text-navy hover:bg-white">
+              <ButtonLink href="/engineering-tools" size="lg" variant="accent">
                 NB Engineering Tools দেখুন
               </ButtonLink>
-              <ButtonLink
-                href="/blog"
-                size="lg"
-                variant="secondary"
-                className="border-white/30 bg-transparent text-white hover:border-white hover:text-white"
-              >
+              <ButtonLink href="/blog" size="lg" variant="inverse">
                 আর্টিকেল পড়ুন
               </ButtonLink>
             </div>

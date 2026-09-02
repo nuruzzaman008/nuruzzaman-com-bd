@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent' | 'inverse';
 type Size = 'sm' | 'md' | 'lg';
 
 /**
@@ -21,6 +21,10 @@ const VARIANTS: Record<Variant, string> = {
   secondary: 'bg-white text-navy border border-line hover:border-blue hover:text-blue',
   ghost: 'bg-transparent text-navy hover:bg-blue-soft',
   danger: 'bg-danger text-white hover:brightness-95',
+  // The two variants below are for use on a navy ground, where the light
+  // variants would be invisible.
+  accent: 'bg-amber text-navy hover:bg-white',
+  inverse: 'border border-white/40 bg-transparent text-white hover:border-white hover:bg-white/10',
 };
 
 const BASE =
