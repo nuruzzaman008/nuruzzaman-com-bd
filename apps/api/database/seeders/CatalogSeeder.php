@@ -34,14 +34,13 @@ class CatalogSeeder extends Seeder
                 'release_notes_markdown' => implode("\n", [
                     '## NB Engineering Tools v6.0',
                     '',
-                    '- AutoCAD 2024-2027-এর জন্য one-setup architecture, version-specific security runtime',
-                    '- ২৬টি compiled VLX application',
+                    '- ২৫টি engineering/productivity + ১টি core/security = মোট ২৬টি compiled VLX module',
                     '- AutoCAD Ribbon এবং classic pull-down menu',
                     '- Machine activation, signed token refill, protected token wallet',
                     '- Vendor-verified license recovery',
                     '- Installer upgrade / repair / uninstall / rollback / log workflow',
                     '',
-                    '> Designed for AutoCAD 2024-2027. Tested compatibility: [OWNER TO CONFIRM PER RELEASE].',
+                    '> সামঞ্জস্য: '.config('nb.product.designed_for').', Windows 10/11 64-bit. ভিন্ন AutoCAD ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে।',
                 ]),
             ],
         );
@@ -65,7 +64,7 @@ class CatalogSeeder extends Seeder
                 ],
                 'specs' => [
                     'platform' => 'Windows 10 / 11, 64-bit',
-                    'autocad' => 'Designed for AutoCAD 2024-2027',
+                    'autocad' => 'Designed for '.config('nb.product.designed_for'),
                     'applications' => '26 compiled VLX applications',
                     'menu' => 'Ribbon + classic pull-down menu',
                     'licensing' => 'Machine activation, signed token refill, protected token wallet',
@@ -128,16 +127,16 @@ class CatalogSeeder extends Seeder
             '',
             '## কী আছে',
             '',
-            '- ২৬টি compiled VLX application, সাতটি feature group-এ সাজানো',
+            '- ২৫টি engineering/productivity + ১টি core/security = মোট ২৬টি compiled VLX module, সাতটি feature group-এ সাজানো',
             '- AutoCAD Ribbon এবং classic pull-down menu — দুইভাবেই ব্যবহার করা যায়',
-            '- AutoCAD 2024, 2025, 2026 ও 2027-এর জন্য one-setup architecture',
             '- Machine activation, signed token refill এবং protected token wallet',
             '- Vendor-verified license recovery',
             '- Installer-এ upgrade, repair, uninstall, rollback ও log workflow',
             '',
             '## সামঞ্জস্য',
             '',
-            'Designed for AutoCAD 2024-2027. Tested compatibility: [OWNER TO CONFIRM PER RELEASE].',
+            'মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান commercial build '.config('nb.product.designed_for').', Windows 10/11 64-bit-এর জন্য প্রস্তুত।',
+            'ভিন্ন AutoCAD ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে — রানটাইম-টেস্টের প্রমাণ ছাড়া কোনো ভার্সনকে পরীক্ষিত বলা হয় না।',
         ]);
     }
 
