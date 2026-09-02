@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { PostSummary } from '@nuruzzaman/contracts';
 
 import { Card } from '@/components/ui/card';
+import { CoverArt } from '@/components/ui/cover-art';
 import { date, isoDate, minutes } from '@/lib/format';
 
 export function PostCard({ post, priority = false }: { post: PostSummary; priority?: boolean }) {
@@ -23,10 +24,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
           className="aspect-[16/9] w-full object-cover"
         />
       ) : (
-        <div
-          aria-hidden="true"
-          className="aspect-[16/9] w-full bg-blue-soft"
-        />
+        <CoverArt topic={post.categories?.[0]?.slug} label={post.categories?.[0]?.name} />
       )}
 
       <div className="flex flex-1 flex-col p-5">

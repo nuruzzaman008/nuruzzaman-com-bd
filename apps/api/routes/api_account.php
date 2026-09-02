@@ -56,7 +56,24 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('{courseSlug}/lessons/{lessonSlug}/complete', [Learn\ProgressController::class, 'complete'])
             ->middleware('throttle:progress');
         Route::post('{courseSlug}/reviews', [Learn\CourseReviewController::class, 'store']);
+
+        Route::get('{courseSlug}/gradebook', [Learn\GradebookController::class, 'show']);
+        Route::get('{courseSlug}/announcements', [Learn\AnnouncementController::class, 'index']);
+
+        Route::get('{courseSlug}/questions', [Learn\QuestionController::class, 'index']);
+        Route::post('{courseSlug}/questions', [Learn\QuestionController::class, 'store'])
+            ->middleware('throttle:public-forms');
+        Route::post('{courseSlug}/questions/{questionId}/replies', [Learn\QuestionController::class, 'reply'])
+            ->middleware('throttle:public-forms');
+
+        Route::get('{courseSlug}/notes', [Learn\NoteController::class, 'index']);
+        Route::post('{courseSlug}/lessons/{lessonSlug}/notes', [Learn\NoteController::class, 'store']);
+        Route::delete('{courseSlug}/notes/{noteId}', [Learn\NoteController::class, 'destroy']);
     });
+
+    Route::get('account/wishlist', [Account\WishlistController::class, 'index']);
+    Route::put('account/wishlist/{courseSlug}', [Account\WishlistController::class, 'store']);
+    Route::delete('account/wishlist/{courseSlug}', [Account\WishlistController::class, 'destroy']);
 
     Route::get('quizzes/{quizId}', [Learn\QuizController::class, 'show']);
     Route::post('quizzes/{quizId}/attempts', [Learn\QuizController::class, 'start']);

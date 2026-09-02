@@ -383,6 +383,10 @@ components:
         title: { type: string }
         subtitle: { type: [string, 'null'] }
         level: { type: string, enum: [beginner, intermediate, advanced] }
+        track:
+          type: [string, 'null']
+          description: Catalogue subject track. Drives browsing and the generated cover art.
+        track_name: { type: [string, 'null'] }
         language: { type: string }
         cover_url: { type: [string, 'null'] }
         estimated_minutes: { type: [integer, 'null'] }
@@ -400,6 +404,9 @@ components:
             outcomes: { type: array, items: { type: string } }
             audience: { type: array, items: { type: string } }
             prerequisites: { type: array, items: { type: string } }
+            prerequisite_courses:
+              type: array
+              items: { $ref: '#/components/schemas/CoursePrerequisite' }
             required_software: { type: array, items: { type: string } }
             access_duration_days: { type: [integer, 'null'] }
             sequential: { type: boolean }
@@ -908,6 +915,115 @@ components:
         ip_address: { type: [string, 'null'] }
         request_id: { type: [string, 'null'] }
         at: { type: [string, 'null'], format: date-time }
+
+    CourseAnnouncement:
+      type: object
+      required: [id, title, body_html, published_at]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        body_html: { type: string }
+        author_name: { type: [string, 'null'] }
+        published_at: { type: [string, 'null'], format: date-time }
+
+    CourseQuestionReply:
+      type: object
+      required: [id, body, from_instructor, created_at]
+      properties:
+        id: { type: integer }
+        body: { type: string }
+        from_instructor: { type: boolean }
+        author_name: { type: [string, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    CourseQuestion:
+      type: object
+      required: [id, title, body, status, is_pinned, is_mine, reply_count, created_at]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        body: { type: string }
+        status: { type: string, enum: [draft, in_review, scheduled, published, archived] }
+        is_pinned: { type: boolean }
+        is_mine: { type: boolean }
+        reply_count: { type: integer }
+        lesson:
+          type: [object, 'null']
+          properties:
+            slug: { type: string }
+            title: { type: string }
+        author_name: { type: [string, 'null'] }
+        answered_at: { type: [string, 'null'], format: date-time }
+        resolved_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: [string, 'null'], format: date-time }
+        replies:
+          type: array
+          items: { $ref: '#/components/schemas/CourseQuestionReply' }
+
+    LessonNote:
+      type: object
+      required: [id, body, created_at]
+      properties:
+        id: { type: integer }
+        body: { type: string }
+        position_seconds: { type: [integer, 'null'] }
+        lesson:
+          type: object
+          properties:
+            slug: { type: [string, 'null'] }
+            title: { type: [string, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    CoursePrerequisite:
+      type: object
+      required: [slug, title, is_blocking]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        is_blocking: { type: boolean }
+
+    Gradebook:
+      type: object
+      required: [lessons, quizzes, assignments, average_percent, pass_percentage]
+      properties:
+        lessons:
+          type: object
+          required: [total, completed]
+          properties:
+            total: { type: integer }
+            completed: { type: integer }
+        quizzes:
+          type: array
+          items:
+            type: object
+            required: [id, title, score_percent, passed, attempts_used, attempts_allowed, pass_percentage]
+            properties:
+              id: { type: integer }
+              title: { type: string }
+              score_percent: { type: [integer, 'null'] }
+              passed: { type: boolean }
+              attempts_used: { type: integer }
+              attempts_allowed: { type: integer }
+              pass_percentage: { type: integer }
+        assignments:
+          type: array
+          items:
+            type: object
+            required: [id, title, status, score_percent, pass_percentage]
+            properties:
+              id: { type: integer }
+              title: { type: string }
+              status: { type: string }
+              score_percent: { type: [integer, 'null'] }
+              feedback: { type: [string, 'null'] }
+              pass_percentage: { type: integer }
+              submitted_at: { type: [string, 'null'], format: date-time }
+              reviewed_at: { type: [string, 'null'], format: date-time }
+        average_percent:
+          type: [integer, 'null']
+          description: Null until at least one quiz or assignment has been graded.
+        pass_percentage: { type: integer }
+        completed_at: { type: [string, 'null'], format: date-time }
 
 paths:
 
@@ -4954,3 +5070,457 @@ paths:
                   data: { $ref: '#/components/schemas/SupportTicket' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /learn/{courseSlug}/gradebook:
+    get:
+      tags: [Learn]
+      operationId: getGradebook
+      summary: Get the learner's marks for a course
+      security: [{ sessionCookie: [] }]
+      description: >-
+        Every figure is derived on the server from graded attempts and reviewed
+        submissions. An ungraded assignment is reported as ungraded, never as a
+        zero.
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Gradebook' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /learn/{courseSlug}/announcements:
+    get:
+      tags: [Learn]
+      operationId: listCourseAnnouncements
+      summary: List instructor announcements
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CourseAnnouncement' }
+                  meta: { $ref: '#/components/schemas/Pagination' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /learn/{courseSlug}/questions:
+    get:
+      tags: [Learn]
+      operationId: listCourseQuestions
+      summary: List course Q&A
+      security: [{ sessionCookie: [] }]
+      description: >-
+        Published questions, plus the caller's own while they are still in
+        moderation.
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+        - { name: lesson, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CourseQuestion' }
+                  meta: { $ref: '#/components/schemas/Pagination' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Learn]
+      operationId: askCourseQuestion
+      summary: Ask a question
+      security: [{ sessionCookie: [] }]
+      description: Held for moderation before the rest of the class can see it.
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title: { type: string, maxLength: 255 }
+                body: { type: string, maxLength: 5000 }
+                lesson: { type: [string, 'null'] }
+      responses:
+        '201':
+          description: Submitted for moderation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/CourseQuestion' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /learn/{courseSlug}/questions/{questionId}/replies:
+    post:
+      tags: [Learn]
+      operationId: replyToCourseQuestion
+      summary: Reply to a question
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+        - { name: questionId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 5000 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/CourseQuestion' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /learn/{courseSlug}/notes:
+    get:
+      tags: [Learn]
+      operationId: listLessonNotes
+      summary: List the learner's own notes
+      security: [{ sessionCookie: [] }]
+      description: Private to the caller; scoped to their own enrolment.
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/LessonNote' }
+                  meta: { $ref: '#/components/schemas/Pagination' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /learn/{courseSlug}/lessons/{lessonSlug}/notes:
+    post:
+      tags: [Learn]
+      operationId: createLessonNote
+      summary: Save a note on a lesson
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+        - { name: lessonSlug, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 5000 }
+                position_seconds: { type: [integer, 'null'], minimum: 0 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/LessonNote' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /learn/{courseSlug}/notes/{noteId}:
+    delete:
+      tags: [Learn]
+      operationId: deleteLessonNote
+      summary: Delete one of the learner's notes
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+        - { name: noteId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /account/wishlist:
+    get:
+      tags: [Account]
+      operationId: listWishlist
+      summary: List saved courses
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Course' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /account/wishlist/{courseSlug}:
+    put:
+      tags: [Account]
+      operationId: addToWishlist
+      summary: Save a course for later
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [saved]
+                    properties:
+                      saved: { type: boolean }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Account]
+      operationId: removeFromWishlist
+      summary: Remove a saved course
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        '204': { description: Removed }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/courses/{course}/prerequisites:
+    put:
+      tags: [Admin]
+      operationId: syncCoursePrerequisites
+      summary: Replace the course-to-course prerequisite list
+      security: [{ sessionCookie: [] }]
+      description: >-
+        A blocking prerequisite stops a free or manual enrolment. A purchase is
+        never blocked, because the learner has already paid.
+      parameters:
+        - { name: course, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prerequisites]
+              properties:
+                prerequisites:
+                  type: array
+                  maxItems: 8
+                  items:
+                    type: object
+                    required: [course_id]
+                    properties:
+                      course_id: { type: integer }
+                      is_blocking: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CoursePrerequisite' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /admin/courses/{course}/announcements:
+    get:
+      tags: [Admin]
+      operationId: listAdminCourseAnnouncements
+      summary: List a course's announcements
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: course, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CourseAnnouncement' }
+                  meta: { $ref: '#/components/schemas/Pagination' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: createCourseAnnouncement
+      summary: Post an announcement
+      security: [{ sessionCookie: [] }]
+      description: Leave published_at null to save it as a draft.
+      parameters:
+        - { name: course, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body_markdown]
+              properties:
+                title: { type: string, maxLength: 255 }
+                body_markdown: { type: string }
+                published_at: { type: [string, 'null'], format: date-time }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/CourseAnnouncement' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/courses/{course}/announcements/{announcementId}:
+    patch:
+      tags: [Admin]
+      operationId: updateCourseAnnouncement
+      summary: Edit an announcement
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: course, in: path, required: true, schema: { type: integer } }
+        - { name: announcementId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 255 }
+                body_markdown: { type: string }
+                published_at: { type: [string, 'null'], format: date-time }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/CourseAnnouncement' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Admin]
+      operationId: deleteCourseAnnouncement
+      summary: Delete an announcement
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: course, in: path, required: true, schema: { type: integer } }
+        - { name: announcementId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/course-questions:
+    get:
+      tags: [Admin]
+      operationId: listCourseQuestionsForModeration
+      summary: List questions awaiting moderation
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [draft, in_review, scheduled, published, archived] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CourseQuestion' }
+                  meta: { $ref: '#/components/schemas/Pagination' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/course-questions/{question}/moderate:
+    post:
+      tags: [Admin]
+      operationId: moderateCourseQuestion
+      summary: Publish, pin or archive a question
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: question, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [published, archived, in_review] }
+                is_pinned: { type: boolean }
+                resolved: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/CourseQuestion' }
+        '403': { $ref: '#/components/responses/Forbidden' }

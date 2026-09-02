@@ -4,6 +4,7 @@ import type { CourseSummary } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { CoverArt } from '@/components/ui/cover-art';
 import { duration, number } from '@/lib/format';
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -28,7 +29,7 @@ export function CourseCard({ course }: { course: CourseSummary }) {
           className="aspect-[16/9] w-full object-cover"
         />
       ) : (
-        <div aria-hidden="true" className="aspect-[16/9] w-full bg-teal-soft" />
+        <CoverArt topic={course.track ?? undefined} label={course.track_name ?? undefined} />
       )}
 
       <div className="flex flex-1 flex-col p-5">

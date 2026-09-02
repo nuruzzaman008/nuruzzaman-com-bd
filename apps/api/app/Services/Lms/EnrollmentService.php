@@ -27,6 +27,21 @@ class EnrollmentService
                 'course_id' => $course->getKey(),
             ]);
 
+            // A purchase is never blocked: the learner has already paid, and
+            // refusing fulfilment here would take their money without giving
+            // them the course. Prerequisites gate the free/manual paths only.
+            if (! $enrollment->exists && $source !== 'purchase') {
+                $unmet = $this->unmetPrerequisites($user, $course);
+
+                if ($unmet !== []) {
+                    $titles = implode(', ', array_column($unmet, 'title'));
+
+                    throw new DomainException(
+                        "Finish these courses first: {$titles}.",
+                    );
+                }
+            }
+
             // Re-purchasing after an expiry or a revocation reactivates the same
             // enrolment row so progress and certificates are not lost.
             $enrollment->fill([
@@ -48,6 +63,38 @@ class EnrollmentService
 
             return $enrollment;
         });
+    }
+
+    /**
+     * Courses the learner must have completed before this one unlocks.
+     *
+     * Only prerequisites marked `is_blocking` stop an enrolment; the rest are
+     * advice and are merely listed on the course page. A learner who already
+     * holds an enrolment is never re-checked, so tightening a prerequisite
+     * cannot lock an existing student out of work they paid for.
+     */
+    public function unmetPrerequisites(User $user, Course $course): array
+    {
+        $blocking = $course->prerequisiteCourses()
+            ->wherePivot('is_blocking', true)
+            ->get();
+
+        if ($blocking->isEmpty()) {
+            return [];
+        }
+
+        $completed = Enrollment::query()
+            ->where('user_id', $user->getKey())
+            ->whereIn('course_id', $blocking->modelKeys())
+            ->whereNotNull('completed_at')
+            ->pluck('course_id')
+            ->all();
+
+        return $blocking
+            ->reject(fn (Course $required) => in_array($required->getKey(), $completed, true))
+            ->map(fn (Course $required) => ['slug' => $required->slug, 'title' => $required->title])
+            ->values()
+            ->all();
     }
 
     public function revoke(Enrollment $enrollment, string $reason): Enrollment

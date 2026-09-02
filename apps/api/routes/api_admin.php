@@ -121,6 +121,16 @@ Route::middleware([
     Route::post('enrollments', [Admin\EnrollmentController::class, 'store']);
     Route::post('enrollments/{enrollment:id}/revoke', [Admin\EnrollmentController::class, 'revoke']);
 
+    Route::put('courses/{course:id}/prerequisites', [Admin\CourseController::class, 'syncPrerequisites']);
+
+    Route::get('courses/{course:id}/announcements', [Admin\CourseAnnouncementController::class, 'index']);
+    Route::post('courses/{course:id}/announcements', [Admin\CourseAnnouncementController::class, 'store']);
+    Route::patch('courses/{course:id}/announcements/{announcementId}', [Admin\CourseAnnouncementController::class, 'update']);
+    Route::delete('courses/{course:id}/announcements/{announcementId}', [Admin\CourseAnnouncementController::class, 'destroy']);
+
+    Route::get('course-questions', [Admin\QuestionModerationController::class, 'index']);
+    Route::post('course-questions/{question:id}/moderate', [Admin\QuestionModerationController::class, 'moderate']);
+
     Route::get('course-reviews', [Admin\ReviewModerationController::class, 'index']);
     Route::post('course-reviews/{review:id}/moderate', [Admin\ReviewModerationController::class, 'moderate']);
 

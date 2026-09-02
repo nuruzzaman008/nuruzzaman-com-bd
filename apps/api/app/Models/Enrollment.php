@@ -52,6 +52,21 @@ class Enrollment extends Model
         return $this->hasMany(QuizAttempt::class);
     }
 
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(AssignmentSubmission::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(LessonNote::class);
+    }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(CourseQuestion::class);
+    }
+
     public function certificate(): HasOne
     {
         return $this->hasOne(Certificate::class);
