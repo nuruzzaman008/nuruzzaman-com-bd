@@ -1,25 +1,26 @@
 # Test report
 
-Run on **2 September 2026** against the versions in
+Run on **3 September 2026** against the versions in
 [DEPENDENCY_VERSIONS.md](DEPENDENCY_VERSIONS.md).
 
 ## Summary
 
 | Suite | Result | Notes |
 |---|---|---|
-| Laravel unit + feature (PHPUnit) | **99 passed, 292 assertions** | Run in Docker on SQLite in memory |
-| API contract test | **not executed** | Added after Docker Desktop stopped — see "Known gap" |
+| Laravel unit + feature (PHPUnit) | **127 passed, 542 assertions** | Run in Docker on SQLite in memory |
+| API contract test | **passed** | Every admin route is documented bar six declared exclusions |
 | Frontend unit + component (Vitest) | **37 passed** | 6 files |
-| End-to-end (Playwright) | **57 passed** | 19 tests across desktop / tablet / mobile |
+| End-to-end (Playwright), mock API | **57 passed** | 19 tests across desktop / tablet / mobile |
+| End-to-end (Playwright), real Laravel API | **57 passed** | `--workers=1`; see "Running E2E against the real API" |
 | TypeScript (`tsc --noEmit`) | **clean** | Web app and contracts package |
 | ESLint | **clean** | 0 errors, 0 warnings |
 | OpenAPI lint (Redocly) | **valid** | 23 style warnings, 0 errors |
-| Production build (`next build`) | **succeeds** | 58 routes, 57 prerendered pages |
+| Production build (`next build`) | **succeeds** | 61 routes |
 
 ## Laravel suite
 
 ```text
-PHPUnit 12.5.34 - OK (99 tests, 292 assertions)
+PHPUnit 12.5.34 - OK (127 tests, 542 assertions)
 ```
 
 | Area | What is covered |
@@ -38,6 +39,10 @@ PHPUnit 12.5.34 - OK (99 tests, 292 assertions)
 | `ActivationRequestTest` | Ownership enforced; Machine ID stored encrypted and only ever returned masked; someone else's order refused; unpaid order refused; duplicate open request is a conflict; a recovery-file field is ignored; only support staff can review; illegal status jumps refused |
 | `RefundTest` | Refund is request-then-approve; cannot exceed the remaining total; processing revokes entitlements; a rejected refund returns the order to its previous state; support staff cannot request refunds |
 | `ContentWorkflowTest` | Publishing asks the frontend to revalidate; illegal status jumps refused; scheduling requires a date; edits snapshot a restorable revision; the scheduler publishes what is due; a course with no lessons cannot be published |
+| `SeedContentTest` | Every document in every seed file parses; the first one survives the file's leading comment; a malformed document throws rather than being skipped |
+| `CourseEngagementTest` | A question is held for moderation and only its author sees it meanwhile; a non-enrolled visitor can neither read nor ask; publishing makes it visible to the class; notes are private to their writer and cannot be deleted by guessing an id; the gradebook reports an ungraded assignment as ungraded, not zero; wishlist add is idempotent; the course list exposes its track and the track filter rejects an unknown value |
+| `CoursePrerequisiteTest` | A free enrolment is blocked until the prerequisite is completed; completing it clears the block; a purchase is never blocked, because the learner has already paid; reciprocal and self-referential prerequisites are refused |
+| `ApiContractTest` | Every route the router knows is documented in the OpenAPI spec, bar six declared exclusions |
 | `PublicContentTest` | Only published posts are listed; drafts 404; raw HTML stripped from Markdown; a course with no lessons is never listed; legal pages report they are awaiting review; the sitemap feed excludes drafts; unconfigured settings stay null; search covers published records only |
 
 ## Frontend suite
@@ -97,56 +102,27 @@ those engines are installed.
    content, so a screen reader announced nothing. Both now carry a
    visually-hidden name.
 
-## Known gap
+## Running E2E against the real API
 
-Docker Desktop stopped part-way through this session and could not be brought
-back: the process starts but its WSL engine stays stopped, apparently waiting on
-a UI prompt. The Laravel suite was green (99 tests, 292 assertions) before that;
-three additional tests in `ApiContractTest` were written afterwards and **have
-not been run**.
-
-Their logic was verified another way: a script compared every route in
-`routes/api*.php` against the bundled `openapi.json` in both directions. All 87
-admin routes and the whole public, account and learn surface are documented, and
-the only undocumented routes are the six the test lists as deliberate
-exclusions. Run this before relying on it:
+The Playwright suite defaults to the Node mock API, which is concurrent and is
+what CI uses. `infra/scripts/dev-api.sh` serves the real Laravel app instead, but
+`artisan serve` handles one request at a time, so the suite must be run with
+`--workers=1` against it:
 
 ```bash
-npm run api:test -- --filter=ApiContractTest
+E2E_BASE_URL=http://127.0.0.1:3200 npx playwright test --workers=1
 ```
 
-Four files changed after the last green backend run: `PostResource.php` and
-`PageResource.php` (each gained `id`, `status` and a permission-gated
-`body_markdown`), the new `ApiContractTest.php`, and `routes/api_admin.php`
-(route parameters renamed to bind on `id`). Re-run the whole backend suite, not
-just the contract test, once Docker is available:
+Run in parallel against that server, six tests fail on timeouts as the workers
+queue behind PHP. That is a limitation of the development server, not of the
+application: the same tests pass serially against the real API and in parallel
+against the mock.
 
-```bash
-npm run api:test
-```
+## Defects found and fixed in this round
 
-## Not yet run
-
-| Check | Why | How to run |
-|---|---|---|
-| Lighthouse | Needs a production deployment | `npx lighthouse https://… --preset=desktop` |
-| Load / soak | Needs staging with realistic data | — |
-| Live SSLCOMMERZ | Needs merchant credentials | The sandbox path is fully covered by `PaymentValidationTest` |
-| Restore drill | Needs a real backup | [BACKUP_RESTORE_BN.md](BACKUP_RESTORE_BN.md) |
-| Manual screen-reader pass | Automated axe is not a substitute | NVDA + Firefox, VoiceOver + Safari |
-
-## Reproducing
-
-```bash
-npm install
-npm run contracts:types
-
-# Frontend
-npm run typecheck && npm run lint && npm run test
-
-# End-to-end (starts a mock API and a production build itself)
-npm run test:e2e
-
-# Backend (needs Docker)
-npm run api:test
-```
+| What | How it was found |
+|---|---|
+| The seed-content parser silently dropped the first document of every file, because the explanatory comment at the top broke the front-matter match. The first article, the first course and the first lesson of each file had never been seeded. | Seeded counts did not match what had been written; now covered by `SeedContentTest`, and a malformed document throws instead of being skipped |
+| The course list returned no `track`, so the whole catalogue rendered the fallback artwork. `track` had been added to `CourseResource` but not to `CourseSummaryResource`, which is what the list actually returns. | Visual check of the rendered catalogue; now covered by `CourseEngagementTest` |
+| The sitemap skipped CMS pages outright, so any page the owner published that was not also hard-coded in the static list never reached it. | Reading the sitemap builder while adding the feed |
+| The product page claimed "AutoCAD 2024-2027" with a version-specific runtime. That came from the name of a build folder, not from anything the owner had written; their own product document says the current build is prepared for AutoCAD 2024. | Reading the owner's product PDF against the page |

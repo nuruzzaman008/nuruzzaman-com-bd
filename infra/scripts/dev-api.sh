@@ -4,6 +4,11 @@
 #
 # Development convenience only. The production topology is compose.yaml.
 #
+# `artisan serve` handles one request at a time. That is fine for browsing, but
+# it means the Playwright suite must be run with --workers=1 against this server,
+# or the parallel workers queue behind PHP and time out. The suite's own default
+# (the Node mock API on port 3100) is concurrent and is what CI uses.
+#
 #   infra/scripts/dev-api.sh             # serve on 8001, keep the database
 #   infra/scripts/dev-api.sh 8001 fresh  # rebuild and re-seed first
 #
