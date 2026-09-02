@@ -1,0 +1,29 @@
+title,slug,intent,cluster,funnel_stage,original_asset,cta,engineer_review_state
+আইসোলেটেড ফুটিংয়ের সাইজ যাচাই — ধাপে ধাপে হিসাব,isolated-footing-size-check-bangla,informational,foundation-geotechnical,awareness,"সংখ্যাসহ ওয়ার্কড উদাহরণ + চাপ বণ্টন ডায়াগ্রাম",RCC ফুটিং কোর্সে যান,published
+AutoCAD লেয়ার স্ট্যান্ডার্ড — একটি টিমের জন্য কার্যকর কাঠামো,autocad-layer-standard-bangla,informational,autocad-productivity,awareness,"লেয়ার নামকরণ টেবিল + রঙ/লাইনওয়েট ম্যাপ",AutoCAD প্রোডাক্টিভিটি কোর্স,published
+ওয়ান-ওয়ে স্ল্যাবের বেধ নির্ধারণ — deflection নিয়ন্ত্রণের সহজ হিসাব,one-way-slab-thickness-bangla,informational,rcc-design-detailing,awareness,"span/depth হিসাব + লোড টেবিল",ব্লগ সাবস্ক্রিপশন,published
+রড ল্যাপ লেংথ — ফিল্ডে কাজে লাগে এমন হিসাব,rebar-lap-length-quick-reference-bangla,informational,rcc-design-detailing,consideration,"ল্যাপ লেংথ হিসাব + প্রভাবক টেবিল",RCC ফুটিং কোর্স,published
+NB Engineering Tools দিয়ে একটি ড্রয়িং সেট তৈরির ওয়ার্কফ্লো,nb-engineering-tools-workflow-overview,commercial,engineering-software,decision,"প্রতিটি ধাপের স্ক্রিনশট",টুলস কিনুন,draft
+BNBC অনুযায়ী লোড কম্বিনেশন — কাজের নোট,bnbc-load-combination-notes,informational,bnbc-code-application,awareness,"কম্বিনেশন টেবিল + একটি উদাহরণ",ব্লগ সাবস্ক্রিপশন,draft
+দুই-মুখী (punching) shear যাচাই — ফুটিং ডিজাইনের সবচেয়ে ভুল হওয়া ধাপ,punching-shear-check-bangla,informational,foundation-geotechnical,awareness,"critical perimeter ডায়াগ্রাম + হিসাব",RCC ফুটিং কোর্স,planned
+কম্বাইন্ড ফুটিং কখন লাগে এবং কীভাবে সাইজ করবেন,combined-footing-when-and-how,informational,foundation-geotechnical,consideration,"লোড সেন্ট্রয়েড হিসাব + লেআউট",RCC ফুটিং কোর্স,planned
+মাটির রিপোর্ট কীভাবে পড়বেন — SPT থেকে bearing capacity,reading-soil-report-spt-bangla,informational,foundation-geotechnical,awareness,"নমুনা রিপোর্টের ব্যাখ্যা (মৌলিক)",ব্লগ সাবস্ক্রিপশন,planned
+কলামের ন্যূনতম ও সর্বোচ্চ রড — কোড কী বলে,column-reinforcement-limits-bangla,informational,rcc-design-detailing,awareness,"সীমার টেবিল + একটি উদাহরণ",ব্লগ সাবস্ক্রিপশন,planned
+বিম ডিটেইলিং — কার্টেইলমেন্ট ও ল্যাপের ব্যবহারিক নিয়ম,beam-detailing-curtailment-bangla,informational,rcc-design-detailing,consideration,"ডিটেইলিং ড্রয়িং",RCC কোর্স,planned
+স্ল্যাবে ডিস্ট্রিবিউশন রড — কেন এবং কতটা,slab-distribution-steel-bangla,informational,rcc-design-detailing,awareness,"হিসাব + ড্রয়িং",ব্লগ সাবস্ক্রিপশন,planned
+AutoCAD টেমপ্লেট ফাইল তৈরি — একবার সেট করে বারবার ব্যবহার,autocad-template-setup-bangla,informational,autocad-productivity,awareness,"টেমপ্লেট চেকলিস্ট",AutoCAD কোর্স,planned
+Sheet set ও প্লট সেটআপ — ২০ শিটের সেট এক ক্লিকে,autocad-sheet-set-plotting-bangla,informational,autocad-productivity,consideration,"স্ক্রিনশট সিরিজ",AutoCAD কোর্স,planned
+ডাইনামিক ব্লক দিয়ে ডিটেইল লাইব্রেরি,autocad-dynamic-blocks-detail-library,informational,autocad-productivity,consideration,"ব্লক লাইব্রেরি উদাহরণ",AutoCAD কোর্স,planned
+অ্যানোটেশন স্কেল — যে ভুলটি সবচেয়ে বেশি সময় নষ্ট করে,autocad-annotation-scale-bangla,informational,autocad-productivity,awareness,"তুলনামূলক স্ক্রিনশট",AutoCAD কোর্স,planned
+LISP ছাড়া AutoCAD অটোমেশন — কোথায় সীমা,autocad-automation-without-lisp,informational,engineering-software,consideration,"তুলনা টেবিল",NB Engineering Tools,planned
+NB Engineering Tools ইনস্টল ও অ্যাক্টিভেশন — সম্পূর্ণ গাইড,nb-tools-install-activation-guide,transactional,engineering-software,decision,"ধাপে ধাপে স্ক্রিনশট",টুলস কিনুন,planned
+Mouza ম্যাপ থেকে সাইট প্ল্যান — ওয়ার্কফ্লো,mouza-map-to-site-plan-workflow,informational,mouza-drawing-workflow,awareness,"ওয়ার্কফ্লো ডায়াগ্রাম",NB Engineering Tools,planned
+OCR দিয়ে পুরোনো ম্যাপ ডিজিটাইজ করা — বাস্তব সীমাবদ্ধতা,ocr-map-digitisation-limits,informational,mouza-drawing-workflow,consideration,"আগে/পরে উদাহরণ",NB Engineering Tools,planned
+কনক্রিট ঢালাইয়ের আগে সাইট চেকলিস্ট,pre-pour-site-checklist-bangla,informational,construction-quality,awareness,"মুদ্রণযোগ্য চেকলিস্ট",রিসোর্স ডাউনলোড,planned
+কিউরিং — কতদিন এবং কেন,concrete-curing-duration-bangla,informational,construction-quality,awareness,"সময়সূচি টেবিল",ব্লগ সাবস্ক্রিপশন,planned
+রিবার কভার — মাপ ঠিক রাখার ব্যবহারিক উপায়,rebar-cover-field-practice-bangla,informational,construction-quality,awareness,"সাইট ছবি (মৌলিক)",ব্লগ সাবস্ক্রিপশন,planned
+BNBC-তে সিসমিক ডিজাইন ক্যাটাগরি — শুরু করার গাইড,bnbc-seismic-category-intro,informational,bnbc-code-application,awareness,"সিদ্ধান্ত-বৃক্ষ ডায়াগ্রাম",ব্লগ সাবস্ক্রিপশন,planned
+উইন্ড লোড হিসাব — একটি বাস্তব উদাহরণ,wind-load-worked-example-bangla,informational,bnbc-code-application,consideration,"সংখ্যাসহ হিসাব",ব্লগ সাবস্ক্রিপশন,planned
+স্ট্রাকচারাল ড্রয়িং রিভিউ — কী কী দেখবেন,structural-drawing-review-checklist,informational,structural-engineering,consideration,"রিভিউ চেকলিস্ট",রিসোর্স ডাউনলোড,planned
+ফ্রেম বিশ্লেষণের ফলাফল কীভাবে যাচাই করবেন,verifying-frame-analysis-results,informational,structural-engineering,consideration,"হাতে যাচাইয়ের উদাহরণ",ব্লগ সাবস্ক্রিপশন,planned
+জুনিয়র প্রকৌশলীর প্রথম ছয় মাস — কী শিখবেন,first-six-months-junior-engineer,informational,structural-engineering,awareness,"শেখার রোডম্যাপ",কোর্স তালিকা,planned

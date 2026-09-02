@@ -1,0 +1,92 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\Role as RoleEnum;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Tests\TestCase;
+
+class AuthTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedRoles();
+    }
+
+    public function test_registration_creates_a_customer_and_signs_in(): void
+    {
+        Notification::fake();
+
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Rafiq Hasan',
+            'email' => 'rafiq@example.com',
+            'password' => 'correct-horse-42',
+            'password_confirmation' => 'correct-horse-42',
+            'accepts_terms' => true,
+        ]);
+
+        $response->assertCreated()->assertJsonPath('data.email', 'rafiq@example.com');
+
+        $user = User::query()->where('email', 'rafiq@example.com')->firstOrFail();
+
+        $this->assertTrue($user->hasRole(RoleEnum::Customer));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_registration_requires_accepting_the_terms(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Rafiq Hasan',
+            'email' => 'rafiq@example.com',
+            'password' => 'correct-horse-42',
+            'password_confirmation' => 'correct-horse-42',
+        ])->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
+    }
+
+    public function test_login_rejects_wrong_credentials_with_the_shared_error_shape(): void
+    {
+        User::factory()->create(['email' => 'rafiq@example.com']);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'rafiq@example.com',
+            'password' => 'not-the-password',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonStructure(['error' => ['code', 'message', 'fields']]);
+    }
+
+    public function test_a_suspended_account_cannot_sign_in(): void
+    {
+        User::factory()->create(['email' => 'rafiq@example.com', 'status' => 'suspended']);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'rafiq@example.com',
+            'password' => 'password',
+        ])->assertStatus(422);
+
+        $this->assertGuest();
+    }
+
+    public function test_forgot_password_never_reveals_whether_an_account_exists(): void
+    {
+        $known = $this->postJson('/api/v1/auth/forgot-password', ['email' => 'nobody@example.com']);
+        $known->assertOk();
+
+        User::factory()->create(['email' => 'real@example.com']);
+        $this->postJson('/api/v1/auth/forgot-password', ['email' => 'real@example.com'])
+            ->assertOk()
+            ->assertJson($known->json());
+    }
+
+    public function test_account_endpoints_require_authentication(): void
+    {
+        $this->getJson('/api/v1/me')->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
+        $this->getJson('/api/v1/account/orders')->assertStatus(401);
+    }
+}

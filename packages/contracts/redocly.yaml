@@ -1,0 +1,13 @@
+# Lint profile for the API contract. The recommended ruleset is kept, with two
+# deliberate relaxations documented here rather than silently ignored.
+#
+# No `apis:` block: openapi-typescript also reads this file, and a named API
+# here would make it demand its own output key.
+extends:
+  - recommended
+
+rules:
+  # The licence is proprietary and has no public URL to point at.
+  info-license-strict: off
+  # example.com appears only inside schema `format: email` examples.
+  no-server-example.com: off

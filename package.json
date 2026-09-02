@@ -1,0 +1,34 @@
+{
+  "name": "nuruzzaman-com-bd",
+  "private": true,
+  "version": "1.0.0",
+  "description": "nuruzzaman.com.bd — custom Next.js + Laravel platform (education, engineering tools, commerce, LMS).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @nuruzzaman/web",
+    "build": "npm run contracts:types && npm run build --workspace @nuruzzaman/web",
+    "start": "npm run start --workspace @nuruzzaman/web",
+    "lint": "npm run lint --workspace @nuruzzaman/web",
+    "typecheck": "npm run typecheck --workspace @nuruzzaman/web",
+    "test": "npm run test --workspace @nuruzzaman/web",
+    "test:e2e": "npm run test:e2e --workspace @nuruzzaman/web",
+    "contracts:types": "npm run generate --workspace @nuruzzaman/contracts",
+    "contracts:lint": "npm run lint --workspace @nuruzzaman/contracts",
+    "api:composer": "bash infra/scripts/composer.sh",
+    "api:artisan": "bash infra/scripts/artisan.sh",
+    "api:test": "bash infra/scripts/phpunit.sh",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}

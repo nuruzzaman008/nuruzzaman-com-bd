@@ -1,0 +1,123 @@
+# Local development and staging topology.
+#
+# In production this is fronted by Cloudflare; the shape is otherwise the same:
+# Nginx terminates every request and routes /api, /sanctum and payment callbacks
+# to Laravel, everything else to the long-running Next.js Node server.
+name: nuruzzaman
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: infra/docker/nginx/Dockerfile
+    ports:
+      - '${HTTP_PORT:-8080}:80'
+    depends_on:
+      web:
+        condition: service_started
+      api:
+        condition: service_started
+    volumes:
+      # Laravel serves its public assets through Nginx, so both share the root.
+      - ./apps/api/public:/var/www/html/public:ro
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/node/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOSTNAME: '0.0.0.0'
+      # Server Components reach Laravel over the internal network.
+      INTERNAL_API_URL: http://nginx/api/v1
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:8080}
+      NEXT_PUBLIC_API_BASE: /api/v1
+      NEXT_REVALIDATE_SECRET: ${NEXT_REVALIDATE_SECRET:?set NEXT_REVALIDATE_SECRET in .env}
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/php/Dockerfile
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - api-storage:/var/www/html/storage
+      - ./content:/content:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  queue:
+    build:
+      context: .
+      dockerfile: infra/docker/php/Dockerfile
+    command: ['php', 'artisan', 'queue:work', '--tries=3', '--max-time=3600', '--sleep=1']
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - api-storage:/var/www/html/storage
+      - ./content:/content:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: infra/docker/php/Dockerfile
+    # Runs the Laravel scheduler once a minute: scheduled publishing, payment
+    # reconciliation and housekeeping.
+    command: ['php', 'artisan', 'schedule:work']
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - api-storage:/var/www/html/storage
+      - ./content:/content:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    command:
+      - --default-authentication-plugin=caching_sha2_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-nuruzzaman}
+      MYSQL_USER: ${DB_USERNAME:-nuruzzaman}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  api-storage:

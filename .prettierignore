@@ -1,0 +1,4 @@
+node_modules
+apps/api/vendor
+.next
+packages/contracts/src/generated

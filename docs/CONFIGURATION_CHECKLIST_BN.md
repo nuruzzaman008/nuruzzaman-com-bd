@@ -1,0 +1,98 @@
+# কনফিগারেশন চেকলিস্ট (মালিকের কাজ)
+
+এই ফাইলটিই একমাত্র জায়গা যেখানে মালিকের দিতে হবে এমন সব মান তালিকাভুক্ত।
+কোডে কোনো দাম, ফোন নম্বর, ঠিকানা, আইনি অনুমোদন বা ক্রেডেনশিয়াল অনুমান করা হয়নি।
+যতক্ষণ কোনো মান দেওয়া হয়নি, সাইট সেটিকে সৎভাবে "প্রকাশ করা হয়নি" হিসেবে দেখায় —
+কখনো শূন্য দাম বা বানানো তথ্য দেখায় না।
+
+কোথায় বসাতে হবে:
+
+| জায়গা | কী |
+|---|---|
+| `apps/api/.env` | সব সার্ভার-সাইড মান ও ক্রেডেনশিয়াল |
+| `apps/web/.env.local` (বা হোস্টিং env) | শুধু `NEXT_PUBLIC_*` ও `INTERNAL_API_URL` |
+| `/dashboard/settings` | ব্র্যান্ড টেক্সট ও ফিচার তালিকার মতো সম্পাদনাযোগ্য মান |
+
+> কোনো গোপন মান কখনো `NEXT_PUBLIC_` উপসর্গ দিয়ে রাখবেন না — সেটি ব্রাউজারে চলে যায়।
+
+---
+
+## ১. পরিচয় ও যোগাযোগ
+
+| কী | env | এখন কী হয় | কেন দরকার |
+|---|---|---|---|
+| মালিকের পূর্ণ নাম | `NB_SITE_NAME` | ডিফল্ট "Engr. Md. Nuruzzaman, RSE" | হেডার, ফুটার, schema |
+| সাপোর্ট ইমেইল | `NB_SUPPORT_EMAIL` | ফুটারে যোগাযোগ ব্লক লুকানো থাকে | সাপোর্ট ও Organization schema |
+| সাপোর্ট সময়সূচি | `NB_SUPPORT_HOURS` | দেখানো হয় না | প্রত্যাশা ঠিক রাখা |
+| ফোন | `NB_PHONE` | দেখানো হয় না | যোগাযোগ পাতা |
+| ব্যবসার ঠিকানা | `NB_BUSINESS_ADDRESS` | দেখানো হয় না | ফুটার, ইনভয়েস |
+| আইনি সত্তার নাম | `NB_LEGAL_ENTITY` | দেখানো হয় না | ফুটার, চুক্তি |
+| মালিকের অনুমোদিত জীবনী | অ্যাডমিন → Authors | শুধু headline দেখায় | About ও লেখকের পাতা |
+| মালিকের ছবি | অ্যাডমিন → Media | অক্ষরের প্লেসহোল্ডার | About, Person schema |
+
+## ২. পণ্য ও দাম
+
+| কী | কোথায় | এখন কী হয় |
+|---|---|---|
+| NB Engineering Tools-এর দাম | অ্যাডমিন → প্রোডাক্ট → ভ্যারিয়েন্ট → দাম প্রকাশ | "দাম জানতে যোগাযোগ করুন" |
+| NB Credit প্যাকেজের দাম | একই | একই |
+| কোর্সের দাম | একই | "এনরোলমেন্ট এখনো খোলা হয়নি" |
+| লাইসেন্সের মেয়াদ | ভ্যারিয়েন্টের `license_term_days` | মেয়াদহীন হিসেবে ইস্যু হয় |
+| ডিভাইস সীমা | ভ্যারিয়েন্টের `device_limit` | ১ |
+| আপডেট অন্তর্ভুক্তি | EULA পাতার লেখা | সাধারণ ভাষায় লেখা আছে |
+| পরীক্ষিত AutoCAD ভার্সন | `NB_TESTED_AUTOCAD_VERSIONS` | "প্রতিটি রিলিজে মালিক নিশ্চিত করবেন" |
+| ইনস্টলার ফাইল | অ্যাডমিন → রিলিজ → ফাইল আপলোড | রিলিজ "প্রকাশিত নয়" |
+| ইনস্টলার SHA-256 | আপলোড করলে সার্ভার নিজেই হিসাব করে | "হিসাব করা হয়নি" |
+| Code signing অবস্থা | অ্যাডমিন → রিলিজ | "unknown" |
+
+> ফাইল আপলোড না করা পর্যন্ত কোনো রিলিজ "উপলব্ধ" করা যায় না — এটি কোডে বাধ্যতামূলক।
+
+## ৩. আইনি
+
+| কী | কোথায় | এখন কী হয় |
+|---|---|---|
+| পেশাগত পর্যালোচনা সম্পন্ন | অ্যাডমিন → পেজ → আইনি পর্যালোচনা | ছয়টি আইনি পাতায় দৃশ্যমান DRAFT নোটিশ |
+| রিফান্ড নীতির সময়সীমা | রিফান্ড পাতার লেখা | সাধারণ নীতি লেখা আছে, সময়সীমা নেই |
+| ডেটা সংরক্ষণের মেয়াদ | গোপনীয়তা পাতার লেখা | "মালিক নির্ধারণ করবেন" |
+| কোর্স অ্যাক্সেসের মেয়াদ | `NB_COURSE_ACCESS_DAYS` বা প্রতি কোর্সে | "মেয়াদ প্রকাশিত হয়নি" |
+| কর নিয়ম | `NB_TAX_PERCENT`, `NB_TAX_NOTE` | কোনো কর লাইন দেখানো হয় না |
+
+## ৪. পেমেন্ট (SSLCOMMERZ)
+
+| কী | env |
+|---|---|
+| Sandbox store id | `SSLCOMMERZ_SANDBOX_STORE_ID` |
+| Sandbox store password | `SSLCOMMERZ_SANDBOX_STORE_PASSWORD` |
+| Live store id | `SSLCOMMERZ_LIVE_STORE_ID` |
+| Live store password | `SSLCOMMERZ_LIVE_STORE_PASSWORD` |
+| ড্রাইভার | `SSLCOMMERZ_DRIVER=sslcommerz` (ডিফল্ট `fake`) |
+| মোড | `SSLCOMMERZ_MODE=sandbox` অথবা `live` |
+| ঝুঁকিপূর্ণ অর্ডার নীতি | `NB_RISK_ORDER_POLICY=manual_hold` (ডিফল্ট) বা `auto_release` |
+| IPN উৎস allowlist | `SSLCOMMERZ_IPN_ALLOWLIST` (ঐচ্ছিক) |
+
+ক্রেডেনশিয়াল না থাকলে পুরো চেকআউট, IPN, ফুলফিলমেন্ট ও রিফান্ড পথ sandbox
+ড্রাইভার দিয়ে কাজ করে এবং পরীক্ষা করা যায়।
+
+## ৫. অবকাঠামো
+
+| কী | env |
+|---|---|
+| ডেটাবেস | `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` |
+| Redis | `REDIS_HOST`, `REDIS_PASSWORD` (না থাকলে database ড্রাইভার) |
+| SMTP | `MAIL_MAILER`, `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` |
+| প্রাইভেট অবজেক্ট স্টোরেজ | `NB_PRIVATE_DISK=s3_private`, `PRIVATE_S3_*` |
+| ভিডিও | `VIDEO_DRIVER`, `BUNNY_STREAM_*` বা `VIMEO_ACCESS_TOKEN` |
+| Next revalidation | `NEXT_REVALIDATE_URL`, `NEXT_REVALIDATE_SECRET` (দুই পাশে একই) |
+| GA4 | `NB_GA4_ID` |
+| Search Console | `NB_SEARCH_CONSOLE_VERIFICATION` |
+
+## ৬. প্রোডাকশনের আগে বাধ্যতামূলক
+
+- [ ] `APP_DEBUG=false`, `APP_ENV=production`
+- [ ] `php artisan key:generate` চালানো হয়েছে এবং `APP_KEY` ব্যাকআপ আছে
+- [ ] অ্যাডমিন অ্যাকাউন্টে MFA চালু
+- [ ] `SESSION_SECURE_COOKIE=true` এবং HTTPS যাচাই করা
+- [ ] MySQL ব্যাকআপ ও একটি সফল restore drill
+- [ ] `NB_LEGAL_REVIEWED=true` শুধু প্রকৃত পর্যালোচনার পরে
+
+সম্পূর্ণ তালিকা: [LAUNCH_CHECKLIST_BN.md](LAUNCH_CHECKLIST_BN.md)

@@ -1,0 +1,3 @@
+Static files served from the site root live here (verification files, downloadable
+public assets). Protected installers never go in this directory - they live on a
+private disk. See docs/PRODUCT_FILE_SECURITY_BN.md.

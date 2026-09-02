@@ -1,0 +1,6 @@
+# Kept for parity with the documented architecture. The repository is installed
+# with npm workspaces (see package.json) because npm is the toolchain that ships
+# with the supported Node.js runtime; both managers resolve the same layout.
+packages:
+  - 'apps/web'
+  - 'packages/*'
