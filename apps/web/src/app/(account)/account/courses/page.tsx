@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { Certificate, Enrollment } from '@nuruzzaman/contracts';
+import type { Certificate, Course, Enrollment } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button';
@@ -12,10 +12,19 @@ import { privateMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = privateMetadata('আমার কোর্স');
 
+/** The enrolment states a learner can actually be in, in their own language. */
+const STATUS_LABELS: Record<string, { label: string; tone: 'success' | 'info' | 'warning' }> = {
+  active: { label: 'চলছে', tone: 'info' },
+  completed: { label: 'সম্পন্ন', tone: 'success' },
+  expired: { label: 'মেয়াদ শেষ', tone: 'warning' },
+  revoked: { label: 'বাতিল', tone: 'warning' },
+};
+
 export default async function AccountCoursesPage() {
-  const [enrollments, certificates] = await Promise.all([
+  const [enrollments, certificates, wishlist] = await Promise.all([
     sessionApi<{ data: Enrollment[] }>('/account/courses'),
     sessionApi<{ data: Certificate[] }>('/account/certificates'),
+    sessionApi<{ data: Course[] }>('/account/wishlist'),
   ]);
 
   return (
@@ -47,8 +56,8 @@ export default async function AccountCoursesPage() {
                           : null}
                       </p>
                     </div>
-                    <Badge tone={enrollment.status === 'completed' ? 'success' : 'info'}>
-                      {enrollment.status}
+                    <Badge tone={STATUS_LABELS[enrollment.status]?.tone ?? 'info'}>
+                      {STATUS_LABELS[enrollment.status]?.label ?? enrollment.status}
                     </Badge>
                   </div>
 
@@ -84,7 +93,13 @@ export default async function AccountCoursesPage() {
                     >
                       {enrollment.progress_percent > 0 ? 'চালিয়ে যান' : 'শুরু করুন'}
                     </ButtonLink>
-                    <ButtonLink href={`/courses/${enrollment.course.slug}`} variant="secondary">
+                    <ButtonLink
+                      href={`/account/courses/${enrollment.course.slug}`}
+                      variant="secondary"
+                    >
+                      অগ্রগতি ও মার্কস
+                    </ButtonLink>
+                    <ButtonLink href={`/courses/${enrollment.course.slug}`} variant="ghost">
                       কোর্স পাতা
                     </ButtonLink>
                   </div>
@@ -94,6 +109,29 @@ export default async function AccountCoursesPage() {
           </ul>
         )}
       </section>
+
+      {wishlist.data.length > 0 ? (
+        <section>
+          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">সংরক্ষিত কোর্স</h2>
+          <ul className="mt-4 space-y-3">
+            {wishlist.data.map((course) => (
+              <li key={course.slug}>
+                <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+                  <div>
+                    <p className="font-semibold text-navy">{course.title}</p>
+                    {course.subtitle ? (
+                      <p className="mt-0.5 text-sm text-muted">{course.subtitle}</p>
+                    ) : null}
+                  </div>
+                  <ButtonLink href={`/courses/${course.slug}`} variant="secondary">
+                    দেখুন
+                  </ButtonLink>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {certificates.data.length > 0 ? (
         <section>

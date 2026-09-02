@@ -43,6 +43,27 @@ const nextConfig: NextConfig = {
     qualities: [75],
   },
 
+  /**
+   * Permanent redirects for URLs that are advertised elsewhere but are not the
+   * canonical address. Keeping them here rather than as duplicate pages means
+   * there is exactly one indexable URL per thing.
+   */
+  async redirects() {
+    return [
+      {
+        // The slug recommended in the owner's product document.
+        source: '/nb-engineering-tools-autocad-structural-design-software',
+        destination: '/engineering-tools',
+        permanent: true,
+      },
+      {
+        source: '/nb-engineering-tools',
+        destination: '/engineering-tools',
+        permanent: true,
+      },
+    ];
+  },
+
   async headers() {
     return [
       {

@@ -682,6 +682,14 @@
             }
           },
           {
+            "name": "track",
+            "in": "query",
+            "description": "Catalogue subject track slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {

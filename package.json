@@ -2,7 +2,7 @@
   "name": "nuruzzaman-com-bd",
   "private": true,
   "version": "1.0.0",
-  "description": "nuruzzaman.com.bd — custom Next.js + Laravel platform (education, engineering tools, commerce, LMS).",
+  "description": "nuruzzaman.com.bd \u2014 custom Next.js + Laravel platform (education, engineering tools, commerce, LMS).",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20.9.0"
@@ -26,7 +26,8 @@
     "api:test": "bash infra/scripts/phpunit.sh",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "api:dev": "bash infra/scripts/dev-api.sh"
   },
   "devDependencies": {
     "prettier": "^3.4.2"

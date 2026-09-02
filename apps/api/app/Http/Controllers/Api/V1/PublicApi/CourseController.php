@@ -8,8 +8,10 @@ use App\Http\Resources\CourseSummaryResource;
 use App\Http\Resources\LessonResource;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Support\CourseTracks;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\Rule;
 
 class CourseController extends Controller
 {
@@ -17,6 +19,7 @@ class CourseController extends Controller
     {
         $validated = $request->validate([
             'level' => ['sometimes', 'string', 'in:beginner,intermediate,advanced'],
+            'track' => ['sometimes', 'string', Rule::in(CourseTracks::slugs())],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -25,6 +28,7 @@ class CourseController extends Controller
             ->withCount('lessons')
             ->with('cover')
             ->when($validated['level'] ?? null, fn ($query, $level) => $query->where('level', $level))
+            ->when($validated['track'] ?? null, fn ($query, $track) => $query->where('track', $track))
             ->orderByDesc('published_at')
             ->paginate($validated['per_page'] ?? 12)
             ->withQueryString();

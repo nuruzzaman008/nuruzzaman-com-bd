@@ -1317,6 +1317,10 @@ paths:
         - name: level
           in: query
           schema: { type: string, enum: [beginner, intermediate, advanced] }
+        - name: track
+          in: query
+          description: Catalogue subject track slug.
+          schema: { type: string }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
       responses:

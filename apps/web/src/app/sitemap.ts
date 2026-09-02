@@ -9,6 +9,10 @@ import { absoluteUrl } from '@/lib/env';
  * (a draft article, an unpriced product or a course with no lessons never
  * reaches this feed), so the sitemap cannot advertise a page that 404s or that
  * carries a noindex tag.
+ *
+ * CMS pages used to be skipped entirely rather than de-duplicated, so any page
+ * the owner published that was not also hard-coded in STATIC_ROUTES below never
+ * reached the sitemap at all.
  */
 const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
   { path: '/', priority: 1, changeFrequency: 'weekly' },
@@ -55,24 +59,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return entries;
   }
 
-  const dynamic: [keyof SitemapFeed, string, number][] = [
-    ['posts', '/blog', 0.8],
-    ['pages', '', 0.5],
-    ['products', '/shop', 0.8],
-    ['courses', '/courses', 0.8],
+  const dynamic: [keyof SitemapFeed, string, number, MetadataRoute.Sitemap[number]['changeFrequency']][] = [
+    ['posts', '/blog', 0.8, 'monthly'],
+    ['pages', '', 0.5, 'monthly'],
+    ['products', '/shop', 0.8, 'weekly'],
+    ['courses', '/courses', 0.8, 'weekly'],
   ];
 
-  for (const [key, prefix, priority] of dynamic) {
+  // A CMS page whose slug is already a static route above would otherwise be
+  // listed twice with two different lastModified values.
+  const listed = new Set(entries.map((entry) => entry.url));
+
+  for (const [key, prefix, priority, changeFrequency] of dynamic) {
     for (const item of feed.data[key] ?? []) {
-      // CMS pages already appear as static routes above; skip the duplicates.
-      if (key === 'pages') {
+      const url = absoluteUrl(`${prefix}/${item.slug}`);
+
+      if (listed.has(url)) {
         continue;
       }
 
+      listed.add(url);
+
       entries.push({
-        url: absoluteUrl(`${prefix}/${item.slug}`),
+        url,
         lastModified: item.updated_at ? new Date(item.updated_at) : now,
-        changeFrequency: key === 'posts' ? 'monthly' : 'weekly',
+        changeFrequency,
         priority,
       });
     }

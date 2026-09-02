@@ -270,6 +270,63 @@ export function courseSchema(course: {
   };
 }
 
+/**
+ * FAQPage structured data.
+ *
+ * Only ever built from questions and answers that are actually rendered on the
+ * page, so the markup and the visible content cannot drift apart.
+ */
+export function faqSchema(items: { question: string; answer: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  };
+}
+
+/**
+ * SoftwareApplication data for the engineering tools.
+ *
+ * `operatingSystem` and the application category are facts from the owner's
+ * product document. No offer is emitted without a published price, and no
+ * rating is emitted at all, since there are no collected reviews to aggregate.
+ */
+export function softwareApplicationSchema(app: {
+  name: string;
+  description?: string | null;
+  version?: string | null;
+  operatingSystem: string;
+  path: string;
+  price?: { currency: string; amount_minor: number } | null;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: app.name,
+    ...(app.description ? { description: app.description } : {}),
+    ...(app.version ? { softwareVersion: app.version } : {}),
+    applicationCategory: 'DesignApplication',
+    operatingSystem: app.operatingSystem,
+    url: absoluteUrl(app.path),
+    author: { '@type': 'Person', name: brand.owner },
+    ...(app.price
+      ? {
+          offers: {
+            '@type': 'Offer',
+            price: (app.price.amount_minor / 100).toFixed(2),
+            priceCurrency: app.price.currency,
+            availability: 'https://schema.org/InStock',
+            url: absoluteUrl(app.path),
+          },
+        }
+      : {}),
+  };
+}
+
 export function itemListSchema(items: { name: string; path: string }[]) {
   return {
     '@context': 'https://schema.org',

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ApiError, type CourseOutline, type Lesson } from '@nuruzzaman/contracts';
+import { ApiError, type CourseOutline, type Lesson, type LessonNote } from '@nuruzzaman/contracts';
 
 import { CourseOutlineNav } from '@/features/learn/course-outline';
+import { LessonNotes } from '@/features/learn/lesson-notes';
 import { LessonPlayer } from '@/features/learn/lesson-player';
 import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/container';
@@ -44,6 +45,14 @@ export default async function LessonPage(props: {
     notFound();
   }
 
+  // Notes for this lesson only. A failure here must not take the lesson down
+  // with it, so an empty list is the fallback.
+  const lessonNotes: LessonNote[] = await sessionApi<{ data: LessonNote[] }>(
+    `/learn/${encodeURIComponent(courseSlug)}/notes`,
+  )
+    .then((response) => response.data.filter((note) => note.lesson?.slug === lessonSlug))
+    .catch(() => []);
+
   let lesson: Lesson | null = null;
   let lockedMessage: string | null = null;
 
@@ -71,11 +80,18 @@ export default async function LessonPage(props: {
 
         <div className="rounded-[--radius-card] border border-line bg-white p-6 sm:p-8">
           {lesson ? (
-            <LessonPlayer
-              courseSlug={courseSlug}
-              lesson={lesson}
-              isCompleted={outlineLesson.is_completed}
-            />
+            <>
+              <LessonPlayer
+                courseSlug={courseSlug}
+                lesson={lesson}
+                isCompleted={outlineLesson.is_completed}
+              />
+              <LessonNotes
+                courseSlug={courseSlug}
+                lessonSlug={lessonSlug}
+                notes={lessonNotes}
+              />
+            </>
           ) : (
             <Callout tone="warning" title="এই লেসনটি এখনো খোলেনি" role="status">
               <p>{lockedMessage}</p>

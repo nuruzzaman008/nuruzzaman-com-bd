@@ -175,6 +175,18 @@ export type Lesson = Json<
 export type CourseOutline = Json<
   paths['/learn/{courseSlug}/outline']['get']['responses']['200']
 >['data'];
+export type Gradebook = Json<
+  paths['/learn/{courseSlug}/gradebook']['get']['responses']['200']
+>['data'];
+export type CourseAnnouncement = Json<
+  paths['/learn/{courseSlug}/announcements']['get']['responses']['200']
+>['data'][number];
+export type CourseQuestion = Json<
+  paths['/learn/{courseSlug}/questions']['get']['responses']['200']
+>['data'][number];
+export type LessonNote = Json<
+  paths['/learn/{courseSlug}/notes']['get']['responses']['200']
+>['data'][number];
 export type Quiz = Json<paths['/quizzes/{quizId}']['get']['responses']['200']>['data'];
 export type QuizResult = Json<
   paths['/quiz-attempts/{attemptId}/submit']['post']['responses']['200']

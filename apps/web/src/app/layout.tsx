@@ -37,7 +37,11 @@ export const metadata: Metadata = {
   creator: brand.owner,
   publisher: brand.owner,
   formatDetection: { telephone: false },
-  alternates: { canonical: '/' },
+  alternates: {
+    canonical: '/',
+    // Lets feed readers and crawlers discover the article feed from any page.
+    types: { 'application/rss+xml': [{ url: '/feed.xml', title: brand.owner }] },
+  },
 };
 
 export const viewport: Viewport = {
