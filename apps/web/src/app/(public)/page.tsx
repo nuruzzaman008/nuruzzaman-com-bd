@@ -106,11 +106,14 @@ export default async function HomePage() {
             <li className="flex items-start gap-3">
               <span aria-hidden="true" className="mt-1 size-2 shrink-0 rounded-full bg-blue" />
               <span>
-                <strong className="block font-semibold text-navy">AutoCAD 2024–2027</strong>
+                <strong className="block font-semibold text-navy">
+                  {site?.product?.designed_for ?? 'AutoCAD 2024'}
+                </strong>
                 <span className="text-muted">
+                  {/* Only claims a tested version once the owner has recorded one. */}
                   {site?.product?.tested_autocad_versions
                     ? `পরীক্ষিত: ${site.product.tested_autocad_versions}`
-                    : 'One-setup architecture, version-specific runtime'}
+                    : 'Windows 10 / 11, 64-bit'}
                 </span>
               </span>
             </li>
@@ -178,10 +181,12 @@ export default async function HomePage() {
 
           <Callout tone="warning" className="mt-6">
             <p>
-              <strong>সামঞ্জস্য:</strong> Designed for AutoCAD 2024–2027.{' '}
+              <strong>সামঞ্জস্য:</strong> মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান
+              commercial build {site?.product?.designed_for ?? 'AutoCAD 2024'}, Windows
+              10/11 64-bit-এর জন্য প্রস্তুত।{' '}
               {site?.product?.tested_autocad_versions
-                ? `Tested compatibility: ${site.product.tested_autocad_versions}.`
-                : 'Tested compatibility: প্রতিটি রিলিজে মালিক আলাদা করে নিশ্চিত করবেন।'}
+                ? `রানটাইম-টেস্ট করা: ${site.product.tested_autocad_versions}।`
+                : 'ভিন্ন ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে।'}
             </p>
             <p className="mt-2">
               সফটওয়্যারটি একটি productivity aid। চূড়ান্ত যাচাই ও পেশাগত দায়িত্ব যোগ্য
