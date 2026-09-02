@@ -9,6 +9,7 @@ import { PostCard } from '@/features/content/post-card';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/container';
+import { CoverArt } from '@/components/ui/cover-art';
 import { Prose } from '@/components/ui/prose';
 import { TableOfContents } from '@/components/ui/table-of-contents';
 import { publicApi, tryPublicApi } from '@/lib/api/server';
@@ -123,7 +124,13 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
                 টেকনিক্যাল রিভিউ: {post.reviewer.name}
                 {post.reviewer.credentials ? ` ${post.reviewer.credentials}` : ''}
               </p>
-            ) : null}
+            ) : (
+              // Said plainly rather than left blank: a reader cannot tell an
+              // unreviewed article from a reviewed one by looking at it.
+              <p className="mt-2 text-sm font-medium text-warning">
+                টেকনিক্যাল রিভিউ এখনো বাকি — হিসাব নিজে যাচাই করে ব্যবহার করুন।
+              </p>
+            )}
           </header>
 
           {post.cover_url ? (
@@ -136,7 +143,13 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
               priority
               className="mt-8 aspect-[1200/630] w-full rounded-[--radius-card] border border-line object-cover"
             />
-          ) : null}
+          ) : (
+            <CoverArt
+              topic={post.categories?.[0]?.slug}
+              label={post.categories?.[0]?.name}
+              className="mt-8 rounded-[--radius-card] border border-line"
+            />
+          )}
 
           <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
             <div>

@@ -25,6 +25,16 @@ return [
         'legal_entity' => env('NB_LEGAL_ENTITY'),
     ],
 
+    'seed' => [
+        // The owner's staff account, created by AdminUserSeeder.
+        'owner_email' => env('NB_ADMIN_EMAIL', 'admin@nuruzzaman.com.bd'),
+        'owner_name' => env('NB_ADMIN_NAME', 'Engr. Md. Nuruzzaman'),
+        // Deliberately has no default. Outside local/testing the seeder refuses
+        // to create the account without it, so no build can ever ship carrying
+        // a password that is written down in this repository.
+        'owner_password' => env('NB_ADMIN_PASSWORD'),
+    ],
+
     'legal' => [
         // Until this is true every legal page renders a visible DRAFT notice.
         'reviewed' => env('NB_LEGAL_REVIEWED', false),

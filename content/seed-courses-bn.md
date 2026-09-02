@@ -1,14 +1,18 @@
 <!--
-  nuruzzaman.com.bd — seed courses (Bangla)
+  nuruzzaman.com.bd — course catalogue (Bangla)
 
-  These three courses are seeded as DRAFTS with their outline only. A course
-  cannot be published until it has real lessons: the admin API refuses it and
-  Course::published() hides any course with no lessons, so an empty placeholder
-  can never be listed, indexed or sold.
+  This file holds outlines. The lessons live in seed-lessons-bn.md, keyed by the
+  `course` and `section` fields.
+
+  A course is published only once it actually holds a lesson: the admin API
+  refuses to publish an empty one and Course::published() hides it, so a
+  placeholder can never be listed, indexed or sold. Its advertised length is
+  derived from the lessons that exist rather than typed by hand.
 -->
 
 ---
 slug: nb-engineering-tools-complete-workflow
+track: engineering-software
 title: NB Engineering Tools: সম্পূর্ণ প্র্যাকটিক্যাল ওয়ার্কফ্লো
 subtitle: ইনস্টলেশন থেকে একটি সম্পূর্ণ ড্রয়িং সেট পর্যন্ত
 level: intermediate
@@ -38,6 +42,7 @@ sections: ইনস্টলেশন ও অ্যাক্টিভেশন|L
 
 ---
 slug: autocad-structural-drawing-productivity
+track: autocad-productivity
 title: AutoCAD Structural Drawing Productivity for Civil Engineers
 subtitle: একই কাজ অর্ধেক সময়ে — টেমপ্লেট, স্ট্যান্ডার্ড ও অটোমেশন
 level: beginner
@@ -62,6 +67,7 @@ sections: ড্রয়িং স্ট্যান্ডার্ড কে�
 
 ---
 slug: rcc-footing-design-detailing-bangla
+track: foundation-geotechnical
 title: RCC Footing Design & Detailing: প্র্যাকটিক্যাল বাংলা কোর্স
 subtitle: হিসাব থেকে ড্রয়িং — একটি ফুটিংয়ের সম্পূর্ণ পথ
 level: intermediate
@@ -85,3 +91,108 @@ sections: লোড ও bearing capacity|আইসোলেটেড ফুট�
 
 কোর্সের উদাহরণ শিক্ষামূলক। কোনো নির্দিষ্ট প্রকল্পে প্রয়োগের আগে সেই প্রকল্পের
 জিওটেকনিক্যাল রিপোর্ট, লোড ও প্রযোজ্য কোড অনুযায়ী স্বাধীনভাবে যাচাই করুন।
+
+@@@
+
+---
+slug: structural-load-path-basics-bangla
+track: structural-engineering
+title: স্ট্রাকচারাল লোড পাথ — ছাদ থেকে মাটি পর্যন্ত
+subtitle: প্রতিটি কিলোনিউটন কোথা দিয়ে নামে, সেটি ধরতে পারা
+level: beginner
+language: Bangla
+sequential: true
+issues_certificate: true
+pass_percentage: 70
+outcomes: যেকোনো তলার লোড কলাম পর্যন্ত অনুসরণ করতে পারবেন|Tributary area সঠিকভাবে বের করতে পারবেন|Load combination কেন একাধিক লাগে তা বুঝবেন|Service ও factored লোড আলাদা করে ব্যবহার করতে পারবেন
+audience: শেষ বর্ষের শিক্ষার্থী|junior structural প্রকৌশলী|যারা analysis software ব্যবহার করেন কিন্তু ফলাফল যাচাই করতে চান
+prerequisites: Statics ও mechanics of materials-এর প্রাথমিক ধারণা
+required_software: কোনো বিশেষ সফটওয়্যার লাগবে না|ক্যালকুলেটর ও কাগজ যথেষ্ট
+sections: লোড পাথের ধারণা|Dead ও live load|Tributary area|Load combination|যাচাইয়ের অভ্যাস
+---
+
+## কোর্সটি কী শেখায়
+
+Analysis software সংখ্যা দেয়, কিন্তু সংখ্যাটা যুক্তিসঙ্গত কি না তা বলে না।
+এই কোর্স হাতে-কলমে লোড পাথ অনুসরণ করতে শেখায়, যাতে model-এর আউটপুট দেখেই
+বোঝা যায় কোথাও ভুল আছে কি না।
+
+## কীভাবে শেখানো হয়
+
+প্রতিটি লেসনে একটি ছোট, সম্পূর্ণ হিসাব থাকে — অনুমান আলাদা করে লেখা, আর শেষে
+সীমাবদ্ধতা স্পষ্ট করে বলা।
+
+@@@
+
+---
+slug: pile-foundation-design-bangla
+track: foundation-geotechnical
+title: পাইল ফাউন্ডেশন ডিজাইন — প্র্যাকটিক্যাল বাংলা কোর্স
+subtitle: মাটির রিপোর্ট থেকে pile cap ড্রয়িং পর্যন্ত
+level: advanced
+language: Bangla
+sequential: true
+issues_certificate: true
+pass_percentage: 75
+outcomes: Soil report পড়ে পাইলের ধরন ও দৈর্ঘ্য নির্ধারণ করতে পারবেন|Static formula দিয়ে প্রাথমিক ক্ষমতা বের করতে পারবেন|Pile group ও efficiency-র প্রভাব বুঝবেন|Pile cap-এর গভীরতা ও reinforcement বের করতে পারবেন|Load test রিপোর্ট ব্যাখ্যা করতে পারবেন
+audience: প্র্যাকটিসিং structural প্রকৌশলী|geotechnical কাজে যুক্ত প্রকৌশলী|design office-এর senior drafter
+prerequisites: RCC ডিজাইনের কার্যকর জ্ঞান|Soil mechanics-এর প্রাথমিক ধারণা
+required_software: AutoCAD (ঐচ্ছিক, ড্রয়িং অনুশীলনের জন্য)
+sections: মাটির রিপোর্ট পড়া|পাইলের ক্ষমতা|Pile group|Pile cap ডিজাইন|Load test ও গ্রহণযোগ্যতা
+---
+
+## কোর্সটি কী শেখায়
+
+পাইল ফাউন্ডেশনে সবচেয়ে বড় ঝুঁকি হলো মাটির অনিশ্চয়তা। এই কোর্সে হিসাবের পাশাপাশি
+**কোন সংখ্যাটা কতটা বিশ্বাসযোগ্য** সেটিও শেখানো হয়, এবং কোথায় load test ছাড়া
+এগোনো উচিত নয় তা স্পষ্ট করা হয়।
+
+@@@
+
+---
+slug: quantity-estimation-bangla
+track: quantity-estimation
+title: কোয়ান্টিটি ও এস্টিমেট — ড্রয়িং থেকে BOQ
+subtitle: কংক্রিট, স্টিল ও ফিনিশিংয়ের হিসাব যেভাবে মেলে
+level: beginner
+language: Bangla
+sequential: false
+issues_certificate: true
+pass_percentage: 70
+outcomes: ড্রয়িং থেকে কংক্রিটের আয়তন বের করতে পারবেন|Bar bending schedule তৈরি করতে পারবেন|উপকরণের পরিমাণ ও wastage হিসাব করতে পারবেন|একটি পরিষ্কার BOQ সাজাতে পারবেন
+audience: junior প্রকৌশলী|quantity surveyor|ঠিকাদার ও সাইট ইঞ্জিনিয়ার
+prerequisites: ড্রয়িং পড়ার প্রাথমিক দক্ষতা
+required_software: স্প্রেডশিট (Excel বা সমতুল্য)
+sections: এস্টিমেটের ভিত্তি|কংক্রিটের আয়তন|Bar bending schedule|উপকরণ ও wastage|BOQ সাজানো
+---
+
+## কোর্সটি কী শেখায়
+
+এস্টিমেটে ভুল সাধারণত জটিল হিসাবে হয় না — হয় ইউনিট গুলিয়ে ফেলায়, wastage
+ভুলে যাওয়ায়, বা একই আইটেম দুইবার ধরায়। এই কোর্স সেই ভুলগুলো ধরার ব্যবস্থা
+তৈরি করতে শেখায়।
+
+@@@
+
+---
+slug: concrete-quality-site-practice-bangla
+track: construction-quality
+title: কংক্রিটের মান ও সাইট প্র্যাকটিস
+subtitle: মিক্স থেকে কিউরিং — যা সত্যিই strength ঠিক করে
+level: beginner
+language: Bangla
+sequential: false
+issues_certificate: true
+pass_percentage: 70
+outcomes: Mix design ও nominal mix-এর পার্থক্য বুঝবেন|Slump ও কিউব টেস্টের ফল সঠিকভাবে পড়তে পারবেন|Cover নিয়ন্ত্রণের ব্যবস্থা করতে পারবেন|কিউরিংয়ের সময় ও পদ্ধতি ঠিক করতে পারবেন
+audience: সাইট ইঞ্জিনিয়ার|ঠিকাদার|junior প্রকৌশলী
+prerequisites: কোনো পূর্বশর্ত নেই
+required_software: কোনো সফটওয়্যার লাগবে না
+sections: মিক্স ও উপকরণ|সাইটে পরীক্ষা|Cover ও ডিটেইলিং|কিউরিং
+---
+
+## কোর্সটি কী শেখায়
+
+ডিজাইনে `f'c` = ২৫ MPa লেখা থাকলেই কংক্রিট ২৫ MPa হয় না। ব্যাচিং, ঢালাই,
+compaction ও কিউরিং — এই চারটি ধাপেই প্রকৃত strength নির্ধারিত হয়। কোর্সে
+প্রতিটি ধাপে কী মাপতে হবে এবং কোন সংখ্যাটা কী বলে, তা দেখানো হয়।
