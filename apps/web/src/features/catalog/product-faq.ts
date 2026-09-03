@@ -16,9 +16,9 @@ export const PRODUCT_FAQ: Faq[] = [
   {
     question: 'কোন AutoCAD ভার্সন সমর্থন করে?',
     answer:
-      'মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান commercial build AutoCAD 2024-এর জন্য প্রস্তুত। '
-      + 'ভিন্ন ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে; AutoCAD 2020–2023 বা পরবর্তী '
-      + 'রিলিজের জন্য একই VLX build guaranteed compatible নয়।',
+      'বর্তমান commercial build AutoCAD 2024, 2025, 2026 ও 2027-এর জন্য তৈরি, Windows 10/11 '
+      + '64-bit environment-এ। AutoCAD 2020–2023 বা এর আগের ভার্সন সমর্থিত নয়। কোন রিলিজে '
+      + 'রানটাইম পরীক্ষা সম্পন্ন হয়েছে তা আলাদাভাবে জানানো হয়।',
   },
   {
     question: 'সফটওয়্যার কি Windows 11-এ চলে?',

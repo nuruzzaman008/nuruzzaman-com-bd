@@ -23,7 +23,7 @@ class SettingSeeder extends Seeder
             ]],
             ['key' => 'product.system_requirements', 'group' => 'product', 'is_public' => true, 'value' => [
                 'Windows 10 / 11, 64-bit',
-                'AutoCAD 2024 (full desktop version) — অন্য ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে',
+                'AutoCAD 2024, 2025, 2026 বা 2027 (full desktop version)',
                 'ইনস্টলেশনের জন্য administrator অধিকার',
                 'Activation ও token refill-এর জন্য ইন্টারনেট সংযোগ',
             ]],

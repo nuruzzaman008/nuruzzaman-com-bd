@@ -44,13 +44,15 @@ return [
     'product' => [
         // Free text, e.g. "AutoCAD 2024, 2025" - only what the owner has tested.
         'tested_autocad_versions' => env('NB_TESTED_AUTOCAD_VERSIONS'),
-        // The default is the sentence in the owner's own published product PDF.
-        // It used to read "AutoCAD 2024-2027", which came from the name of a
-        // build folder rather than from anything the owner had written down. A
-        // folder name is not evidence of compatibility, so the claim now
-        // matches the document and is overridable once the owner confirms which
-        // releases the current build actually supports.
-        'designed_for' => env('NB_DESIGNED_FOR', 'AutoCAD 2024'),
+        // Which releases the build targets. This briefly read "AutoCAD 2024",
+        // because the product PDF says so and the wider range had only ever been
+        // inferred from a build folder's name, which is not evidence. The owner
+        // confirmed the range directly on 3 September 2026, so it is now their
+        // attestation rather than a guess.
+        //
+        // This is the design target, not a test result. `tested_autocad_versions`
+        // above stays empty until each release is actually runtime-tested.
+        'designed_for' => env('NB_DESIGNED_FOR', 'AutoCAD 2024-2027'),
         'installer_sha256' => env('NB_INSTALLER_SHA256'),
         'code_signing_status' => env('NB_CODE_SIGNING_STATUS', 'unknown'),
     ],

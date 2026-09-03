@@ -52,7 +52,10 @@ if [ "${MODE}" = "fresh" ]; then
   MIGRATE="php artisan migrate:fresh --force -q && php artisan db:seed --force"
 fi
 
-MSYS_NO_PATHCONV=1 docker run --rm ${TTY_FLAG--it} \
+# A fixed name so a wrapper script can stop it again on exit.
+docker rm -f nb-dev-api >/dev/null 2>&1 || true
+
+MSYS_NO_PATHCONV=1 docker run --rm --name nb-dev-api ${TTY_FLAG--it} \
   -v "${ROOT}:/repo" -w /repo/apps/api \
   -p "${PORT}:8000" \
   -e APP_ENV=local \

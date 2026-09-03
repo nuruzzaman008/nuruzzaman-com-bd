@@ -118,11 +118,10 @@ Get-FileHash .\NB_Engineering_Tools_Setup.exe -Algorithm SHA256
 
 ## ইনস্টলেশন
 
-মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান commercial build AutoCAD 2024-এর জন্য
-প্রস্তুত। ইনস্টলেশনের ধাপ:
+ইনস্টলার একই সেটআপ থেকে AutoCAD 2024, 2025, 2026 ও 2027 সাপোর্ট করে।
 
 1. ইনস্টলার চালান এবং EULA পড়ে সম্মতি দিন।
-2. ইনস্টলেশন গন্তব্য নিশ্চিত করুন।
+2. কোন AutoCAD ভার্সনগুলোতে বসাতে চান তা নির্বাচন করুন।
 3. ইনস্টল শেষ হলে AutoCAD খুলুন — Ribbon-এ NB ট্যাব এবং classic pull-down মেনু দুটোই পাবেন।
 
 ## আপগ্রেড, রিপেয়ার ও আনইনস্টল
@@ -211,21 +210,20 @@ meta_description: NB Engineering Tools v6.0 চালানোর জন্য �
 ## ন্যূনতম প্রয়োজন
 
 - **অপারেটিং সিস্টেম:** Windows 10 বা Windows 11, 64-bit
-- **AutoCAD:** 2024 — full desktop সংস্করণ (অন্য ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে)
+- **AutoCAD:** 2024, 2025, 2026 বা 2027 — full desktop সংস্করণ
 - **অধিকার:** ইনস্টলেশনের সময় administrator access
 - **ইন্টারনেট:** activation এবং token refill-এর সময়
 
 ## সামঞ্জস্য নিয়ে সৎ কথা
 
-মালিকের প্রকাশিত গ্রাহক-নথি অনুযায়ী:
+সফটওয়্যারটি AutoCAD 2024, 2025, 2026 ও 2027-এর জন্য ডিজাইন করা।
 
-> বর্তমান commercial build বিশেষভাবে AutoCAD 2024, Windows 10/11 64-bit
-> environment-এর জন্য প্রস্তুত। ভিন্ন AutoCAD version-এর compatibility আলাদাভাবে
-> confirm করতে হবে। AutoCAD 2020–2023 বা future releases-এর জন্য একই VLX build
-> guaranteed compatible নয়।
+> Designed for AutoCAD 2024-2027.
+> Tested compatibility: প্রতিটি রিলিজে মালিক আলাদা করে নিশ্চিত করবেন।
 
-যে ভার্সনে রানটাইম পরীক্ষা হয়নি, সেটিকে "সম্পূর্ণ পরীক্ষিত" বলা হবে না — এবং
-বিল্ড ফোল্ডারের নাম দেখে কোনো ভার্সনের দাবি করা হয় না।
+**ডিজাইন লক্ষ্য আর পরীক্ষিত হওয়া এক জিনিস নয়।** যে ভার্সনে রানটাইম পরীক্ষা হয়নি,
+সেটিকে "সম্পূর্ণ পরীক্ষিত" বলা হবে না। AutoCAD 2020–2023 বা এর আগের ভার্সন
+সমর্থিত নয়।
 
 ## যা সাপোর্ট করে না
 
@@ -252,6 +250,7 @@ code-signing অবস্থা রিলিজ তালিকায় স্�
 
 ## v6.0
 
+- AutoCAD 2024, 2025, 2026 ও 2027-এর জন্য one-setup architecture
 - ২৫টি engineering/productivity + ১টি core/security = মোট ২৬টি compiled VLX module
 - AutoCAD Ribbon ও classic pull-down menu
 - Machine activation, signed token refill, protected token wallet

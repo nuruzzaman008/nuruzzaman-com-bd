@@ -27,7 +27,8 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "api:dev": "bash infra/scripts/dev-api.sh"
+    "api:dev": "bash infra/scripts/dev-api.sh",
+    "serve": "bash infra/scripts/serve.sh"
   },
   "devDependencies": {
     "prettier": "^3.4.2"

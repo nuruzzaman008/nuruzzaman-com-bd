@@ -56,3 +56,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Marker written by infra/scripts/serve.sh to know when a rebuild is needed.
+apps/web/.next/.serve-ports
