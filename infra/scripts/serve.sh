@@ -102,4 +102,24 @@ echo ""
 
 node "${ROOT}/apps/web/tools/preview-real.mjs" "${WEB_PORT}" "${API_PORT}" &
 WEB_PID=$!
+
+# Confirm the server answering on this port is the one we just started.
+# Another process can claim the port between the check above and now - a stray
+# `next dev`, an editor's preview - and then every request is served by a build
+# with no /api proxy, so sign-in fails with a CSRF error that looks like bad
+# credentials. Probing a route only our build serves catches that.
+(
+  sleep 12
+  probe="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20     "http://127.0.0.1:${WEB_PORT}/sanctum/csrf-cookie" 2>/dev/null || echo 000)"
+
+  if [ "${probe}" != "204" ] && [ "${probe}" != "200" ]; then
+    echo "" >&2
+    echo "WARNING: /sanctum/csrf-cookie returned ${probe}, so the API proxy is" >&2
+    echo "not in place and sign-in will fail. Another server is probably holding" >&2
+    echo "port ${WEB_PORT}. Check with:" >&2
+    echo "  powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort ${WEB_PORT} -State Listen\"" >&2
+    echo "" >&2
+  fi
+) &
+
 wait "${WEB_PID}"
