@@ -89,4 +89,15 @@ class AuthTest extends TestCase
         $this->getJson('/api/v1/me')->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
         $this->getJson('/api/v1/account/orders')->assertStatus(401);
     }
+
+    /**
+     * The Next.js proxy decides whether to render a private page or redirect to
+     * sign-in by looking for this exact cookie name. If Laravel renames it, the
+     * front end sends every signed-in visitor back to the login page, which is
+     * a total lockout that no API-level test would otherwise catch.
+     */
+    public function test_the_session_cookie_is_the_name_the_front_end_looks_for(): void
+    {
+        $this->assertSame('nuruzzaman_session', config('session.cookie'));
+    }
 }

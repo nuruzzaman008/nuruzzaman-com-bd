@@ -35,7 +35,10 @@ const child = spawn(process.execPath, [server], {
     NODE_ENV: 'production',
     INTERNAL_API_URL: `http://127.0.0.1:${apiPort}/api/v1`,
     NEXT_PUBLIC_SITE_URL: `http://localhost:${webPort}`,
-    NEXT_PUBLIC_API_BASE: `http://127.0.0.1:${apiPort}/api/v1`,
+    // Stands in for Nginx: /api and /sanctum are proxied to Laravel so the
+    // browser sees a single origin. Without it the session cookie is not sent
+    // and every write fails the CSRF check with a 419.
+    NEXT_DEV_API_PROXY: `http://127.0.0.1:${apiPort}`,
   },
 });
 

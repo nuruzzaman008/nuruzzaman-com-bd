@@ -41,11 +41,19 @@ DB_DATABASE=/repo/${DB}
 CACHE_STORE=file
 SESSION_DRIVER=file
 SESSION_DOMAIN=localhost
+SESSION_COOKIE=nuruzzaman_session
 QUEUE_CONNECTION=sync
 MAIL_MAILER=log
 SANCTUM_STATEFUL_DOMAINS=localhost:3200,127.0.0.1:3200
 FRONTEND_URL=http://localhost:3200
 ENV
+
+# Pass a chosen admin password through when the caller set one, so
+# `NB_ADMIN_PASSWORD=... SEED=fresh` behaves the way the docs describe
+# instead of silently generating a random one.
+if [ -n "${NB_ADMIN_PASSWORD:-}" ]; then
+  echo "NB_ADMIN_PASSWORD=${NB_ADMIN_PASSWORD}" >> "${ROOT}/apps/api/.env.local"
+fi
 
 MIGRATE="php artisan migrate --force -q"
 if [ "${MODE}" = "fresh" ]; then

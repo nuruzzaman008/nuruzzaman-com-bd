@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Str;
-
 return [
 
     /*
@@ -127,10 +125,12 @@ return [
     |
     */
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
-    ),
+    // The Next.js proxy reads this cookie by name to decide whether to render a
+    // private page or send the visitor to sign in, so the two must agree. The
+    // stock default derives from APP_NAME, which means renaming the app would
+    // silently log everyone out of the front end; a fixed default removes that.
+    // Override with SESSION_COOKIE, and set NEXT_PUBLIC_SESSION_COOKIE to match.
+    'cookie' => env('SESSION_COOKIE', 'nuruzzaman_session'),
 
     /*
     |--------------------------------------------------------------------------

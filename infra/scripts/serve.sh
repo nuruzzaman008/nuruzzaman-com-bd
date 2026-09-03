@@ -52,8 +52,11 @@ if ! curl -fsS --max-time 3 "${API_URL}/site/settings" >/dev/null 2>&1; then
   exit 1
 fi
 
-# NEXT_PUBLIC_* values are baked into the client bundle at build time, so the
-# build has to be redone whenever the ports change - not just when it is missing.
+# NEXT_PUBLIC_SITE_URL is baked into the client bundle at build time, so the
+# build has to be redone when the web port changes, not only when it is
+# missing. The API is reached through the same-origin proxy, so its port is
+# a runtime value - except that Next evaluates rewrites() at build time and
+# bakes them into the routes manifest, so the proxy target is set here too.
 PORTS="${WEB_PORT}:${API_PORT}"
 NEEDS_BUILD=0
 [ -f "${ROOT}/apps/web/.next/standalone/apps/web/server.js" ] || NEEDS_BUILD=1
@@ -65,8 +68,8 @@ if [ "${NEEDS_BUILD}" = "1" ]; then
   (
     cd "${ROOT}/apps/web"
     NEXT_PUBLIC_SITE_URL="http://localhost:${WEB_PORT}" \
-    NEXT_PUBLIC_API_BASE="${API_URL}" \
     INTERNAL_API_URL="${API_URL}" \
+    NEXT_DEV_API_PROXY="http://127.0.0.1:${API_PORT}" \
       npx next build
   )
   printf '%s' "${PORTS}" > "${MARKER}"
