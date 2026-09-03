@@ -48,7 +48,15 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
 
-        $course->update($request->validate($this->rules($course->getKey())));
+        $course->update(collect($request->validate($this->rules($course->getKey())))
+            ->except('seo')
+            ->all());
+
+        // `seo` is a related record, not a column, so it is written separately
+        // and only when the caller actually sent it.
+        if ($request->has('seo')) {
+            $course->seo()->updateOrCreate([], $request->validated('seo'));
+        }
 
         return new CourseResource($course->fresh()->loadCount('lessons'));
     }
@@ -174,6 +182,13 @@ class CourseController extends Controller
             'support_policy' => ['nullable', 'string', 'max:512'],
             'refund_policy' => ['nullable', 'string', 'max:512'],
             'last_reviewed_at' => ['nullable', 'date'],
+            'seo' => ['sometimes', 'array'],
+            'seo.meta_title' => ['nullable', 'string', 'max:255'],
+            'seo.meta_description' => ['nullable', 'string', 'max:320'],
+            'seo.focus_keyword' => ['nullable', 'string', 'max:160'],
+            'seo.canonical_url' => ['nullable', 'url', 'max:512'],
+            'seo.noindex' => ['sometimes', 'boolean'],
+            'seo.nofollow' => ['sometimes', 'boolean'],
         ];
     }
 }

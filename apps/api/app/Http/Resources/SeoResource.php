@@ -13,6 +13,7 @@ class SeoResource extends JsonResource
         return [
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
+            'focus_keyword' => $this->focus_keyword,
             'canonical_url' => $this->canonical_url,
             'og_image_url' => $this->whenLoaded('ogImage', fn () => $this->ogImage?->url()),
             'noindex' => (bool) $this->noindex,

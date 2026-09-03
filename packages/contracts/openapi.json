@@ -6982,6 +6982,9 @@
                   },
                   "is_price_public": {
                     "type": "boolean"
+                  },
+                  "seo": {
+                    "$ref": "#/components/schemas/SeoWriteRequest"
                   }
                 }
               }
@@ -8236,6 +8239,15 @@
                   },
                   "access_duration_days": {
                     "type": "integer"
+                  },
+                  "track": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "seo": {
+                    "$ref": "#/components/schemas/SeoWriteRequest"
                   }
                 }
               }
@@ -10982,6 +10994,13 @@
               "null"
             ]
           },
+          "focus_keyword": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The phrase the page is written to rank for. Every check in the editor's SEO analysis is measured against it."
+          },
           "canonical_url": {
             "type": [
               "string",
@@ -13224,6 +13243,12 @@
             ]
           },
           "meta_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "focus_keyword": {
             "type": [
               "string",
               "null"

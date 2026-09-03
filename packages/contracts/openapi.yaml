@@ -193,6 +193,11 @@ components:
       properties:
         meta_title: { type: [string, 'null'] }
         meta_description: { type: [string, 'null'] }
+        focus_keyword:
+          type: [string, 'null']
+          description: >-
+            The phrase the page is written to rank for. Every check in the
+            editor's SEO analysis is measured against it.
         canonical_url: { type: [string, 'null'] }
         og_image_url: { type: [string, 'null'] }
         noindex: { type: boolean }
@@ -818,6 +823,7 @@ components:
       properties:
         meta_title: { type: [string, 'null'] }
         meta_description: { type: [string, 'null'] }
+        focus_keyword: { type: [string, 'null'] }
         canonical_url: { type: [string, 'null'] }
         og_media_id: { type: [integer, 'null'] }
         noindex: { type: boolean }
@@ -3983,6 +3989,7 @@ paths:
                 tagline: { type: string }
                 description_markdown: { type: string }
                 is_price_public: { type: boolean }
+                seo: { $ref: '#/components/schemas/SeoWriteRequest' }
       responses:
         '200':
           description: OK
@@ -4509,6 +4516,8 @@ paths:
                 pass_percentage: { type: integer }
                 issues_certificate: { type: boolean }
                 access_duration_days: { type: integer }
+                track: { type: [string, 'null'] }
+                seo: { $ref: '#/components/schemas/SeoWriteRequest' }
       responses:
         '200':
           description: OK

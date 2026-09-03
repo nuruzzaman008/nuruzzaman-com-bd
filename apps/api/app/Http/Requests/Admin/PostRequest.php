@@ -41,6 +41,7 @@ class PostRequest extends FormRequest
             'seo' => ['sometimes', 'array'],
             'seo.meta_title' => ['nullable', 'string', 'max:255'],
             'seo.meta_description' => ['nullable', 'string', 'max:320'],
+            'seo.focus_keyword' => ['nullable', 'string', 'max:160'],
             'seo.canonical_url' => ['nullable', 'url', 'max:512'],
             'seo.og_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'seo.noindex' => ['sometimes', 'boolean'],

@@ -54,7 +54,15 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->update($request->validate($this->rules($product->getKey())));
+        $product->update(collect($request->validate($this->rules($product->getKey())))
+            ->except('seo')
+            ->all());
+
+        // `seo` is a related record, not a column, so it is written separately
+        // and only when the caller actually sent it.
+        if ($request->has('seo')) {
+            $product->seo()->updateOrCreate([], $request->validated('seo'));
+        }
 
         return new ProductResource($product->fresh()->load('activeVariants.prices'));
     }
@@ -88,6 +96,13 @@ class ProductController extends Controller
             'feature_groups' => ['sometimes', 'array'],
             'specs' => ['sometimes', 'array'],
             'is_price_public' => ['sometimes', 'boolean'],
+            'seo' => ['sometimes', 'array'],
+            'seo.meta_title' => ['nullable', 'string', 'max:255'],
+            'seo.meta_description' => ['nullable', 'string', 'max:320'],
+            'seo.focus_keyword' => ['nullable', 'string', 'max:160'],
+            'seo.canonical_url' => ['nullable', 'url', 'max:512'],
+            'seo.noindex' => ['sometimes', 'boolean'],
+            'seo.nofollow' => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import type { Post } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +66,7 @@ export function PostEditor({ post }: { post: Post }) {
           seo: {
             meta_title: form.get('meta_title') || null,
             meta_description: form.get('meta_description') || null,
+            focus_keyword: form.get('focus_keyword') || null,
           },
         },
       });
@@ -105,7 +108,7 @@ export function PostEditor({ post }: { post: Post }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <form onSubmit={save} noValidate className="space-y-5">
+      <form id="post-editor" onSubmit={save} noValidate className="space-y-5">
         <ErrorSummary errors={errors} />
 
         {message ? (
@@ -179,6 +182,15 @@ export function PostEditor({ post }: { post: Post }) {
         <fieldset className="space-y-5 border-t border-line pt-5">
           <legend className="font-bold text-navy">SEO</legend>
 
+          <Field
+            label="ফোকাস কিওয়ার্ড"
+            hint="যে শব্দগুচ্ছে এই লেখাটি খুঁজে পাওয়া উচিত। নিচের বিশ্লেষণ এর সাপেক্ষেই হয়।"
+          >
+            {(props) => (
+              <Input name="focus_keyword" defaultValue={post.seo?.focus_keyword ?? ''} {...props} />
+            )}
+          </Field>
+
           <Field label="Meta title">
             {(props) => (
               <Input name="meta_title" defaultValue={post.seo?.meta_title ?? ''} {...props} />
@@ -227,6 +239,20 @@ export function PostEditor({ post }: { post: Post }) {
             </Callout>
           ) : null}
         </Card>
+
+        <SeoAnalysisPanel
+          formId="post-editor"
+          kind="post"
+          fields={{
+            title: 'title',
+            slug: 'slug',
+            content: 'body_markdown',
+            metaTitle: 'meta_title',
+            metaDescription: 'meta_description',
+            focusKeyword: 'focus_keyword',
+            excerpt: 'excerpt',
+          }}
+        />
       </aside>
     </div>
   );
