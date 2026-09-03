@@ -59,3 +59,6 @@ Thumbs.db
 
 # Marker written by infra/scripts/serve.sh to know when a rebuild is needed.
 apps/web/.next/.serve-ports
+
+# A stray empty git repo was created here once by a mistyped path.
+nuruzzaman.com.bd/
