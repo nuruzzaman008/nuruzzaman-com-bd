@@ -50,7 +50,13 @@ export function LoginForm() {
       if (caught instanceof ApiError) {
         setErrors(caught.fields);
 
-        if (!caught.isValidation) {
+        if (caught.isNetworkError) {
+          // Nothing they typed was wrong, so saying "could not sign in" would
+          // send them off checking their password for no reason.
+          setMessage(
+            'সার্ভারের সঙ্গে সংযোগ করা যায়নি। ইন্টারনেট সংযোগ দেখুন, অথবা সার্ভার চালু আছে কি না নিশ্চিত করুন।',
+          );
+        } else if (!caught.isValidation) {
           setMessage(caught.message);
         }
       } else {

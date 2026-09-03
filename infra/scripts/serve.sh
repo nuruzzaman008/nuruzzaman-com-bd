@@ -31,6 +31,24 @@ if ! docker version --format '{{.Server.Version}}' >/dev/null 2>&1; then
   exit 1
 fi
 
+# A server left running from an earlier session keeps the port and answers
+# every request, so a new one starts, fails to bind, and is never noticed -
+# you end up debugging a build that is not the one being served. Refuse
+# instead of stacking a second listener on the same port.
+port_owner() {
+  command -v powershell.exe >/dev/null 2>&1 || return 0
+  powershell.exe -NoProfile -Command "(Get-NetTCPConnection -LocalPort $1 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess" 2>/dev/null | tr -cd '0-9'
+}
+
+for port in "${WEB_PORT}" "${API_PORT}"; do
+  owner="$(port_owner "${port}")"
+  if [ -n "${owner}" ]; then
+    echo "Port ${port} is already in use by process ${owner}." >&2
+    echo "Stop it, or use other ports: npm run serve -- <web-port> <api-port>" >&2
+    exit 1
+  fi
+done
+
 echo "starting the API on ${API_PORT}..."
 TTY_FLAG= bash "${ROOT}/infra/scripts/dev-api.sh" "${API_PORT}" "${SEED}" &
 

@@ -17,9 +17,21 @@ export class ApiError extends Error {
     message: string,
     readonly fields: Record<string, string[]> = {},
     readonly requestId?: string,
+    options?: { cause?: unknown },
   ) {
-    super(message);
+    super(message, options);
     this.name = 'ApiError';
+  }
+
+  /**
+   * The request never reached the API: the server is down, the network is out,
+   * or the request was blocked. Status is 0 because there was no response.
+   *
+   * Worth separating from every other failure, because the honest message for a
+   * visitor is completely different: nothing they typed was wrong.
+   */
+  get isNetworkError(): boolean {
+    return this.status === 0;
   }
 
   /** True when the caller should send the visitor to sign in. */
@@ -106,16 +118,34 @@ export function createClient(config: ClientConfig) {
       resolved['Idempotency-Key'] = idempotencyKey;
     }
 
-    const response = await doFetch(buildUrl(config.baseUrl, path, query), {
-      method,
-      headers: resolved,
-      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
-      // The session is a cookie, so every request must carry credentials.
-      credentials: 'include',
-      signal,
-      cache,
-      ...(next ? { next } : {}),
-    } as RequestInit);
+    let response: Response;
+
+    try {
+      response = await doFetch(buildUrl(config.baseUrl, path, query), {
+        method,
+        headers: resolved,
+        body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+        // The session is a cookie, so every request must carry credentials.
+        credentials: 'include',
+        signal,
+        cache,
+        ...(next ? { next } : {}),
+      } as RequestInit);
+    } catch (cause) {
+      // An aborted request is the caller's own doing, not a failure to reach the
+      // API, so it is passed through untouched.
+      if ((cause as Error | undefined)?.name === 'AbortError') {
+        throw cause;
+      }
+
+      // fetch rejects with a bare TypeError when it cannot reach the server, and
+      // a caller cannot tell that apart from a bug. Wrapping it means the UI can
+      // say "we could not reach the server" instead of implying the request was
+      // rejected — which reads, wrongly, as "your details are wrong".
+      throw new ApiError(0, 'network_error', 'Could not reach the API.', {}, undefined, {
+        cause,
+      });
+    }
 
     if (response.status === 204) {
       return undefined as T;
