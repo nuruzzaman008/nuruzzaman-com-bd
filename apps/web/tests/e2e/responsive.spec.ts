@@ -27,9 +27,9 @@ test.describe('responsive layout', () => {
     const toggle = page.getByRole('button', { name: 'মেনু খুলুন' });
     await toggle.click();
 
-    await expect(page.getByRole('navigation', { name: 'মোবাইল নেভিগেশন' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'মোবাইল মেনু' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('navigation', { name: 'মোবাইল নেভিগেশন' })).toBeHidden();
+    await expect(page.getByRole('navigation', { name: 'মোবাইল মেনু' })).toBeHidden();
   });
 });

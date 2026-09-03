@@ -20,6 +20,7 @@ const bn = {
   },
 
   nav: {
+    home: 'হোম',
     courses: 'কোর্স',
     tools: 'ইঞ্জিনিয়ারিং টুলস',
     blog: 'ব্লগ',
@@ -27,9 +28,19 @@ const bn = {
     about: 'পরিচিতি',
     support: 'সাপোর্ট',
     primary: 'প্রধান মেনু',
+    mobile: 'মোবাইল মেনু',
     openMenu: 'মেনু খুলুন',
     closeMenu: 'মেনু বন্ধ করুন',
-    skipToContent: 'মূল কন্টেন্টে যান',
+    skipToContent: 'মূল কনটেন্টে যান',
+  },
+
+  /** One-line descriptions shown under each item in the mobile menu. */
+  navDescription: {
+    courses: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স',
+    tools: 'AutoCAD-এর জন্য NB Engineering Tools',
+    blog: 'যাচাই করা টেকনিক্যাল আর্টিকেল',
+    resources: 'চেকলিস্ট ও টেমপ্লেট',
+    support: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স',
   },
 
   actions: {
@@ -76,6 +87,7 @@ const en: Dictionary = {
   },
 
   nav: {
+    home: 'Home',
     courses: 'Courses',
     tools: 'Engineering Tools',
     blog: 'Blog',
@@ -83,9 +95,18 @@ const en: Dictionary = {
     about: 'About',
     support: 'Support',
     primary: 'Primary menu',
+    mobile: 'Mobile menu',
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
     skipToContent: 'Skip to main content',
+  },
+
+  navDescription: {
+    courses: 'Practical engineering courses in Bangla',
+    tools: 'NB Engineering Tools for AutoCAD',
+    blog: 'Reviewed technical articles',
+    resources: 'Checklists and templates',
+    support: 'Installation, activation and licensing',
   },
 
   actions: {

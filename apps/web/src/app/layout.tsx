@@ -56,10 +56,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="bn" dir="ltr" className={`${bengali.variable} ${inter.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
-        <SkipLink />
-        {/* One `/me` and `/cart` request per page load, shared by the header
-            and the footer's admin entrance. */}
+        {/* Inside LocaleProvider: the skip link is the first thing a keyboard
+            or screen-reader user meets, so it has to be in their language. */}
         <LocaleProvider>
+          <SkipLink />
+          {/* One `/me` and `/cart` request per page load, shared by the header
+              and the footer's admin entrance. */}
           <SessionProvider>{children}</SessionProvider>
         </LocaleProvider>
       </body>

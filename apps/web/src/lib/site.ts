@@ -11,22 +11,25 @@ export type NavItem = {
    */
   labelKey?: keyof Dictionary['nav'];
   description?: string;
+  /** Key into `Dictionary['navDescription']`, for the mobile menu blurb. */
+  descriptionKey?: keyof Dictionary['navDescription'];
 };
 
 /** Primary navigation, in the order the information architecture defines. */
 export const primaryNav: NavItem[] = [
-  { href: '/', label: 'হোম' },
-  { href: '/courses', label: 'কোর্স', labelKey: 'courses', description: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স' },
+  { href: '/', label: 'হোম', labelKey: 'home' },
+  { href: '/courses', label: 'কোর্স', labelKey: 'courses', descriptionKey: 'courses', description: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স' },
   {
     href: '/engineering-tools',
     label: 'ইঞ্জিনিয়ারিং টুলস',
     labelKey: 'tools',
+    descriptionKey: 'tools',
     description: 'AutoCAD-এর জন্য NB Engineering Tools',
   },
-  { href: '/blog', label: 'ব্লগ', labelKey: 'blog', description: 'যাচাই করা টেকনিক্যাল আর্টিকেল' },
-  { href: '/resources', label: 'রিসোর্স', labelKey: 'resources', description: 'চেকলিস্ট ও টেমপ্লেট' },
+  { href: '/blog', label: 'ব্লগ', labelKey: 'blog', descriptionKey: 'blog', description: 'যাচাই করা টেকনিক্যাল আর্টিকেল' },
+  { href: '/resources', label: 'রিসোর্স', labelKey: 'resources', descriptionKey: 'resources', description: 'চেকলিস্ট ও টেমপ্লেট' },
   { href: '/about', label: 'পরিচিতি', labelKey: 'about' },
-  { href: '/support', label: 'সাপোর্ট', labelKey: 'support', description: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স' },
+  { href: '/support', label: 'সাপোর্ট', labelKey: 'support', descriptionKey: 'support', description: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স' },
 ];
 
 export const supportNav: NavItem[] = [

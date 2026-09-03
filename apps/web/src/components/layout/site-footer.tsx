@@ -21,6 +21,7 @@ import { brand, legalNav, primaryNav, supportNav } from '@/lib/site';
  * never shows a placeholder address or an invented phone number.
  */
 export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
+  const { locale, t } = useLocale();
   const year = new Date().getFullYear();
 
   return (

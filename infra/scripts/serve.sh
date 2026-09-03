@@ -54,9 +54,16 @@ TTY_FLAG= bash "${ROOT}/infra/scripts/dev-api.sh" "${API_PORT}" "${SEED}" &
 
 # The API is not usable the moment the container starts: migrations and, on a
 # fresh run, the seeders have to finish first.
+# The generous per-request timeout matters: `artisan serve` is single-threaded
+# and a cold first request can take several seconds. A short timeout here made
+# the loop succeed and then a second probe fail, reporting an API that was
+# plainly running as down.
+API_READY=0
+
 echo -n "waiting for the API"
 for _ in $(seq 1 90); do
-  if curl -fsS --max-time 3 "${API_URL}/site/settings" >/dev/null 2>&1; then
+  if curl -fsS --max-time 15 "${API_URL}/site/settings" >/dev/null 2>&1; then
+    API_READY=1
     echo " - ready"
     break
   fi
@@ -64,7 +71,7 @@ for _ in $(seq 1 90); do
   sleep 2
 done
 
-if ! curl -fsS --max-time 3 "${API_URL}/site/settings" >/dev/null 2>&1; then
+if [ "${API_READY}" != "1" ]; then
   echo ""
   echo "The API did not come up. Run 'npm run api:dev' on its own to see why." >&2
   exit 1

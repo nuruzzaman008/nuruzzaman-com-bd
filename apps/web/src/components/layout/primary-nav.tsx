@@ -18,6 +18,14 @@ export function navLabel(item: NavItem, t: ReturnType<typeof useLocale>['t']): s
   return item.labelKey ? t.nav[item.labelKey] : item.label;
 }
 
+/** The mobile menu's one-line blurb, translated where a key exists. */
+export function navDescription(
+  item: NavItem,
+  t: ReturnType<typeof useLocale>['t'],
+): string | undefined {
+  return item.descriptionKey ? t.navDescription[item.descriptionKey] : item.description;
+}
+
 export function PrimaryNav() {
   const { locale, t } = useLocale();
 

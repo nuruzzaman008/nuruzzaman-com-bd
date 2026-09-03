@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { navLabel } from '@/components/layout/primary-nav';
+import { navDescription, navLabel } from '@/components/layout/primary-nav';
 import { localizePath } from '@/lib/i18n/locale';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { primaryNav, supportNav } from '@/lib/site';
@@ -63,7 +63,7 @@ export function MobileNav() {
         hidden={!open}
         className="fixed inset-x-0 top-16 bottom-0 z-40 overflow-y-auto border-t border-line bg-white px-4 py-6"
       >
-        <nav aria-label={t.nav.primary}>
+        <nav aria-label={t.nav.mobile}>
           <ul className="space-y-1">
             {primaryNav.map((item) => (
               <li key={item.href}>
@@ -74,7 +74,7 @@ export function MobileNav() {
                   {navLabel(item, t)}
                   {item.description ? (
                     <span className="mt-0.5 block text-xs font-normal text-muted">
-                      {item.description}
+                      {navDescription(item, t)}
                     </span>
                   ) : null}
                 </Link>

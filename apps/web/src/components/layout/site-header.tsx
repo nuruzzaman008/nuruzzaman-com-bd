@@ -1,5 +1,5 @@
-import Link from 'next/link';
 
+import { BrandLink } from '@/components/layout/brand-link';
 import { HeaderActions } from '@/components/layout/header-actions';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { PrimaryNav } from '@/components/layout/primary-nav';
@@ -18,25 +18,7 @@ export function SiteHeader() {
         <div className="flex min-h-16 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <MobileNav />
-            <Link
-              href="/"
-              className="flex items-center gap-2 rounded-md text-navy hover:text-blue"
-            >
-              <span
-                aria-hidden="true"
-                className="font-latin grid size-9 shrink-0 place-items-center rounded-lg bg-navy text-sm font-bold text-white"
-              >
-                NB
-              </span>
-              <span className="sr-only">হোম — Engr. Md. Nuruzzaman, RSE</span>
-              {/* Hidden below 400px so the header actions always fit. */}
-              <span className="hidden min-w-0 leading-tight min-[400px]:block">
-                <span className="block truncate text-sm font-bold">Engr. Md. Nuruzzaman</span>
-                <span className="font-latin block truncate text-[0.7rem] tracking-wide text-muted">
-                  RSE · nuruzzaman.com.bd
-                </span>
-              </span>
-            </Link>
+            <BrandLink />
           </div>
 
           <PrimaryNav />
