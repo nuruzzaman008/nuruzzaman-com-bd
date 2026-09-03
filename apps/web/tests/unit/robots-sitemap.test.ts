@@ -48,11 +48,23 @@ describe('sitemap.xml', () => {
     }
   });
 
-  it('does not duplicate CMS pages that are already static routes', async () => {
+  it('never lists the same URL twice', async () => {
     const { default: sitemap } = await import('@/app/sitemap');
     const entries = await sitemap();
-    const aboutEntries = entries.filter((entry) => entry.url.endsWith('/about'));
+    const urls = entries.map((entry) => entry.url);
 
-    expect(aboutEntries).toHaveLength(1);
+    // A CMS page whose slug is also a static route used to appear twice with
+    // two different lastModified values.
+    expect(new Set(urls).size).toBe(urls.length);
+  });
+
+  it('lists both languages for a page', async () => {
+    const { default: sitemap } = await import('@/app/sitemap');
+    const urls = (await sitemap()).map((entry) => entry.url);
+
+    // Two different URLs, not a duplicate: the English route is a real page
+    // with its own canonical, and omitting it would hide half the site.
+    expect(urls.some((url) => url.endsWith('/about'))).toBe(true);
+    expect(urls.some((url) => url.endsWith('/en/about'))).toBe(true);
   });
 });

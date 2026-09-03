@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 
 import { SkipLink } from '@/components/layout/skip-link';
+import { LocaleProvider } from '@/lib/i18n/locale-provider';
 import { SessionProvider } from '@/lib/session/session-provider';
 import { publicEnv } from '@/lib/env';
 import { brand } from '@/lib/site';
@@ -58,7 +59,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SkipLink />
         {/* One `/me` and `/cart` request per page load, shared by the header
             and the footer's admin entrance. */}
-        <SessionProvider>{children}</SessionProvider>
+        <LocaleProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

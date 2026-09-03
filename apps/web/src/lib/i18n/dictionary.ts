@@ -65,8 +65,9 @@ const bn = {
     contact: 'যোগাযোগ',
     legal: 'আইনি',
   },
-} as const;
+};
 
+// Derived from the Bengali entry, so a missing English string fails the build.
 export type Dictionary = typeof bn;
 
 const en: Dictionary = {

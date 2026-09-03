@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+import { useLocale } from '@/lib/i18n/locale-provider';
 import { useSession } from '@/lib/session/session-provider';
 
 /**
@@ -16,6 +17,7 @@ import { useSession } from '@/lib/session/session-provider';
  */
 export function AdminEntrance() {
   const { isStaff } = useSession();
+  const { t } = useLocale();
 
   if (!isStaff) {
     return null;
@@ -41,7 +43,7 @@ export function AdminEntrance() {
         <rect x="14" y="12" width="7" height="9" rx="1" />
         <rect x="3" y="16" width="7" height="5" rx="1" />
       </svg>
-      অ্যাডমিন প্যানেল
+      {t.actions.adminPanel}
     </Link>
   );
 }

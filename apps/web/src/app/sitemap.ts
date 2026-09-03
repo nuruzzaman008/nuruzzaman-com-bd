@@ -3,6 +3,7 @@ import type { SitemapFeed } from '@nuruzzaman/contracts';
 
 import { tryPublicApi } from '@/lib/api/server';
 import { absoluteUrl } from '@/lib/env';
+import { localizePath } from '@/lib/i18n/locale';
 
 /**
  * Only genuinely indexable URLs are listed. The API decides what is publishable
@@ -46,12 +47,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const now = new Date();
 
-  const entries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
-    url: absoluteUrl(route.path),
-    lastModified: now,
-    changeFrequency: route.changeFrequency,
-    priority: route.priority,
-  }));
+  // Both languages are listed. The English routes are real, indexable pages
+  // with their own canonical, so leaving them out would hide half the site.
+  const entries: MetadataRoute.Sitemap = STATIC_ROUTES.flatMap((route) => [
+    {
+      url: absoluteUrl(route.path),
+      lastModified: now,
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+    },
+    {
+      url: absoluteUrl(localizePath(route.path, 'en')),
+      lastModified: now,
+      changeFrequency: route.changeFrequency,
+      // Slightly below the Bengali original: the site is written in Bengali and
+      // the English pages share its interface rather than its articles.
+      priority: Math.max(0.1, route.priority - 0.1),
+    },
+  ]);
 
   if (!feed) {
     // The API is unreachable: publish the static routes rather than an empty
@@ -85,6 +98,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: item.updated_at ? new Date(item.updated_at) : now,
         changeFrequency,
         priority,
+      });
+
+      entries.push({
+        url: absoluteUrl(localizePath(`${prefix}/${item.slug}`, 'en')),
+        lastModified: item.updated_at ? new Date(item.updated_at) : now,
+        changeFrequency,
+        priority: Math.max(0.1, priority - 0.1),
       });
     }
   }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { number } from '@/lib/format';
+import { useLocale } from '@/lib/i18n/locale-provider';
 import { useSession } from '@/lib/session/session-provider';
 
 /**
@@ -15,6 +16,7 @@ import { useSession } from '@/lib/session/session-provider';
  */
 export function HeaderActions() {
   const { user, cartCount: itemCount } = useSession();
+  const { t } = useLocale();
 
   return (
     <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -22,7 +24,7 @@ export function HeaderActions() {
         href="/search"
         className="inline-flex size-11 items-center justify-center rounded-lg text-navy hover:bg-blue-soft hover:text-blue"
       >
-        <span className="sr-only">সার্চ</span>
+        <span className="sr-only">{t.actions.search}</span>
         <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-3.5-3.5" strokeLinecap="round" />
@@ -34,7 +36,8 @@ export function HeaderActions() {
         className="relative inline-flex size-11 items-center justify-center rounded-lg text-navy hover:bg-blue-soft hover:text-blue"
       >
         <span className="sr-only">
-          কার্ট{itemCount ? ` (${number(itemCount)} আইটেম)` : ''}
+          {t.actions.cart}
+          {itemCount ? ` (${number(itemCount)})` : ''}
         </span>
         <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 5h2l2 10h9l2-7H7" strokeLinecap="round" strokeLinejoin="round" />
@@ -59,8 +62,8 @@ export function HeaderActions() {
           <circle cx="12" cy="8.5" r="3.5" />
           <path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" strokeLinecap="round" />
         </svg>
-        <span className="hidden sm:inline">{user ? 'অ্যাকাউন্ট' : 'সাইন ইন'}</span>
-        <span className="sr-only sm:hidden">{user ? 'অ্যাকাউন্ট' : 'সাইন ইন'}</span>
+        <span className="hidden sm:inline">{user ? t.actions.account : t.actions.signIn}</span>
+        <span className="sr-only sm:hidden">{user ? t.actions.account : t.actions.signIn}</span>
       </Link>
     </div>
   );

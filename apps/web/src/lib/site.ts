@@ -1,22 +1,32 @@
+import type { Dictionary } from '@/lib/i18n/dictionary';
+
 export type NavItem = {
   href: string;
+  /** Bengali label, used when an item has no dictionary key. */
   label: string;
+  /**
+   * Key into `Dictionary['nav']`. Items that carry one are translated; items
+   * without one show `label` in both languages, which is right for names that
+   * do not translate.
+   */
+  labelKey?: keyof Dictionary['nav'];
   description?: string;
 };
 
 /** Primary navigation, in the order the information architecture defines. */
 export const primaryNav: NavItem[] = [
   { href: '/', label: 'হোম' },
-  { href: '/courses', label: 'কোর্স', description: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স' },
+  { href: '/courses', label: 'কোর্স', labelKey: 'courses', description: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স' },
   {
     href: '/engineering-tools',
     label: 'ইঞ্জিনিয়ারিং টুলস',
+    labelKey: 'tools',
     description: 'AutoCAD-এর জন্য NB Engineering Tools',
   },
-  { href: '/blog', label: 'ব্লগ', description: 'যাচাই করা টেকনিক্যাল আর্টিকেল' },
-  { href: '/resources', label: 'রিসোর্স', description: 'চেকলিস্ট ও টেমপ্লেট' },
-  { href: '/about', label: 'পরিচিতি' },
-  { href: '/support', label: 'সাপোর্ট', description: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স' },
+  { href: '/blog', label: 'ব্লগ', labelKey: 'blog', description: 'যাচাই করা টেকনিক্যাল আর্টিকেল' },
+  { href: '/resources', label: 'রিসোর্স', labelKey: 'resources', description: 'চেকলিস্ট ও টেমপ্লেট' },
+  { href: '/about', label: 'পরিচিতি', labelKey: 'about' },
+  { href: '/support', label: 'সাপোর্ট', labelKey: 'support', description: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স' },
 ];
 
 export const supportNav: NavItem[] = [

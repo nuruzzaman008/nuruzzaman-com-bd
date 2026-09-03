@@ -4,9 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { navLabel } from '@/components/layout/primary-nav';
+import { localizePath } from '@/lib/i18n/locale';
+import { useLocale } from '@/lib/i18n/locale-provider';
 import { primaryNav, supportNav } from '@/lib/site';
 
 export function MobileNav() {
+  const { locale, t } = useLocale();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const [openedAt, setOpenedAt] = useState(pathname);
@@ -59,15 +63,15 @@ export function MobileNav() {
         hidden={!open}
         className="fixed inset-x-0 top-16 bottom-0 z-40 overflow-y-auto border-t border-line bg-white px-4 py-6"
       >
-        <nav aria-label="মোবাইল নেভিগেশন">
+        <nav aria-label={t.nav.primary}>
           <ul className="space-y-1">
             {primaryNav.map((item) => (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={localizePath(item.href, locale)}
                   className="block rounded-lg px-3 py-3 text-base font-semibold text-navy hover:bg-blue-soft hover:text-blue"
                 >
-                  {item.label}
+                  {navLabel(item, t)}
                   {item.description ? (
                     <span className="mt-0.5 block text-xs font-normal text-muted">
                       {item.description}
@@ -85,10 +89,10 @@ export function MobileNav() {
             {supportNav.map((item) => (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={localizePath(item.href, locale)}
                   className="block rounded-lg px-3 py-2.5 text-sm text-navy hover:bg-blue-soft hover:text-blue"
                 >
-                  {item.label}
+                  {navLabel(item, t)}
                 </Link>
               </li>
             ))}

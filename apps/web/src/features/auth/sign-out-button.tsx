@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Ends the session.
@@ -27,6 +28,7 @@ export function SignOutButton({
   variant?: 'default' | 'inverse';
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -70,13 +72,12 @@ export function SignOutButton({
           <path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2" />
           <path d="M18 15l3-3-3-3M21 12H10" />
         </svg>
-        {busy ? 'সাইন আউট হচ্ছে…' : 'সাইন আউট'}
+        {busy ? t.actions.signingOut : t.actions.signOut}
       </button>
 
       {failed ? (
         <p className="mt-2 px-3 text-xs text-danger">
-          সার্ভারে পৌঁছানো যায়নি, তাই সেশন এখনো বন্ধ নাও হতে পারে। নিরাপত্তার জন্য
-          ব্রাউজার বন্ধ করুন বা আবার চেষ্টা করুন।
+{t.account.signOutFailed}
         </p>
       ) : null}
     </div>

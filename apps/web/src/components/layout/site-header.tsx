@@ -1,9 +1,10 @@
 import Link from 'next/link';
 
 import { HeaderActions } from '@/components/layout/header-actions';
+import { LanguageSwitcher } from '@/components/layout/language-switcher';
+import { PrimaryNav } from '@/components/layout/primary-nav';
 import { MobileNav } from '@/components/layout/mobile-nav';
 import { Container } from '@/components/ui/container';
-import { primaryNav } from '@/lib/site';
 
 /**
  * The header is a Server Component so public pages stay cacheable. The two
@@ -38,22 +39,13 @@ export function SiteHeader() {
             </Link>
           </div>
 
-          <nav aria-label="প্রধান নেভিগেশন" className="hidden lg:block">
-            <ul className="flex items-center gap-1">
-              {primaryNav.slice(1).map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-navy hover:bg-blue-soft hover:text-blue"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <PrimaryNav />
 
-          <HeaderActions />
+
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher className="hidden md:flex" />
+            <HeaderActions />
+          </div>
         </div>
       </Container>
     </header>

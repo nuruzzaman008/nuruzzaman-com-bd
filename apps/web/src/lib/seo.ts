@@ -38,7 +38,16 @@ export function buildMetadata(input: MetadataInput): Metadata {
   return {
     title,
     description,
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      // Both languages declared on every page, so a crawler that finds one
+      // finds the other. The English routes override the canonical to their
+      // own URL; see lib/i18n/metadata.ts.
+      languages: {
+        'bn-BD': absoluteUrl(input.path),
+        en: absoluteUrl(input.path === '/' ? '/en' : `/en${input.path}`),
+      },
+    },
     robots: {
       index: !input.seo?.noindex,
       follow: !input.seo?.nofollow,
