@@ -24,8 +24,8 @@ class SeedContentTest extends TestCase
             'articles' => ['seed-posts-bn.md', 6],
             'article library' => ['seed-posts-bn-library.md', 14],
             'pages' => ['seed-pages-bn.md', 15],
-            'courses' => ['seed-courses-bn.md', 7],
-            'lessons' => ['seed-lessons-bn.md', 30],
+            'courses' => ['seed-courses-bn.md', 11],
+            'lessons' => ['seed-lessons-bn.md', 43],
         ];
     }
 

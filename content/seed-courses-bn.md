@@ -196,3 +196,107 @@ sections: মিক্স ও উপকরণ|সাইটে পরীক্ষ
 ডিজাইনে `f'c` = ২৫ MPa লেখা থাকলেই কংক্রিট ২৫ MPa হয় না। ব্যাচিং, ঢালাই,
 compaction ও কিউরিং — এই চারটি ধাপেই প্রকৃত strength নির্ধারিত হয়। কোর্সে
 প্রতিটি ধাপে কী মাপতে হবে এবং কোন সংখ্যাটা কী বলে, তা দেখানো হয়।
+
+@@@
+
+---
+slug: rcc-beam-design-detailing-bangla
+track: rcc-design-detailing
+title: RCC বিম ডিজাইন ও ডিটেইলিং
+subtitle: Moment ও shear থেকে bar bending schedule পর্যন্ত
+level: intermediate
+language: Bangla
+sequential: true
+issues_certificate: true
+pass_percentage: 70
+outcomes: Singly ও doubly reinforced বিমের capacity বের করতে পারবেন|Shear reinforcement ও stirrup ব্যবধান নির্ধারণ করতে পারবেন|Deflection ও crack control যাচাই করতে পারবেন|Continuous বিমে rod curtailment ঠিক করতে পারবেন|সম্পূর্ণ বিম ডিটেইল ড্রয়িং তৈরি করতে পারবেন
+audience: junior structural প্রকৌশলী|শেষ বর্ষের শিক্ষার্থী|design office-এর drafter
+prerequisites: RCC-এর মৌলিক ধারণা|Bending moment ও shear force diagram পড়তে পারা
+required_software: কোনো বিশেষ সফটওয়্যার লাগবে না|ক্যালকুলেটর ও কাগজ যথেষ্ট
+sections: বিমের আচরণ|Flexure ডিজাইন|Shear ডিজাইন|Serviceability|ডিটেইলিং ও ড্রয়িং
+---
+
+## কোর্সটি কী শেখায়
+
+একটি বিমের পূর্ণ পথ — লোড থেকে moment, moment থেকে rod, rod থেকে ড্রয়িং।
+প্রতিটি ধাপে সংখ্যা বসিয়ে হিসাব করা হয় এবং কোন অনুমানে কী বদলায় তা দেখানো হয়।
+
+## কেন আলাদা কোর্স
+
+Analysis software বিমের moment দেয়, কিন্তু সেই moment থেকে কয়টা rod, কোথায়
+বাঁকবে, কোথায় থামবে — এটাই প্রকৌশলীর কাজ। এই কোর্স সেই অংশটুকুতে মনোযোগ দেয়।
+
+@@@
+
+---
+slug: column-design-bangla
+track: rcc-design-detailing
+title: কলাম ডিজাইন — axial থেকে biaxial
+subtitle: Short ও slender কলাম, interaction diagram ও ডিটেইলিং
+level: advanced
+language: Bangla
+sequential: true
+issues_certificate: true
+pass_percentage: 75
+outcomes: Short ও slender কলাম আলাদা করতে পারবেন|Axial ও uniaxial bending-এ capacity যাচাই করতে পারবেন|Interaction diagram পড়তে ও ব্যবহার করতে পারবেন|Tie ও lateral reinforcement-এর নিয়ম প্রয়োগ করতে পারবেন|Lap ও splice-এর অবস্থান ঠিক করতে পারবেন
+audience: প্র্যাকটিসিং structural প্রকৌশলী|design office-এর প্রকৌশলী
+prerequisites: RCC বিম ডিজাইনের কার্যকর জ্ঞান|Load combination-এর ধারণা
+required_software: কোনো বিশেষ সফটওয়্যার লাগবে না
+sections: কলামের ধরন|Axial ও bending|Slenderness|ডিটেইলিং
+---
+
+## কোর্সটি কী শেখায়
+
+কলাম ব্যর্থ হলে তার উপরের সবকিছু নামে — তাই কলামে নিরাপত্তার মার্জিন বিমের
+চেয়ে বেশি রাখা হয়। এই কোর্সে সেই মার্জিন কোথা থেকে আসে এবং কোন অবস্থায় কমে
+যায় তা সংখ্যা দিয়ে দেখানো হয়।
+
+@@@
+
+---
+slug: retaining-wall-design-bangla
+track: foundation-geotechnical
+title: রিটেইনিং ওয়াল ডিজাইন
+subtitle: মাটির চাপ থেকে stability ও reinforcement
+level: intermediate
+language: Bangla
+sequential: true
+issues_certificate: true
+pass_percentage: 70
+outcomes: Active ও passive earth pressure হিসাব করতে পারবেন|Overturning, sliding ও bearing-এর তিনটি stability চেক করতে পারবেন|Stem, heel ও toe-এর reinforcement বের করতে পারবেন|Drainage-এর ব্যবস্থা কেন অপরিহার্য তা বুঝবেন
+audience: civil ও structural প্রকৌশলী|সাইট ইঞ্জিনিয়ার
+prerequisites: Soil mechanics-এর প্রাথমিক ধারণা|RCC ডিজাইনের মৌলিক জ্ঞান
+required_software: স্প্রেডশিট (ঐচ্ছিক)
+sections: মাটির চাপ|Stability চেক|Reinforcement|Drainage ও ডিটেইল
+---
+
+## কোর্সটি কী শেখায়
+
+রিটেইনিং ওয়ালে সবচেয়ে বেশি ব্যর্থতা আসে দুটি কারণে — drainage না রাখা, আর
+sliding চেক না করা। এই কোর্সে চারটি চেকই ধাপে ধাপে করা হয় এবং প্রতিটির
+অনুমান স্পষ্ট করে লেখা হয়।
+
+@@@
+
+---
+slug: staircase-design-bangla
+track: rcc-design-detailing
+title: সিঁড়ি ডিজাইন — জ্যামিতি থেকে reinforcement
+subtitle: Dog-legged সিঁড়ির সম্পূর্ণ হিসাব ও ড্রয়িং
+level: beginner
+language: Bangla
+sequential: false
+issues_certificate: true
+pass_percentage: 70
+outcomes: Rise ও tread-এর আরামদায়ক অনুপাত নির্ধারণ করতে পারবেন|Waist slab-এর পুরুত্ব বের করতে পারবেন|সিঁড়ির লোড সঠিকভাবে হিসাব করতে পারবেন|Main ও distribution rod বের করতে পারবেন|Landing-এর সংযোগ ডিটেইল করতে পারবেন
+audience: junior প্রকৌশলী|drafter|শিক্ষার্থী
+prerequisites: One-way slab ডিজাইনের ধারণা
+required_software: কোনো বিশেষ সফটওয়্যার লাগবে না
+sections: জ্যামিতি|লোড হিসাব|Reinforcement|ডিটেইল
+---
+
+## কোর্সটি কী শেখায়
+
+সিঁড়ি দেখতে সহজ, কিন্তু এর লোড হিসাবেই সবচেয়ে বেশি ভুল হয় — ধাপের ওজন,
+ঢালু waist slab-এর প্রকৃত দৈর্ঘ্য, আর landing-এর span কোথা থেকে ধরা হবে।
+এই কোর্সে প্রতিটি ধাপ সংখ্যা দিয়ে দেখানো হয়।
