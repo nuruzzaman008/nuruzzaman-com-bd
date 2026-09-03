@@ -3,6 +3,7 @@ import type { SiteSettings, User } from '@nuruzzaman/contracts';
 import { redirect } from 'next/navigation';
 import { ApiError } from '@nuruzzaman/contracts';
 
+import { SignOutButton } from '@/features/auth/sign-out-button';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { Container } from '@/components/ui/container';
@@ -65,20 +66,14 @@ export default async function AccountLayout({ children }: { children: React.Reac
                       </Link>
                     </li>
                   ))}
-                  {user.roles.some((role) =>
-                    ['super_admin', 'admin', 'editor', 'instructor', 'support'].includes(role),
-                  ) ? (
-                    <li className="pt-2">
-                      <Link
-                        href="/dashboard"
-                        className="block rounded-lg bg-navy px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue"
-                      >
-                        অ্যাডমিন ড্যাশবোর্ড
-                      </Link>
-                    </li>
-                  ) : null}
                 </ul>
               </nav>
+
+              {/* The admin panel is a separate application, reached from the
+                  footer's staff-only entrance rather than from inside the
+                  customer account. Mixing the two made one look like a section
+                  of the other. */}
+              <SignOutButton className="mt-4 border-t border-line pt-4" />
             </aside>
 
             <div>{children}</div>

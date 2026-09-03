@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 
 import { SkipLink } from '@/components/layout/skip-link';
+import { SessionProvider } from '@/lib/session/session-provider';
 import { publicEnv } from '@/lib/env';
 import { brand } from '@/lib/site';
 
@@ -55,7 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="bn" dir="ltr" className={`${bengali.variable} ${inter.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         <SkipLink />
-        {children}
+        {/* One `/me` and `/cart` request per page load, shared by the header
+            and the footer's admin entrance. */}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

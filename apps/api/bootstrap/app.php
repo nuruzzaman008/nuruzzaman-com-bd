@@ -41,6 +41,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->trustProxies(at: '*');
+
+        /*
+         * There is no Laravel login page: the sign-in form is in the Next.js
+         * app and this project serves JSON only. Laravel's auth middleware
+         * otherwise redirects an unauthenticated visitor to route('login'),
+         * which does not exist here, so any request that did not ask for JSON
+         * — a browser address bar, a link, a crawler — got a 500 instead of a
+         * 401. Returning null stops the redirect and lets the exception
+         * renderer answer with the same 401 envelope as every other client.
+         */
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

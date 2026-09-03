@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ApiError, type User } from '@nuruzzaman/contracts';
 
+import { SignOutButton } from '@/features/auth/sign-out-button';
 import { sessionApi } from '@/lib/api/server';
 import { dashboardNav } from '@/lib/site';
 
@@ -73,6 +74,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </div>
           ))}
         </nav>
+
+        {/* Leaving the admin panel: back to the customer-facing account, or out
+            altogether. Both are here because the admin shell has no site header
+            or footer to fall back on. */}
+        <div className="border-t border-white/15 px-3 py-4">
+          <Link
+            href="/account"
+            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
+          >
+            আমার অ্যাকাউন্ট
+          </Link>
+          <SignOutButton variant="inverse" className="mt-1" />
+        </div>
       </aside>
 
       <main id="main" className="min-w-0 flex-1 p-5 sm:p-8">

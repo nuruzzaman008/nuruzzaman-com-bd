@@ -14,6 +14,9 @@ import { ApiError, api } from '@/lib/api/browser';
  * Sign-in against the first-party cookie session. No token is returned or
  * stored; the browser simply receives an HttpOnly session cookie.
  */
+/** Roles that belong in the admin panel rather than the customer account. */
+const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'instructor', 'support'];
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,7 +36,7 @@ export function LoginForm() {
     const form = new FormData(event.currentTarget);
 
     try {
-      await api<{ data: User }>('/auth/login', {
+      const signedIn = await api<{ data: User }>('/auth/login', {
         method: 'POST',
         body: {
           email: form.get('email'),
@@ -42,7 +45,12 @@ export function LoginForm() {
         },
       });
 
-      router.replace(safeNext);
+      // Staff go to the admin panel, customers to their account. An explicit
+      // `next` always wins, so a deep link the visitor was sent to still works.
+      const isStaff = signedIn.data.roles.some((role) => STAFF_ROLES.includes(role));
+      const destination = next ? safeNext : isStaff ? '/dashboard' : '/account';
+
+      router.replace(destination);
       router.refresh();
     } catch (caught) {
       setBusy(false);

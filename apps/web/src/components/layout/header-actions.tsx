@@ -1,54 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import type { Cart, User } from '@nuruzzaman/contracts';
 
-import { api } from '@/lib/api/browser';
 import { number } from '@/lib/format';
+import { useSession } from '@/lib/session/session-provider';
 
 /**
  * Search, cart and account controls.
  *
  * These are the only parts of the header that depend on the visitor, so they
  * hydrate on the client and let every public page stay statically cacheable.
- * Both requests fail silently: a signed-out visitor is the normal case.
+ * The session itself is fetched once by SessionProvider and shared, so the
+ * footer's admin entrance does not repeat the same request.
  */
 export function HeaderActions() {
-  const [itemCount, setItemCount] = useState<number | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const cart = await api<{ data: Cart }>('/cart');
-
-        if (!cancelled) {
-          setItemCount(cart.data.lines.reduce((total, line) => total + line.quantity, 0));
-        }
-      } catch {
-        if (!cancelled) {
-          setItemCount(0);
-        }
-      }
-
-      try {
-        const me = await api<{ data: User }>('/me');
-
-        if (!cancelled) {
-          setUser(me.data);
-        }
-      } catch {
-        // Signed out is the expected path, not an error worth surfacing.
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { user, cartCount: itemCount } = useSession();
 
   return (
     <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">

@@ -114,4 +114,48 @@ class AuthTest extends TestCase
             ['mysql', 'mariadb'],
         );
     }
+
+    /**
+     * A protected route must answer 401 whatever the caller asked for.
+     *
+     * Laravel's auth middleware redirects an unauthenticated visitor to
+     * route('login'); this project has no such route, so any request that did
+     * not send `Accept: application/json` — a browser address bar, a link, a
+     * crawler — got a 500 instead. That leaks a stack trace in debug mode and
+     * tells monitoring the API is broken when it is merely unauthenticated.
+     */
+    public function test_a_protected_route_returns_401_even_for_a_browser_request(): void
+    {
+        $this->get('/api/v1/me', ['Accept' => 'text/html'])
+            ->assertStatus(401);
+
+        $this->getJson('/api/v1/me')->assertStatus(401);
+    }
+
+    public function test_signing_out_ends_the_session(): void
+    {
+        $user = $this->customer();
+
+        $this->actingAs($user)->getJson('/api/v1/me')->assertOk();
+        $this->actingAs($user)->postJson('/api/v1/auth/logout')->assertSuccessful();
+
+        // `actingAs` re-authenticates on every request and the test's own guard
+        // state is untouched by another request's logout, so neither asking /me
+        // again nor assertGuest() would prove anything here. The audit row is
+        // written by the controller only after the guard is logged out and the
+        // session invalidated, so it is the evidence that path actually ran.
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'auth.logout',
+            'user_id' => $user->getKey(),
+        ]);
+    }
+
+    /**
+     * Its own test because `actingAs` persists for the whole test once used,
+     * so an unauthenticated call cannot be made after an authenticated one.
+     */
+    public function test_signing_out_requires_a_session(): void
+    {
+        $this->postJson('/api/v1/auth/logout')->assertStatus(401);
+    }
 }
