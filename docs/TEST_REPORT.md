@@ -1,13 +1,13 @@
 # Test report
 
-Run on **3 September 2026** against the versions in
+Run on **3 September 2026** (updated after the sign-in fixes) against the versions in
 [DEPENDENCY_VERSIONS.md](DEPENDENCY_VERSIONS.md).
 
 ## Summary
 
 | Suite | Result | Notes |
 |---|---|---|
-| Laravel unit + feature (PHPUnit) | **127 passed, 542 assertions** | Run in Docker on SQLite in memory |
+| Laravel unit + feature (PHPUnit) | **128 passed, 543 assertions** | Run in Docker on SQLite in memory |
 | API contract test | **passed** | Every admin route is documented bar six declared exclusions |
 | Frontend unit + component (Vitest) | **37 passed** | 6 files |
 | End-to-end (Playwright), mock API | **57 passed** | 19 tests across desktop / tablet / mobile |
@@ -20,7 +20,7 @@ Run on **3 September 2026** against the versions in
 ## Laravel suite
 
 ```text
-PHPUnit 12.5.34 - OK (127 tests, 542 assertions)
+PHPUnit 12.5.34 - OK (128 tests, 543 assertions)
 ```
 
 | Area | What is covered |
@@ -113,10 +113,18 @@ what CI uses. `infra/scripts/dev-api.sh` serves the real Laravel app instead, bu
 E2E_BASE_URL=http://127.0.0.1:3200 npx playwright test --workers=1
 ```
 
-Run in parallel against that server, six tests fail on timeouts as the workers
-queue behind PHP. That is a limitation of the development server, not of the
-application: the same tests pass serially against the real API and in parallel
-against the mock.
+Run in parallel against that server, several tests fail on timeouts as the
+workers queue behind PHP. That is a limitation of the development server, not of
+the application: the same tests pass serially against the real API and in
+parallel against the mock.
+
+One test — "a visitor can reach an article from the blog index" — can also fail
+on the very first serial run against a cold server, and passes on every run
+after. Measured directly, that navigation takes about 140 ms warm; cold, the
+client-side navigation waits for the RSC payload of a not-yet-rendered
+`/blog/[slug]`, which is a server-side fetch through the same single-threaded
+PHP server and can exceed the assertion's five-second window. The link, its href
+and hydration were all checked and are correct.
 
 ## Defects found and fixed in this round
 
@@ -125,4 +133,7 @@ against the mock.
 | The seed-content parser silently dropped the first document of every file, because the explanatory comment at the top broke the front-matter match. The first article, the first course and the first lesson of each file had never been seeded. | Seeded counts did not match what had been written; now covered by `SeedContentTest`, and a malformed document throws instead of being skipped |
 | The course list returned no `track`, so the whole catalogue rendered the fallback artwork. `track` had been added to `CourseResource` but not to `CourseSummaryResource`, which is what the list actually returns. | Visual check of the rendered catalogue; now covered by `CourseEngagementTest` |
 | The sitemap skipped CMS pages outright, so any page the owner published that was not also hard-coded in the static list never reached it. | Reading the sitemap builder while adding the feed |
+| Sign-in was impossible outside Nginx: the browser primes CSRF at same-origin `/sanctum/csrf-cookie`, the preview served a 404 there, and every attempt failed with a 419 that reads as a wrong password. | Signing in by hand instead of only reading the code |
+| Laravel's session cookie was `laravel-session` (derived from APP_NAME) while the Next.js proxy looked for `nuruzzaman_session`, so a successful sign-in still bounced back to /login. Each side was correct alone. | The same manual sign-in; now asserted by `AuthTest` |
+| An unreachable API produced "could not sign in, try again later", because `fetch` rejects with a bare TypeError that no caller could distinguish from a real rejection. | Reading the error path while diagnosing the above |
 | The product page claimed "AutoCAD 2024-2027" with a version-specific runtime. That came from the name of a build folder, not from anything the owner had written; their own product document says the current build is prepared for AutoCAD 2024. | Reading the owner's product PDF against the page |
