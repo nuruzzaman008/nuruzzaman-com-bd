@@ -12,6 +12,12 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            // Staff need the primary key to build admin links; the public
+            // API is addressed by slug and has no use for it.
+            'id' => $this->when(
+                (bool) $request->user()?->hasPermission('products.view'),
+                fn () => $this->id,
+            ),
             'slug' => $this->slug,
             'type' => $this->type->value,
             'name' => $this->name,

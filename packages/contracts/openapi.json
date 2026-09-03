@@ -11410,6 +11410,10 @@
           "published_at"
         ],
         "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Returned to staff only; the public API is addressed by slug."
+          },
           "slug": {
             "type": "string"
           },
@@ -11613,6 +11617,10 @@
           "published_at"
         ],
         "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Returned to staff only; the public API is addressed by slug."
+          },
           "slug": {
             "type": "string"
           },

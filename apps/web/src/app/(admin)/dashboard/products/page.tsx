@@ -45,6 +45,19 @@ export default async function DashboardProductsPage() {
               ),
             },
             {
+              key: 'seo',
+              header: 'SEO',
+              render: (product) =>
+                product.id ? (
+                  <Link
+                    href={`/dashboard/products/${product.id}/seo`}
+                    className="text-blue hover:underline"
+                  >
+                    বিশ্লেষণ
+                  </Link>
+                ) : null,
+            },
+            {
               key: 'type',
               header: 'ধরন',
               render: (product) => <Badge tone="info">{product.type}</Badge>,

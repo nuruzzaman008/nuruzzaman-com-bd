@@ -45,6 +45,19 @@ export default async function DashboardCoursesPage() {
             },
             { key: 'level', header: 'স্তর', render: (course) => course.level },
             {
+              key: 'seo',
+              header: 'SEO',
+              render: (course) =>
+                course.id ? (
+                  <Link
+                    href={`/dashboard/courses/${course.id}/seo`}
+                    className="text-blue hover:underline"
+                  >
+                    বিশ্লেষণ
+                  </Link>
+                ) : null,
+            },
+            {
               key: 'lessons',
               header: 'লেসন',
               align: 'end',

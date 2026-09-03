@@ -325,6 +325,9 @@ components:
       type: object
       required: [slug, type, name, tagline, description_html, feature_groups, specs, published_at]
       properties:
+        id:
+          type: integer
+          description: Returned to staff only; the public API is addressed by slug.
         slug: { type: string }
         type: { type: string }
         name: { type: string }
@@ -384,6 +387,9 @@ components:
       type: object
       required: [slug, title, subtitle, level, language, estimated_minutes, issues_certificate, published_at]
       properties:
+        id:
+          type: integer
+          description: Returned to staff only; the public API is addressed by slug.
         slug: { type: string }
         title: { type: string }
         subtitle: { type: [string, 'null'] }
