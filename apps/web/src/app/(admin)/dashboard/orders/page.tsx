@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, price } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
+import { ORDER_STATUS_LABELS, label } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('অর্ডার');
 
@@ -85,7 +86,7 @@ export default async function DashboardOrdersPage(props: {
               header: 'অবস্থা',
               render: (order) => (
                 <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>
-                  {order.status}
+                  {label(ORDER_STATUS_LABELS, order.status)}
                 </Badge>
               ),
             },

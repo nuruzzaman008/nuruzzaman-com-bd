@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, price } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
+import { ORDER_STATUS_LABELS, label } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('আমার অর্ডার');
 
@@ -65,7 +66,9 @@ export default async function AccountOrdersPage() {
               key: 'status',
               header: 'অবস্থা',
               render: (order) => (
-                <Badge tone={STATUS_TONES[order.status] ?? 'neutral'}>{order.status}</Badge>
+                <Badge tone={STATUS_TONES[order.status] ?? 'neutral'}>
+                  {label(ORDER_STATUS_LABELS, order.status)}
+                </Badge>
               ),
             },
             {

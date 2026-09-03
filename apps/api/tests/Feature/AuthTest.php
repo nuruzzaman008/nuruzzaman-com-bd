@@ -100,4 +100,18 @@ class AuthTest extends TestCase
     {
         $this->assertSame('nuruzzaman_session', config('session.cookie'));
     }
+
+    /**
+     * The hosting runs MySQL, the schema is written for it, and AppServiceProvider
+     * refuses to boot on anything else. This asserts the suite itself is on the
+     * same engine, so a MySQL-only problem cannot hide behind a green run on some
+     * other driver.
+     */
+    public function test_the_suite_runs_on_mysql(): void
+    {
+        $this->assertContains(
+            \DB::connection()->getDriverName(),
+            ['mysql', 'mariadb'],
+        );
+    }
 }

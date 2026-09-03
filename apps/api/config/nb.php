@@ -33,6 +33,9 @@ return [
         // to create the account without it, so no build can ever ship carrying
         // a password that is written down in this repository.
         'owner_password' => env('NB_ADMIN_PASSWORD'),
+        // Local demo customer created by DemoSeeder, which refuses to run
+        // outside local and testing.
+        'demo_password' => env('NB_DEMO_PASSWORD'),
     ],
 
     'legal' => [

@@ -10,6 +10,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { sessionApi } from '@/lib/api/server';
 import { dateTime, price } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
+import { ORDER_STATUS_LABELS, label } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('অর্ডারের বিস্তারিত');
 
@@ -47,7 +48,7 @@ export default async function DashboardOrderPage(props: {
         <h1 className="font-latin text-[length:var(--step-h1)] font-bold text-navy">
           {order.number}
         </h1>
-        <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{order.status}</Badge>
+        <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{label(ORDER_STATUS_LABELS, order.status)}</Badge>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">

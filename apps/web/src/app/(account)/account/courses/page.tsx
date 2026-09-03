@@ -9,15 +9,16 @@ import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, number } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
+import { ENROLLMENT_STATUS_LABELS, label } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('আমার কোর্স');
 
-/** The enrolment states a learner can actually be in, in their own language. */
-const STATUS_LABELS: Record<string, { label: string; tone: 'success' | 'info' | 'warning' }> = {
-  active: { label: 'চলছে', tone: 'info' },
-  completed: { label: 'সম্পন্ন', tone: 'success' },
-  expired: { label: 'মেয়াদ শেষ', tone: 'warning' },
-  revoked: { label: 'বাতিল', tone: 'warning' },
+/** Tone per enrolment state; the wording comes from the shared status map. */
+const STATUS_TONES: Record<string, 'success' | 'info' | 'warning'> = {
+  active: 'info',
+  completed: 'success',
+  expired: 'warning',
+  revoked: 'warning',
 };
 
 export default async function AccountCoursesPage() {
@@ -56,8 +57,8 @@ export default async function AccountCoursesPage() {
                           : null}
                       </p>
                     </div>
-                    <Badge tone={STATUS_LABELS[enrollment.status]?.tone ?? 'info'}>
-                      {STATUS_LABELS[enrollment.status]?.label ?? enrollment.status}
+                    <Badge tone={STATUS_TONES[enrollment.status] ?? 'info'}>
+                      {label(ENROLLMENT_STATUS_LABELS, enrollment.status)}
                     </Badge>
                   </div>
 

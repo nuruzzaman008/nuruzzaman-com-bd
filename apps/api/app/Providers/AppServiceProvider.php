@@ -28,8 +28,13 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
+    /** The only database engines this application supports. */
+    private const SUPPORTED_DRIVERS = ['mysql', 'mariadb'];
+
     public function boot(): void
     {
+        $this->assertSupportedDatabase();
+
         Model::shouldBeStrict(! $this->app->isProduction());
         Model::unguard(false);
         Date::use(\Illuminate\Support\Carbon::class);
@@ -90,5 +95,29 @@ class AppServiceProvider extends ServiceProvider
             fn ($notifiable, string $token) => $frontend.'/reset-password?token='.$token
                 .'&email='.urlencode($notifiable->getEmailForPasswordReset()),
         );
+    }
+
+    /**
+     * Fails fast if the app is pointed at anything other than MySQL/MariaDB.
+     *
+     * The hosting runs MySQL, the schema is written for it (InnoDB, utf8mb4,
+     * cross-table foreign keys added by ALTER) and the tests run on it. Laravel
+     * still merges its own default config underneath ours, so connections we
+     * never configured — sqlite, pgsql, sqlsrv — remain selectable by setting
+     * DB_CONNECTION. A stray value would otherwise be discovered as strange
+     * behaviour much later, so it is refused here with a message that says what
+     * to change.
+     */
+    private function assertSupportedDatabase(): void
+    {
+        $connection = config('database.default');
+        $driver = config("database.connections.{$connection}.driver");
+
+        if ($driver !== null && ! in_array($driver, self::SUPPORTED_DRIVERS, true)) {
+            throw new \RuntimeException(
+                "This application supports MySQL and MariaDB only; DB_CONNECTION is "
+                ."'{$connection}' (driver '{$driver}'). Set DB_CONNECTION=mysql."
+            );
+        }
     }
 }

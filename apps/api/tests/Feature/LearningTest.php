@@ -164,4 +164,23 @@ class LearningTest extends TestCase
             ->getJson('/api/v1/learn/'.$this->course->slug.'/lessons/lesson-one')
             ->assertStatus(403);
     }
+
+    /**
+     * The outline is the first thing the player loads. isUnlocked() falls back to
+     * the section's drip window, and every lesson without its own drip_days used
+     * to lazy-load its section, which strict mode refuses - so this endpoint
+     * returned a 500 for every enrolled learner.
+     */
+    public function test_the_outline_loads_without_a_lazy_loading_violation(): void
+    {
+        $user = $this->customer();
+        $this->enroll($user);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/learn/'.$this->course->slug.'/outline')
+            ->assertOk()
+            ->assertJsonPath('data.course.slug', $this->course->slug)
+            ->assertJsonCount(1, 'data.sections')
+            ->assertJsonPath('data.sections.0.lessons.0.is_unlocked', true);
+    }
 }

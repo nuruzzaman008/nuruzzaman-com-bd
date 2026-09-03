@@ -139,7 +139,11 @@ class EnrollmentService
         $course = $enrollment->course()->with('lessons')->first();
         $start = $enrollment->starts_at ?? $enrollment->created_at ?? now();
 
-        $dripDays = $lesson->drip_days ?? $lesson->section?->drip_days;
+        // Only consult the section when the caller supplied it. Reaching for an
+        // unloaded relation here throws under strict mode, and this runs on every
+        // lesson of every outline.
+        $dripDays = $lesson->drip_days
+            ?? ($lesson->relationLoaded('section') ? $lesson->section?->drip_days : null);
 
         if ($dripDays !== null && $start->copy()->addDays((int) $dripDays)->isFuture()) {
             return false;

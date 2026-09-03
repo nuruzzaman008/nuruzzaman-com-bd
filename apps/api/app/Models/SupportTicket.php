@@ -29,6 +29,23 @@ class SupportTicket extends Model
         return $this->hasMany(SupportTicketMessage::class)->orderBy('id');
     }
 
+    /**
+     * The order the ticket is about, when the customer raised it from one.
+     *
+     * The controllers eager-load this and the resource reads it; without the
+     * relation every ticket listing throws RelationNotFoundException, which went
+     * unnoticed because no environment had ever had a ticket in it.
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'reference';

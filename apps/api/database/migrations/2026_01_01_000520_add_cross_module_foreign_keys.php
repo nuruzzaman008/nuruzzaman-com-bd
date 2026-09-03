@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Schema;
  * created by a later migration (variants reference courses, carts reference
  * coupons, coupon redemptions reference orders).
  *
- * SQLite cannot add a constraint to an existing table, and the test suite runs
- * on an in-memory SQLite database, so the constraints are applied only on
+ * The guard below is a safety net for drivers that cannot add a constraint to an
+ * existing table. It no longer skips anything in practice: development, the test
+ * suite and production all run MySQL, so these constraints are applied on
  * drivers that support ALTER TABLE ... ADD CONSTRAINT. The application enforces
  * the same relationships through Eloquent regardless of driver.
  */

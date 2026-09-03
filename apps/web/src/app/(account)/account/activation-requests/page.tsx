@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
+import { ACTIVATION_STATUS_LABELS, label } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('অ্যাক্টিভেশন রিকোয়েস্ট');
 
@@ -71,7 +72,7 @@ export default async function ActivationRequestsPage() {
               key: 'status',
               header: 'অবস্থা',
               render: (request) => (
-                <Badge tone={TONES[request.status] ?? 'neutral'}>{request.status}</Badge>
+                <Badge tone={TONES[request.status] ?? 'neutral'}>{label(ACTIVATION_STATUS_LABELS, request.status)}</Badge>
               ),
             },
             {

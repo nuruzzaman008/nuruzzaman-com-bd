@@ -37,6 +37,17 @@ class LessonController extends Controller
         $this->authorize('learn', $enrollment);
 
         $course->load(['sections.lessons']);
+
+        // isUnlocked() falls back to the section's drip window when the lesson
+        // has none, and every lesson without its own drip_days would otherwise
+        // lazy-load its section — which strict mode refuses, taking the whole
+        // outline down. The section is already in memory here, so hand it over.
+        $course->sections->each(
+            fn ($section) => $section->lessons->each(
+                fn (Lesson $lesson) => $lesson->setRelation('section', $section),
+            ),
+        );
+
         $completed = $enrollment->progress()->where('is_completed', true)->pluck('lesson_id')->all();
 
         return response()->json([
@@ -76,7 +87,7 @@ class LessonController extends Controller
         $lesson = Lesson::query()
             ->where('course_id', $course->getKey())
             ->where('slug', $lessonSlug)
-            ->with(['course', 'assets', 'quiz', 'assignment'])
+            ->with(['course', 'section', 'assets', 'quiz', 'assignment'])
             ->firstOrFail();
 
         $this->enrollments->assertAccess($request->user(), $lesson);

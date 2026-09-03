@@ -92,7 +92,9 @@ services:
   mysql:
     image: mysql:8.4
     command:
-      - --default-authentication-plugin=caching_sha2_password
+      # MySQL 8.4 removed --default-authentication-plugin; the replacement is
+      # --authentication-policy. The old flag aborts the server on startup.
+      - --authentication-policy=caching_sha2_password
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --sql-mode=STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
