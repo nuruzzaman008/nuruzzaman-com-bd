@@ -1,0 +1,16 @@
+---
+# cPanel Git Version Control deployment.
+#
+# cPanel runs these tasks as one bash script, from the repository clone
+# (~/repositories/<name>), whenever "Deploy HEAD Commit" is pressed.
+#
+# The real work is in infra/cpanel/deploy.sh so it can be read, reviewed and run
+# by hand on the server. Host-specific paths are NOT in this file: they live in
+# ~/.nb-deploy.conf on the server, outside the repository, because they differ
+# per account and because nothing about the server belongs in Git.
+#
+# See docs/DEPLOY_CPANEL_BN.md before the first deployment.
+deployment:
+  tasks:
+    - export NB_DEPLOY_SOURCE="$PWD"
+    - /bin/bash "$NB_DEPLOY_SOURCE/infra/cpanel/deploy.sh"
