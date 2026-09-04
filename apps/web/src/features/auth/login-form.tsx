@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Checkbox, ErrorSummary, Field, Input } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
+import { useSession } from '@/lib/session/session-provider';
 
 /**
  * Sign-in against the first-party cookie session. No token is returned or
@@ -19,6 +21,8 @@ const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'instructor', 'support'];
 
 export function LoginForm() {
   const router = useRouter();
+  const { t } = useLocale();
+  const { refresh: refreshSession } = useSession();
   const searchParams = useSearchParams();
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -50,6 +54,13 @@ export function LoginForm() {
       const isStaff = signedIn.data.roles.some((role) => STAFF_ROLES.includes(role));
       const destination = next ? safeNext : isStaff ? '/dashboard' : '/account';
 
+      // The header, the cart badge and the footer's staff entrance all read
+      // the shared session, which was fetched while nobody was signed in.
+      // Without this they keep offering "sign in" to someone who just did.
+      // Not awaited: the navigation should not wait on it, and a failure here
+      // must not turn a successful sign-in into an error message.
+      void refreshSession();
+
       router.replace(destination);
       router.refresh();
     } catch (caught) {
@@ -61,14 +72,12 @@ export function LoginForm() {
         if (caught.isNetworkError) {
           // Nothing they typed was wrong, so saying "could not sign in" would
           // send them off checking their password for no reason.
-          setMessage(
-            'সার্ভারের সঙ্গে সংযোগ করা যায়নি। ইন্টারনেট সংযোগ দেখুন, অথবা সার্ভার চালু আছে কি না নিশ্চিত করুন।',
-          );
+          setMessage(t.auth.offline);
         } else if (!caught.isValidation) {
           setMessage(caught.message);
         }
       } else {
-        setMessage('সাইন ইন করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
+        setMessage(t.auth.signInFailed);
       }
     }
   }
@@ -83,25 +92,25 @@ export function LoginForm() {
         </Callout>
       ) : null}
 
-      <Field label="ইমেইল" required error={errors.email?.[0]}>
+      <Field label={t.auth.email} required error={errors.email?.[0]}>
         {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
       </Field>
 
-      <Field label="পাসওয়ার্ড" required error={errors.password?.[0]}>
+      <Field label={t.auth.password} required error={errors.password?.[0]}>
         {(props) => (
           <Input name="password" type="password" autoComplete="current-password" {...props} />
         )}
       </Field>
 
-      <Checkbox name="remember" label="এই ডিভাইসে মনে রাখুন" />
+      <Checkbox name="remember" label={t.auth.remember} />
 
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
-        {busy ? 'সাইন ইন হচ্ছে…' : 'সাইন ইন'}
+        {busy ? t.auth.signingIn : t.auth.signInTitle}
       </Button>
 
       <p className="text-center text-sm text-muted">
         <Link href="/forgot-password" className="text-blue hover:underline">
-          পাসওয়ার্ড ভুলে গেছেন?
+          {t.auth.forgotPassword}
         </Link>
       </p>
     </form>

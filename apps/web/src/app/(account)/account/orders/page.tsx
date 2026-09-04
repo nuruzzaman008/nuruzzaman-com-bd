@@ -8,10 +8,15 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, price } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('আমার অর্ডার');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.customer.orders.title);
+}
 
 const STATUS_TONES: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'neutral'> = {
   paid: 'info',
@@ -26,28 +31,31 @@ const STATUS_TONES: Record<string, 'success' | 'info' | 'warning' | 'danger' | '
 };
 
 export default async function AccountOrdersPage() {
+  const { locale, t } = await adminDictionary();
   const orders = await sessionApi<{ data: Order[] }>('/account/orders');
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">আমার অর্ডার</h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.customer.orders.title}
+      </h1>
 
       <div className="mt-6">
         <DataTable
-          caption="আপনার অর্ডারের তালিকা"
+          caption={t.customer.orders.caption}
           rows={orders.data}
           getRowKey={(order) => order.number}
           empty={
             <EmptyState
-              title="এখনো কোনো অর্ডার নেই"
-              description="শপ থেকে একটি পণ্য বা কোর্স কিনলে সেটি এখানে দেখা যাবে।"
-              action={<ButtonLink href="/shop">শপে যান</ButtonLink>}
+              title={t.customer.orders.emptyTitle}
+              description={t.customer.orders.emptyBody}
+              action={<ButtonLink href="/shop">{t.customer.goToShop}</ButtonLink>}
             />
           }
           columns={[
             {
               key: 'number',
-              header: 'অর্ডার',
+              header: t.customer.orders.order,
               render: (order) => (
                 <Link
                   href={`/account/orders/${order.number}`}
@@ -59,23 +67,23 @@ export default async function AccountOrdersPage() {
             },
             {
               key: 'placed_at',
-              header: 'তারিখ',
-              render: (order) => date(order.placed_at) ?? '—',
+              header: t.customer.orders.date,
+              render: (order) => date(order.placed_at, locale) ?? '—',
             },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.customer.orders.status,
               render: (order) => (
                 <Badge tone={STATUS_TONES[order.status] ?? 'neutral'}>
-                  {statusLabel('order', order.status)}
+                  {statusLabel('order', order.status, locale)}
                 </Badge>
               ),
             },
             {
               key: 'total',
-              header: 'মোট',
+              header: t.customer.orders.total,
               align: 'end',
-              render: (order) => price(order.total_minor, order.currency),
+              render: (order) => price(order.total_minor, order.currency, locale),
             },
           ]}
         />

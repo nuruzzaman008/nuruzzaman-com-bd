@@ -7,15 +7,21 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Card } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { sessionApi } from '@/lib/api/server';
-import { dateTime, price } from '@/lib/format';
+import { dateTime, number as formatNumber, price } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('অর্ডারের বিস্তারিত');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.customer.orders.detailTitle);
+}
 
 export default async function AccountOrderPage(props: {
   params: Promise<{ number: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const { number } = await props.params;
 
   let order: Order;
@@ -37,8 +43,8 @@ export default async function AccountOrderPage(props: {
     <div>
       <Breadcrumbs
         trail={[
-          { name: 'অ্যাকাউন্ট', path: '/account' },
-          { name: 'অর্ডার', path: '/account/orders' },
+          { name: t.customer.title, path: '/account' },
+          { name: t.account.nav.orders, path: '/account/orders' },
           { name: order.number, path: `/account/orders/${order.number}` },
         ]}
       />
@@ -47,19 +53,19 @@ export default async function AccountOrderPage(props: {
         <h1 className="font-latin text-[length:var(--step-h1)] font-bold text-navy">
           {order.number}
         </h1>
-        <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{statusLabel('order', order.status)}</Badge>
+        <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{statusLabel('order', order.status, locale)}</Badge>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
           <DataTable
-            caption="অর্ডারের আইটেম"
+            caption={t.customer.orders.itemsCaption}
             rows={order.items ?? []}
             getRowKey={(item) => item.sku}
             columns={[
               {
                 key: 'name',
-                header: 'আইটেম',
+                header: t.customer.orders.item,
                 render: (item) => (
                   <span>
                     <span className="block font-medium text-navy">{item.product_name}</span>
@@ -68,19 +74,24 @@ export default async function AccountOrderPage(props: {
                   </span>
                 ),
               },
-              { key: 'qty', header: 'পরিমাণ', align: 'end', render: (item) => item.quantity },
+              {
+                key: 'qty',
+                header: t.customer.orders.quantity,
+                align: 'end',
+                render: (item) => formatNumber(item.quantity, locale),
+              },
               {
                 key: 'total',
-                header: 'মোট',
+                header: t.customer.orders.total,
                 align: 'end',
-                render: (item) => price(item.line_total_minor, order.currency),
+                render: (item) => price(item.line_total_minor, order.currency, locale),
               },
             ]}
           />
 
           {order.timeline?.length ? (
             <Card className="p-5">
-              <h2 className="font-bold text-navy">অর্ডারের ইতিহাস</h2>
+              <h2 className="font-bold text-navy">{t.customer.orders.history}</h2>
               <ol className="mt-3 space-y-3 text-sm">
                 {order.timeline.map((event, index) => (
                   <li key={`${event.to}-${index}`} className="flex gap-3">
@@ -93,7 +104,7 @@ export default async function AccountOrderPage(props: {
                         {event.from ? `${event.from} - ${event.to}` : event.to}
                       </span>
                       {event.reason ? <span className="block text-muted">{event.reason}</span> : null}
-                      <span className="block text-xs text-muted">{dateTime(event.at)}</span>
+                      <span className="block text-xs text-muted">{dateTime(event.at, locale)}</span>
                     </span>
                   </li>
                 ))}
@@ -104,40 +115,40 @@ export default async function AccountOrderPage(props: {
 
         <aside className="space-y-4">
           <Card className="p-5">
-            <h2 className="font-bold text-navy">সারসংক্ষেপ</h2>
+            <h2 className="font-bold text-navy">{t.customer.orders.summary}</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between">
-                <dt className="text-muted">সাবটোটাল</dt>
-                <dd>{price(order.subtotal_minor, order.currency)}</dd>
+                <dt className="text-muted">{t.customer.orders.subtotal}</dt>
+                <dd>{price(order.subtotal_minor, order.currency, locale)}</dd>
               </div>
               {order.discount_minor > 0 ? (
                 <div className="flex justify-between text-success">
-                  <dt>ছাড়</dt>
-                  <dd>-{price(order.discount_minor, order.currency)}</dd>
+                  <dt>{t.ui.discount}</dt>
+                  <dd>-{price(order.discount_minor, order.currency, locale)}</dd>
                 </div>
               ) : null}
               {order.tax_minor > 0 ? (
                 <div className="flex justify-between">
-                  <dt className="text-muted">কর</dt>
-                  <dd>{price(order.tax_minor, order.currency)}</dd>
+                  <dt className="text-muted">{t.customer.orders.tax}</dt>
+                  <dd>{price(order.tax_minor, order.currency, locale)}</dd>
                 </div>
               ) : null}
               {order.refunded_minor > 0 ? (
                 <div className="flex justify-between">
-                  <dt className="text-muted">ফেরত</dt>
-                  <dd>-{price(order.refunded_minor, order.currency)}</dd>
+                  <dt className="text-muted">{t.customer.orders.refunded}</dt>
+                  <dd>-{price(order.refunded_minor, order.currency, locale)}</dd>
                 </div>
               ) : null}
               <div className="flex justify-between border-t border-line pt-3 font-bold text-navy">
-                <dt>মোট</dt>
-                <dd>{price(order.total_minor, order.currency)}</dd>
+                <dt>{t.customer.orders.total}</dt>
+                <dd>{price(order.total_minor, order.currency, locale)}</dd>
               </div>
             </dl>
           </Card>
 
           {order.accepted_terms?.length ? (
             <Card className="p-5">
-              <h2 className="font-bold text-navy">গৃহীত নীতি</h2>
+              <h2 className="font-bold text-navy">{t.customer.orders.acceptedTerms}</h2>
               <ul className="font-latin mt-2 list-disc space-y-1 ps-5 text-sm text-muted">
                 {order.accepted_terms.map((term) => (
                   <li key={term}>{term}</li>

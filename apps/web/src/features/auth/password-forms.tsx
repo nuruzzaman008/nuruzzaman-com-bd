@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { ErrorSummary, Field, Input } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * The API answers a forgot-password request identically whether or not the
@@ -14,6 +15,7 @@ import { ApiError, api } from '@/lib/api/browser';
  * cannot be used to discover which emails are registered.
  */
 export function ForgotPasswordForm() {
+  const { t } = useLocale();
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -43,9 +45,8 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <Callout tone="success" title="লিংক পাঠানো হয়েছে" role="status">
-        ইমেইলটি নিবন্ধিত থাকলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে। ইনবক্স এবং স্প্যাম ফোল্ডার
-        দেখে নিন।
+      <Callout tone="success" title={t.auth.linkSent} role="status">
+        {t.auth.linkSentBody}
       </Callout>
     );
   }
@@ -54,18 +55,19 @@ export function ForgotPasswordForm() {
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       <ErrorSummary errors={errors} />
 
-      <Field label="ইমেইল" required error={errors.email?.[0]}>
+      <Field label={t.auth.email} required error={errors.email?.[0]}>
         {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
       </Field>
 
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
-        {busy ? 'পাঠানো হচ্ছে…' : 'রিসেট লিংক পাঠান'}
+        {busy ? t.auth.sending : t.auth.sendResetLink}
       </Button>
     </form>
   );
 }
 
 export function ResetPasswordForm() {
+  const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [busy, setBusy] = useState(false);
@@ -105,15 +107,15 @@ export function ResetPasswordForm() {
           setMessage(caught.message);
         }
       } else {
-        setMessage('পাসওয়ার্ড বদলানো যায়নি। লিংকটি মেয়াদোত্তীর্ণ হতে পারে।');
+        setMessage(t.auth.resetFailed);
       }
     }
   }
 
   if (!token || !email) {
     return (
-      <Callout tone="warning" title="লিংকটি অসম্পূর্ণ" role="alert">
-        রিসেট লিংকটি সম্পূর্ণ নয়। ইমেইল থেকে লিংকটি আবার খুলুন, অথবা নতুন করে অনুরোধ করুন।
+      <Callout tone="warning" title={t.auth.linkIncomplete} role="alert">
+        {t.auth.linkIncompleteBody}
       </Callout>
     );
   }
@@ -129,16 +131,17 @@ export function ResetPasswordForm() {
       ) : null}
 
       <p className="text-sm text-muted">
-        অ্যাকাউন্ট: <span className="font-latin font-medium text-navy">{email}</span>
+        {t.auth.accountLabel}:{' '}
+        <span className="font-latin font-medium text-navy">{email}</span>
       </p>
 
-      <Field label="নতুন পাসওয়ার্ড" required error={errors.password?.[0]}>
+      <Field label={t.auth.newPassword} required error={errors.password?.[0]}>
         {(props) => (
           <Input name="password" type="password" autoComplete="new-password" {...props} />
         )}
       </Field>
 
-      <Field label="পাসওয়ার্ড আবার লিখুন" required>
+      <Field label={t.auth.passwordAgain} required>
         {(props) => (
           <Input
             name="password_confirmation"
@@ -150,7 +153,7 @@ export function ResetPasswordForm() {
       </Field>
 
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
-        {busy ? 'সংরক্ষণ হচ্ছে…' : 'পাসওয়ার্ড বদলান'}
+        {busy ? t.auth.saving : t.auth.changePassword}
       </Button>
     </form>
   );

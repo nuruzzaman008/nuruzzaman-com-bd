@@ -8,10 +8,15 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('অ্যাক্টিভেশন রিকোয়েস্ট');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.customer.activation.title);
+}
 
 const TONES: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'neutral'> = {
   submitted: 'info',
@@ -23,35 +28,42 @@ const TONES: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'neutral
 };
 
 export default async function ActivationRequestsPage() {
+  const { locale, t } = await adminDictionary();
   const requests = await sessionApi<{ data: ActivationRequest[] }>('/account/activation-requests');
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">অ্যাক্টিভেশন রিকোয়েস্ট</h1>
-        <ButtonLink href="/account/activation-requests/new">নতুন রিকোয়েস্ট</ButtonLink>
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+          {t.customer.activation.title}
+        </h1>
+        <ButtonLink href="/account/activation-requests/new">
+          {t.customer.activation.newRequest}
+        </ButtonLink>
       </div>
 
-      <p className="mt-2 text-muted">
-        Machine ID এনক্রিপ্ট করে রাখা হয় এবং সবসময় মাস্ক করা অবস্থায় দেখানো হয়।
-      </p>
+      <p className="mt-2 text-muted">{t.customer.activation.intro}</p>
 
       <div className="mt-6">
         <DataTable
-          caption="আপনার অ্যাক্টিভেশন রিকোয়েস্ট"
+          caption={t.customer.activation.caption}
           rows={requests.data}
           getRowKey={(request) => request.reference}
           empty={
             <EmptyState
-              title="কোনো রিকোয়েস্ট নেই"
-              description="একটি পরিশোধিত অর্ডার থাকলে Machine ID সহ রিকোয়েস্ট পাঠাতে পারবেন।"
-              action={<ButtonLink href="/account/activation-requests/new">রিকোয়েস্ট পাঠান</ButtonLink>}
+              title={t.customer.activation.emptyTitle}
+              description={t.customer.activation.emptyBody}
+              action={
+                <ButtonLink href="/account/activation-requests/new">
+                  {t.customer.activation.sendRequest}
+                </ButtonLink>
+              }
             />
           }
           columns={[
             {
               key: 'reference',
-              header: 'রেফারেন্স',
+              header: t.customer.activation.reference,
               render: (request) => (
                 <Link
                   href={`/account/activation-requests/${request.reference}`}
@@ -70,15 +82,15 @@ export default async function ActivationRequestsPage() {
             },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.customer.activation.status,
               render: (request) => (
-                <Badge tone={TONES[request.status] ?? 'neutral'}>{statusLabel('activation', request.status)}</Badge>
+                <Badge tone={TONES[request.status] ?? 'neutral'}>{statusLabel('activation', request.status, locale)}</Badge>
               ),
             },
             {
               key: 'created',
-              header: 'জমা',
-              render: (request) => date(request.created_at) ?? '—',
+              header: t.customer.activation.submitted,
+              render: (request) => date(request.created_at, locale) ?? '—',
             },
           ]}
         />

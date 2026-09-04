@@ -84,7 +84,11 @@ Environment variables-এ যোগ করুন:
 ```
 NODE_ENV=production
 INTERNAL_API_URL=https://api.nuruzzaman.com.bd/api/v1
+NEXT_REVALIDATE_SECRET=<২.৬-এ দেওয়া হুবহু একই স্ট্রিং>
 ```
+
+`NEXT_PUBLIC_SITE_URL` বিল্ডের সময়েই বান্ডলে ঢুকে যায়, তাই সেটি এখানে নয় —
+`.nb-deploy.conf`-এ (২.৭) দিতে হয়।
 
 ### ২.৪ PHP সংস্করণ
 
@@ -124,7 +128,17 @@ SESSION_DOMAIN=nuruzzaman.com.bd
 SESSION_COOKIE=nuruzzaman_session
 SANCTUM_STATEFUL_DOMAINS=nuruzzaman.com.bd
 FRONTEND_URL=https://nuruzzaman.com.bd
+
+# প্রকাশ বা মডারেশনের পরে Next.js-এর ক্যাশ ছাড়ার জন্য।
+# এই দুটি না দিলে আর্টিকেল প্রকাশ করলে বা মন্তব্য অনুমোদন করলে ৫ মিনিট পর্যন্ত
+# পুরোনো পাতাই দেখা যাবে — কাজটি হারিয়ে গেছে বলে মনে হবে।
+NEXT_REVALIDATE_URL=https://nuruzzaman.com.bd/api/revalidate
+NEXT_REVALIDATE_SECRET=<একটি লম্বা random স্ট্রিং>
 ```
+
+`NEXT_REVALIDATE_SECRET`-এর মানটি Node.js অ্যাপের এনভায়রনমেন্টেও **হুবহু একই**
+দিতে হবে (২.৩ দেখুন)। দুই পাশে আলাদা হলে Next.js অনুরোধটি ফিরিয়ে দেবে, আর
+লারাভেলের লগে `Frontend revalidation failed` লেখা থাকবে।
 
 `APP_KEY` না থাকলে একবার চালান:
 

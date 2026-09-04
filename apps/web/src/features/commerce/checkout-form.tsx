@@ -11,7 +11,8 @@ import { Card } from '@/components/ui/card';
 import { Checkbox, ErrorSummary, Field, Input } from '@/components/ui/form';
 import { EmptyState, LoadingRegion } from '@/components/ui/states';
 import { ApiError, api } from '@/lib/api/browser';
-import { price } from '@/lib/format';
+import { number, price } from '@/lib/format';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Checkout.
@@ -22,6 +23,7 @@ import { price } from '@/lib/format';
  * connection cannot create two orders.
  */
 export function CheckoutForm() {
+  const { locale, t } = useLocale();
   const router = useRouter();
   const [cart, setCart] = useState<Cart | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -48,12 +50,12 @@ export function CheckoutForm() {
           return;
         }
 
-        setMessage('চেকআউটের তথ্য লোড করা যায়নি।');
+        setMessage(t.checkout.loadFailed);
       } finally {
         setLoading(false);
       }
     })();
-  }, [router]);
+  }, [router, t.checkout.loadFailed]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,17 +92,17 @@ export function CheckoutForm() {
           setMessage(caught.message);
         }
       } else {
-        setMessage('চেকআউট শুরু করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
+        setMessage(t.checkout.startFailed);
       }
     }
   }
 
   if (loading) {
-    return <LoadingRegion label="চেকআউট লোড হচ্ছে" />;
+    return <LoadingRegion label={t.checkout.loading} />;
   }
 
   if (!cart || cart.lines.length === 0) {
-    return <EmptyState title="কার্ট খালি" description="চেকআউটের আগে কার্টে কিছু যোগ করুন।" />;
+    return <EmptyState title={t.checkout.emptyTitle} description={t.checkout.emptyBody} />;
   }
 
   return (
@@ -115,7 +117,7 @@ export function CheckoutForm() {
         ) : null}
 
         {!cart.is_purchasable ? (
-          <Callout tone="warning" title="এই কার্ট এখন চেকআউট করা যাবে না" role="alert">
+          <Callout tone="warning" title={t.checkout.blockedTitle} role="alert">
             <ul className="list-disc space-y-1 ps-5">
               {cart.blockers.map((blocker) => (
                 <li key={blocker}>{blocker}</li>
@@ -125,18 +127,16 @@ export function CheckoutForm() {
         ) : null}
 
         <fieldset className="space-y-5">
-          <legend className="text-lg font-bold text-navy">বিলিং তথ্য</legend>
-          <p className="text-sm text-muted">
-            সব পণ্য ডিজিটাল, তাই কোনো ঠিকানা বা শিপিং তথ্য নেওয়া হয় না।
-          </p>
+          <legend className="text-lg font-bold text-navy">{t.checkout.billing}</legend>
+          <p className="text-sm text-muted">{t.checkout.digitalOnly}</p>
 
-          <Field label="নাম" required error={errors.name?.[0]}>
+          <Field label={t.checkout.name} required error={errors.name?.[0]}>
             {(props) => (
               <Input name="name" defaultValue={user?.name ?? ''} autoComplete="name" {...props} />
             )}
           </Field>
 
-          <Field label="ইমেইল" required error={errors.email?.[0]}>
+          <Field label={t.checkout.email} required error={errors.email?.[0]}>
             {(props) => (
               <Input
                 name="email"
@@ -148,7 +148,7 @@ export function CheckoutForm() {
             )}
           </Field>
 
-          <Field label="ফোন (ঐচ্ছিক)" error={errors.phone?.[0]}>
+          <Field label={t.checkout.phoneOptional} error={errors.phone?.[0]}>
             {(props) => (
               <Input name="phone" type="tel" defaultValue={user?.phone ?? ''} {...props} />
             )}
@@ -156,18 +156,18 @@ export function CheckoutForm() {
         </fieldset>
 
         <fieldset className="space-y-3 border-t border-line pt-5">
-          <legend className="text-lg font-bold text-navy">সম্মতি</legend>
+          <legend className="text-lg font-bold text-navy">{t.checkout.consent}</legend>
 
           <Checkbox
             name="accepts_terms"
             error={errors.accepts_terms?.[0]}
             label={
               <>
-                আমি{' '}
+                {t.checkout.consentI}{' '}
                 <Link href="/terms" className="text-blue underline">
-                  ব্যবহারের শর্তাবলি
-                </Link>{' '}
-                মেনে নিচ্ছি।
+                  {t.checkout.consentTerms}
+                </Link>
+                {t.checkout.consentTermsAfter}
               </>
             }
           />
@@ -176,11 +176,11 @@ export function CheckoutForm() {
             error={errors.accepts_privacy?.[0]}
             label={
               <>
-                আমি{' '}
+                {t.checkout.consentI}{' '}
                 <Link href="/privacy-policy" className="text-blue underline">
-                  গোপনীয়তা নীতি
-                </Link>{' '}
-                পড়েছি।
+                  {t.checkout.consentPrivacy}
+                </Link>
+                {t.checkout.consentPrivacyAfter}
               </>
             }
           />
@@ -189,11 +189,11 @@ export function CheckoutForm() {
             error={errors.accepts_refund_policy?.[0]}
             label={
               <>
-                আমি{' '}
+                {t.checkout.consentI}{' '}
                 <Link href="/refund-policy" className="text-blue underline">
-                  রিফান্ড নীতি
-                </Link>{' '}
-                মেনে নিচ্ছি।
+                  {t.checkout.consentRefund}
+                </Link>
+                {t.checkout.consentRefundAfter}
               </>
             }
           />
@@ -201,66 +201,65 @@ export function CheckoutForm() {
             name="accepts_eula"
             label={
               <>
-                সফটওয়্যার কিনলে আমি{' '}
+                {t.checkout.consentEulaBefore}{' '}
                 <Link href="/software-eula" className="text-blue underline">
                   EULA
-                </Link>{' '}
-                মেনে নিচ্ছি।
+                </Link>
+                {t.checkout.consentEulaAfter}
               </>
             }
           />
         </fieldset>
 
         <Button type="submit" size="lg" disabled={busy || !cart.is_purchasable}>
-          {busy ? 'পেমেন্ট পেজে নেওয়া হচ্ছে…' : 'পেমেন্টে যান'}
+          {busy ? t.checkout.redirecting : t.checkout.pay}
         </Button>
       </form>
 
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <Card className="p-6">
-          <h2 className="font-bold text-navy">অর্ডার সারসংক্ষেপ</h2>
+          <h2 className="font-bold text-navy">{t.checkout.orderSummary}</h2>
 
           <ul className="mt-4 space-y-3 text-sm">
             {cart.lines.map((line) => (
               <li key={line.variant_id} className="flex justify-between gap-3">
-                <span>
+                <span data-authored="true">
                   {line.product_name ?? line.variant_name}
                   <span className="block text-xs text-muted">
-                    {line.variant_name} × {line.quantity}
+                    {line.variant_name} × {number(line.quantity, locale)}
                   </span>
                 </span>
-                <span className="shrink-0">{price(line.line_total_minor, cart.currency)}</span>
+                <span className="shrink-0">
+                  {price(line.line_total_minor, cart.currency, locale)}
+                </span>
               </li>
             ))}
           </ul>
 
           <dl className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
             <div className="flex justify-between">
-              <dt className="text-muted">সাবটোটাল</dt>
-              <dd>{price(cart.subtotal_minor, cart.currency)}</dd>
+              <dt className="text-muted">{t.checkout.subtotal}</dt>
+              <dd>{price(cart.subtotal_minor, cart.currency, locale)}</dd>
             </div>
             {cart.discount_minor > 0 ? (
               <div className="flex justify-between text-success">
-                <dt>ছাড়</dt>
-                <dd>-{price(cart.discount_minor, cart.currency)}</dd>
+                <dt>{t.ui.discount}</dt>
+                <dd>-{price(cart.discount_minor, cart.currency, locale)}</dd>
               </div>
             ) : null}
             {cart.tax_minor > 0 ? (
               <div className="flex justify-between">
-                <dt className="text-muted">কর</dt>
-                <dd>{price(cart.tax_minor, cart.currency)}</dd>
+                <dt className="text-muted">{t.checkout.tax}</dt>
+                <dd>{price(cart.tax_minor, cart.currency, locale)}</dd>
               </div>
             ) : null}
             <div className="flex justify-between border-t border-line pt-3 text-base font-bold text-navy">
-              <dt>সর্বমোট</dt>
-              <dd>{price(cart.total_minor, cart.currency)}</dd>
+              <dt>{t.checkout.grandTotal}</dt>
+              <dd>{price(cart.total_minor, cart.currency, locale)}</dd>
             </div>
           </dl>
 
-          <p className="mt-5 text-xs text-muted">
-            পেমেন্ট SSLCOMMERZ-এর hosted page-এ সম্পন্ন হয়। কার্ডের তথ্য এই সাইটে আসে না বা
-            সংরক্ষণ করা হয় না।
-          </p>
+          <p className="mt-5 text-xs text-muted">{t.checkout.hostedPaymentNote}</p>
         </Card>
       </aside>
     </div>

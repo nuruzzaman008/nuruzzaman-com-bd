@@ -50,7 +50,7 @@ Vitest ও Playwright — দুই জায়গাতেই এটি পর
 |---|---|
 | হোম | `WebSite`, `Organization`, `Person` |
 | পরিচিতি / লেখক | `ProfilePage` + `Person` |
-| আর্টিকেল | `BlogPosting` (রিভিউয়ার থাকলে `reviewedBy` সহ) |
+| আর্টিকেল | `BlogPosting` (রিভিউয়ার থাকলে `reviewedBy`; অনুমোদিত মন্তব্য থাকলে `comment` + `commentCount`) |
 | প্রোডাক্ট | `Product` (+ `Offer`, শুধু প্রকাশিত দাম থাকলে) |
 | কোর্স | `Course` (+ `aggregateRating`, শুধু প্রকৃত রিভিউ থাকলে) |
 | তালিকা পাতা | `ItemList` |
@@ -61,6 +61,16 @@ Vitest ও Playwright — দুই জায়গাতেই এটি পর
 - দাম প্রকাশ না করা থাকলে `Product`-এ কোনো `Offer` যোগ করা হয় না।
 - প্রকাশিত রিভিউ না থাকলে `Course`-এ `aggregateRating` যোগ করা হয় না।
 - `Organization`-এ ইমেইল/ফোন শুধু তখনই, যখন মালিক সেগুলো কনফিগার করেছেন।
+- আর্টিকেলে `commentCount` ও `comment` শুধু **অনুমোদিত** মন্তব্য থেকে — পাতায় যত
+  দেখা যায়, markup-এও ঠিক তত। একটিও না থাকলে ফিল্ডগুলো একেবারেই থাকে না,
+  `0` লেখা হয় না।
+- আর্টিকেলে **`aggregateRating` কখনো দেওয়া হয় না**, যদিও পাঠকের দেওয়া তারকা
+  পাতায় দেখানো হয়। কারণ Google `Article`/`BlogPosting`-এ review snippet সমর্থন
+  করে না; যে rating সার্চ রেজাল্টে সৎভাবে দেখানোই যাবে না, সেটি markup-এ দাবি
+  করলে লাভ হয় না — উল্টো structured data-র জরিমানা হতে পারে।
+
+> মন্তব্য SEO-তে সাহায্য করে অন্যভাবে: প্রতিটি অনুমোদিত মন্তব্য পাতায় নতুন,
+> মৌলিক লেখা যোগ করে এবং সেটি সার্ভারেই render হয়, তাই ক্রলার তা পড়তে পায়।
 
 Breadcrumb-এর দৃশ্যমান তালিকা ও JSON-LD একই অ্যারে থেকে তৈরি হয়, তাই দুটো
 আলাদা হতে পারে না।
@@ -72,6 +82,8 @@ Breadcrumb-এর দৃশ্যমান তালিকা ও JSON-LD এক
 3. `/blog/{slug}` → BlogPosting; headline পাতার `h1`-এর সমান কি না মিলিয়ে দেখুন
 4. `/shop/{slug}` → Product; দাম দেখানো হলে Offer আছে, না দেখালে নেই
 5. `/courses/{slug}` → Course; রিভিউ না থাকলে rating নেই
+5ক. `/blog/{slug}` → মন্তব্য থাকলে `comment`-এর সংখ্যা পাতার তালিকার সমান,
+    আর `aggregateRating` নেই
 6. `/blog` ও `/courses` → ItemList
 7. প্রতিটি পাতায় BreadcrumbList
 

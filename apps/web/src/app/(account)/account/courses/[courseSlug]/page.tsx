@@ -18,17 +18,14 @@ import { Card } from '@/components/ui/card';
 import { Prose } from '@/components/ui/prose';
 import { sessionApi } from '@/lib/api/server';
 import { date, number } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('কোর্সের অগ্রগতি');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
 
-const STATUS_LABELS: Record<string, string> = {
-  not_submitted: 'জমা দেওয়া হয়নি',
-  submitted: 'জমা হয়েছে, যাচাই বাকি',
-  in_review: 'যাচাই চলছে',
-  approved: 'গৃহীত',
-  rejected: 'ফেরত পাঠানো হয়েছে',
-};
+  return privateMetadata(t.customer.courses.progressTitle);
+}
 
 /** Fetches one endpoint, returning null when the learner simply has none of it. */
 async function optional<T>(path: string): Promise<T | null> {
@@ -46,6 +43,7 @@ async function optional<T>(path: string): Promise<T | null> {
 export default async function CourseProgressPage(props: {
   params: Promise<{ courseSlug: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const { courseSlug } = await props.params;
   const slug = encodeURIComponent(courseSlug);
 
@@ -81,10 +79,13 @@ export default async function CourseProgressPage(props: {
       <header>
         <p className="text-sm text-muted">
           <Link href="/account/courses" className="text-blue hover:underline">
-            আমার কোর্স
+            {t.customer.courses.title}
           </Link>
         </p>
-        <h1 className="mt-1 text-[length:var(--step-h1)] font-bold text-navy">
+        <h1
+          data-authored="true"
+          className="mt-1 text-[length:var(--step-h1)] font-bold text-navy"
+        >
           {outline.course.title}
         </h1>
 
@@ -94,7 +95,7 @@ export default async function CourseProgressPage(props: {
             aria-valuenow={outline.enrollment.progress_percent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="কোর্সের অগ্রগতি"
+            aria-label={t.customer.courses.progressLabel}
             className="h-2 flex-1 overflow-hidden rounded-full bg-line"
           >
             <div
@@ -102,29 +103,35 @@ export default async function CourseProgressPage(props: {
               style={{ width: `${outline.enrollment.progress_percent}%` }}
             />
           </div>
-          <span className="font-latin text-sm font-semibold text-navy">
-            {outline.enrollment.progress_percent}%
+          <span className="text-sm font-semibold text-navy">
+            {number(outline.enrollment.progress_percent, locale)}%
           </span>
         </div>
 
         {next ? (
           <ButtonLink href={`/learn/${courseSlug}/${next.slug}`} className="mt-5">
-            {outline.enrollment.progress_percent > 0 ? 'যেখানে ছিলেন সেখান থেকে' : 'শুরু করুন'}
+            {outline.enrollment.progress_percent > 0
+              ? t.customer.courses.resume
+              : t.customer.courses.start}
           </ButtonLink>
         ) : null}
       </header>
 
       {announcements?.data.length ? (
         <section>
-          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">ঘোষণা</h2>
+          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+            {t.customer.courses.announcements}
+          </h2>
           <ul className="mt-4 space-y-3">
             {announcements.data.map((announcement) => (
               <li key={announcement.id}>
                 <Card className="p-5">
-                  <h3 className="font-bold text-navy">{announcement.title}</h3>
+                  <h3 className="font-bold text-navy" data-authored="true">
+                    {announcement.title}
+                  </h3>
                   <p className="mt-1 text-xs text-muted">
                     {announcement.author_name ? `${announcement.author_name} · ` : ''}
-                    {announcement.published_at ? date(announcement.published_at) : ''}
+                    {announcement.published_at ? date(announcement.published_at, locale) : ''}
                   </p>
                   <Prose html={announcement.body_html} className="mt-3 text-sm" />
                 </Card>
@@ -136,36 +143,40 @@ export default async function CourseProgressPage(props: {
 
       {marks ? (
         <section>
-          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">মার্কস</h2>
+          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+            {t.customer.courses.marks}
+          </h2>
 
           <Card className="mt-4 p-5">
             <dl className="grid gap-4 sm:grid-cols-3">
               <div>
-                <dt className="text-sm text-muted">লেসন শেষ</dt>
-                <dd className="font-latin mt-1 text-2xl font-bold text-navy">
-                  {number(marks.lessons.completed)}
+                <dt className="text-sm text-muted">{t.customer.courses.lessonsDone}</dt>
+                <dd className="mt-1 text-2xl font-bold text-navy">
+                  {number(marks.lessons.completed, locale)}
                   <span className="text-base font-normal text-muted">
                     {' / '}
-                    {number(marks.lessons.total)}
+                    {number(marks.lessons.total, locale)}
                   </span>
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted">গড় নম্বর</dt>
-                <dd className="font-latin mt-1 text-2xl font-bold text-navy">
+                <dt className="text-sm text-muted">{t.customer.courses.averageScore}</dt>
+                <dd className="mt-1 text-2xl font-bold text-navy">
                   {/* Null until something has been graded — an ungraded
                       submission is not a zero. */}
                   {marks.average_percent === null ? (
-                    <span className="text-base font-normal text-muted">এখনো মূল্যায়ন হয়নি</span>
+                    <span className="text-base font-normal text-muted">
+                      {t.customer.courses.notGradedYet}
+                    </span>
                   ) : (
-                    `${marks.average_percent}%`
+                    `${number(marks.average_percent, locale)}%`
                   )}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted">পাস মার্ক</dt>
-                <dd className="font-latin mt-1 text-2xl font-bold text-navy">
-                  {marks.pass_percentage}%
+                <dt className="text-sm text-muted">{t.customer.courses.passMark}</dt>
+                <dd className="mt-1 text-2xl font-bold text-navy">
+                  {number(marks.pass_percentage, locale)}%
                 </dd>
               </div>
             </dl>
@@ -173,7 +184,7 @@ export default async function CourseProgressPage(props: {
 
           {marks.quizzes.length > 0 ? (
             <div className="mt-5">
-              <h3 className="font-bold text-navy">কুইজ</h3>
+              <h3 className="font-bold text-navy">{t.customer.courses.quizzes}</h3>
               <ul className="mt-3 divide-y divide-line rounded-[--radius-card] border border-line">
                 {marks.quizzes.map((quiz) => (
                   <li
@@ -181,17 +192,25 @@ export default async function CourseProgressPage(props: {
                     className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
                   >
                     <div>
-                      <p className="font-medium text-navy">{quiz.title}</p>
-                      <p className="font-latin text-xs text-muted">
-                        চেষ্টা {number(quiz.attempts_used)} / {number(quiz.attempts_allowed)} ·
-                        পাস {quiz.pass_percentage}%
+                      <p className="font-medium text-navy" data-authored="true">
+                        {quiz.title}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {t.customer.courses.attempts
+                          .replace('{used}', number(quiz.attempts_used, locale))
+                          .replace('{allowed}', number(quiz.attempts_allowed, locale))}
+                        {' · '}
+                        {t.customer.courses.passAt.replace(
+                          '{percent}',
+                          number(quiz.pass_percentage, locale),
+                        )}
                       </p>
                     </div>
                     {quiz.score_percent === null ? (
-                      <Badge>দেওয়া হয়নি</Badge>
+                      <Badge>{t.customer.courses.notAttempted}</Badge>
                     ) : (
                       <Badge tone={quiz.passed ? 'success' : 'danger'}>
-                        {quiz.score_percent}%
+                        {number(quiz.score_percent, locale)}%
                       </Badge>
                     )}
                   </li>
@@ -202,14 +221,20 @@ export default async function CourseProgressPage(props: {
 
           {marks.assignments.length > 0 ? (
             <div className="mt-5">
-              <h3 className="font-bold text-navy">অ্যাসাইনমেন্ট</h3>
+              <h3 className="font-bold text-navy">{t.customer.courses.assignments}</h3>
               <ul className="mt-3 divide-y divide-line rounded-[--radius-card] border border-line">
                 {marks.assignments.map((assignment) => (
                   <li key={assignment.id} className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="font-medium text-navy">{assignment.title}</p>
+                      <p className="font-medium text-navy" data-authored="true">
+                        {assignment.title}
+                      </p>
                       {assignment.score_percent === null ? (
-                        <Badge>{STATUS_LABELS[assignment.status] ?? assignment.status}</Badge>
+                        <Badge>
+                          {t.customer.assignment[
+                            assignment.status as keyof typeof t.customer.assignment
+                          ] ?? assignment.status}
+                        </Badge>
                       ) : (
                         <Badge
                           tone={
@@ -218,12 +243,14 @@ export default async function CourseProgressPage(props: {
                               : 'danger'
                           }
                         >
-                          {assignment.score_percent}%
+                          {number(assignment.score_percent, locale)}%
                         </Badge>
                       )}
                     </div>
                     {assignment.feedback ? (
-                      <p className="mt-2 text-sm text-muted">{assignment.feedback}</p>
+                      <p className="mt-2 text-sm text-muted" data-authored="true">
+                        {assignment.feedback}
+                      </p>
                     ) : null}
                   </li>
                 ))}
@@ -234,11 +261,10 @@ export default async function CourseProgressPage(props: {
       ) : null}
 
       <section>
-        <h2 className="text-[length:var(--step-h2)] font-bold text-navy">প্রশ্ন ও উত্তর</h2>
-        <p className="mt-2 text-sm text-muted">
-          প্রশ্ন মডারেশনের পর ক্লাসের সবার কাছে দেখা যায়। আপনার নিজের প্রশ্ন সেই সময়েও
-          আপনি দেখতে পাবেন।
-        </p>
+        <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+          {t.customer.courses.questions}
+        </h2>
+        <p className="mt-2 text-sm text-muted">{t.customer.courses.questionsNote}</p>
 
         <AskQuestion courseSlug={courseSlug} className="mt-4" />
 
@@ -248,21 +274,29 @@ export default async function CourseProgressPage(props: {
               <li key={question.id}>
                 <Card className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <h3 className="font-bold text-navy">{question.title}</h3>
+                    <h3 className="font-bold text-navy" data-authored="true">
+                      {question.title}
+                    </h3>
                     <div className="flex gap-2">
-                      {question.is_pinned ? <Badge tone="info">পিন করা</Badge> : null}
-                      {question.status !== 'published' && question.is_mine ? (
-                        <Badge tone="warning">মডারেশনে</Badge>
+                      {question.is_pinned ? (
+                        <Badge tone="info">{t.customer.courses.pinned}</Badge>
                       ) : null}
-                      {question.resolved_at ? <Badge tone="success">সমাধান হয়েছে</Badge> : null}
+                      {question.status !== 'published' && question.is_mine ? (
+                        <Badge tone="warning">{t.customer.courses.inModeration}</Badge>
+                      ) : null}
+                      {question.resolved_at ? (
+                        <Badge tone="success">{t.customer.courses.resolved}</Badge>
+                      ) : null}
                     </div>
                   </div>
 
-                  <p className="mt-2 text-sm">{question.body}</p>
-                  <p className="mt-2 text-xs text-muted">
-                    {question.author_name ?? 'শিক্ষার্থী'}
+                  <p className="mt-2 text-sm" data-authored="true">
+                    {question.body}
+                  </p>
+                  <p className="mt-2 text-xs text-muted" data-authored="true">
+                    {question.author_name ?? t.customer.courses.student}
                     {question.lesson?.title ? ` · ${question.lesson.title}` : ''}
-                    {question.created_at ? ` · ${date(question.created_at)}` : ''}
+                    {question.created_at ? ` · ${date(question.created_at, locale)}` : ''}
                   </p>
 
                   {question.replies?.length ? (
@@ -270,15 +304,19 @@ export default async function CourseProgressPage(props: {
                       {question.replies.map((reply) => (
                         <li key={reply.id} className="text-sm">
                           <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                            <span className="font-medium text-navy">
-                              {reply.author_name ?? 'অংশগ্রহণকারী'}
+                            <span className="font-medium text-navy" data-authored="true">
+                              {reply.author_name ?? t.customer.courses.participant}
                             </span>
                             {reply.from_instructor ? (
-                              <Badge tone="teal">ইনস্ট্রাক্টর</Badge>
+                              <Badge tone="teal">{t.customer.courses.instructor}</Badge>
                             ) : null}
-                            {reply.created_at ? <span>{date(reply.created_at)}</span> : null}
+                            {reply.created_at ? (
+                              <span>{date(reply.created_at, locale)}</span>
+                            ) : null}
                           </p>
-                          <p className="mt-1">{reply.body}</p>
+                          <p className="mt-1" data-authored="true">
+                            {reply.body}
+                          </p>
                         </li>
                       ))}
                     </ul>
@@ -289,26 +327,28 @@ export default async function CourseProgressPage(props: {
           </ul>
         ) : (
           <Callout tone="info" className="mt-4">
-            এই কোর্সে এখনো কোনো প্রশ্ন নেই। আটকে গেলে প্রথম প্রশ্নটি আপনিই করুন।
+            {t.customer.courses.noQuestions}
           </Callout>
         )}
       </section>
 
       <section>
-        <h2 className="text-[length:var(--step-h2)] font-bold text-navy">আমার নোট</h2>
-        <p className="mt-2 text-sm text-muted">
-          নোট শুধু আপনি দেখতে পান। লেসন পড়ার সময় নোট যোগ করা যায়।
-        </p>
+        <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+          {t.customer.courses.myNotes}
+        </h2>
+        <p className="mt-2 text-sm text-muted">{t.customer.courses.notesNote}</p>
 
         {notes?.data.length ? (
           <ul className="mt-4 space-y-3">
             {notes.data.map((note) => (
               <li key={note.id}>
                 <Card className="p-4">
-                  <p className="text-sm">{note.body}</p>
-                  <p className="mt-2 text-xs text-muted">
-                    {note.lesson?.title ?? 'লেসন'}
-                    {note.created_at ? ` · ${date(note.created_at)}` : ''}
+                  <p className="text-sm" data-authored="true">
+                    {note.body}
+                  </p>
+                  <p className="mt-2 text-xs text-muted" data-authored="true">
+                    {note.lesson?.title ?? t.customer.courses.lesson}
+                    {note.created_at ? ` · ${date(note.created_at, locale)}` : ''}
                   </p>
                 </Card>
               </li>
@@ -316,7 +356,7 @@ export default async function CourseProgressPage(props: {
           </ul>
         ) : (
           <Callout tone="info" className="mt-4">
-            এখনো কোনো নোট নেই।
+            {t.customer.courses.noNotes}
           </Callout>
         )}
       </section>

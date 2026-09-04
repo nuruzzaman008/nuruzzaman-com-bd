@@ -10724,6 +10724,137 @@
         }
       }
     },
+    "/admin/comments": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "listCommentsForModeration",
+        "summary": "List reader comments by moderation state",
+        "description": "No status means the queue: what is actually waiting on a person. Requires the `comments.moderate` permission.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "spam"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PostComment"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/comments/{comment}/moderate": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "moderateComment",
+        "summary": "Approve, reject or spam a reader comment",
+        "description": "Approving publishes someone else's words under the owner's domain and rejecting removes a reader's contribution, so every decision is audited and the article's cached page is revalidated.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "comment",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "approved",
+                      "rejected",
+                      "spam"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PostComment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/admin/course-questions": {
       "get": {
         "tags": [

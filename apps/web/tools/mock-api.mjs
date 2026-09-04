@@ -78,7 +78,28 @@ const post = {
     noindex: false,
     nofollow: false,
   },
+  // Approved comments only, exactly as the real API answers: the count and the
+  // average are over these rows and nothing else.
+  comment_count: 2,
+  rating: { average: 4.5, count: 2 },
 };
+
+const postComments = [
+  {
+    id: 1,
+    author_name: 'Demo Customer',
+    body: 'লোড কম্বিনেশনের অংশটা পরিষ্কার হয়েছে।',
+    rating: 5,
+    created_at: '2026-08-12T06:00:00Z',
+  },
+  {
+    id: 2,
+    author_name: 'Demo Reader',
+    body: 'ছবির নিচে ইউনিট লেখা থাকলে আরও সুবিধা হতো।',
+    rating: 4,
+    created_at: '2026-08-13T06:00:00Z',
+  },
+];
 
 const page = {
   id: 1,
@@ -185,6 +206,7 @@ const ROUTES = new Map([
 /** Pattern fixtures, tried in order. */
 const PATTERNS = [
   [/^\/api\/v1\/posts\/[^/]+\/related$/, { data: [] }],
+  [/^\/api\/v1\/posts\/[^/]+\/comments$/, { data: postComments }],
   [/^\/api\/v1\/posts\/[^/]+$/, { data: post }],
   [/^\/api\/v1\/categories\/[^/]+$/, { data: categories[0] }],
   [/^\/api\/v1\/authors\/[^/]+$/, { data: author }],

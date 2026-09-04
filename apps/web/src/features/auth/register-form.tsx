@@ -9,9 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Checkbox, ErrorSummary, Field, Input } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
+import { useSession } from '@/lib/session/session-provider';
 
 export function RegisterForm() {
   const router = useRouter();
+  const { t } = useLocale();
+  const { refresh: refreshSession } = useSession();
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,6 +41,12 @@ export function RegisterForm() {
         },
       });
 
+      // The header and the cart badge read the shared session, fetched while
+      // nobody was signed in; without this they keep offering to sign in the
+      // person who has just registered. Not awaited, so the navigation is not
+      // held up by it and cannot be turned into an error by it.
+      void refreshSession();
+
       router.replace('/account');
       router.refresh();
     } catch (caught) {
@@ -49,7 +59,7 @@ export function RegisterForm() {
           setMessage(caught.message);
         }
       } else {
-        setMessage('অ্যাকাউন্ট তৈরি করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
+        setMessage(t.auth.registerFailed);
       }
     }
   }
@@ -64,22 +74,22 @@ export function RegisterForm() {
         </Callout>
       ) : null}
 
-      <Field label="আপনার নাম" required error={errors.name?.[0]}>
+      <Field label={t.auth.name} required error={errors.name?.[0]}>
         {(props) => <Input name="name" autoComplete="name" {...props} />}
       </Field>
 
-      <Field label="ইমেইল" required error={errors.email?.[0]}>
+      <Field label={t.auth.email} required error={errors.email?.[0]}>
         {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
       </Field>
 
-      <Field label="ফোন (ঐচ্ছিক)" error={errors.phone?.[0]}>
+      <Field label={t.auth.phoneOptional} error={errors.phone?.[0]}>
         {(props) => <Input name="phone" type="tel" autoComplete="tel" {...props} />}
       </Field>
 
       <Field
-        label="পাসওয়ার্ড"
+        label={t.auth.password}
         required
-        hint="অন্তত ১০ অক্ষর, অক্ষর ও সংখ্যা মিলিয়ে।"
+        hint={t.auth.passwordHint}
         error={errors.password?.[0]}
       >
         {(props) => (
@@ -87,7 +97,7 @@ export function RegisterForm() {
         )}
       </Field>
 
-      <Field label="পাসওয়ার্ড আবার লিখুন" required>
+      <Field label={t.auth.passwordAgain} required>
         {(props) => (
           <Input
             name="password_confirmation"
@@ -103,21 +113,21 @@ export function RegisterForm() {
         error={errors.accepts_terms?.[0]}
         label={
           <>
-            আমি{' '}
+            {t.auth.consentBefore}{' '}
             <Link href="/terms" className="text-blue underline">
-              ব্যবহারের শর্তাবলি
+              {t.auth.consentTerms}
             </Link>{' '}
-            এবং{' '}
+            {t.auth.consentAnd}{' '}
             <Link href="/privacy-policy" className="text-blue underline">
-              গোপনীয়তা নীতি
-            </Link>{' '}
-            মেনে নিচ্ছি।
+              {t.auth.consentPrivacy}
+            </Link>
+            {t.auth.consentAfter}
           </>
         }
       />
 
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
-        {busy ? 'তৈরি হচ্ছে…' : 'অ্যাকাউন্ট তৈরি করুন'}
+        {busy ? t.auth.creating : t.auth.createAccount}
       </Button>
     </form>
   );

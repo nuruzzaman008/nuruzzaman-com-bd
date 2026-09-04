@@ -108,4 +108,35 @@ describe('structured data', () => {
 
     expect(schema.reviewedBy).toMatchObject({ name: 'Nuruzzaman' });
   });
+
+  it('carries approved comments but never claims a star rating for an article', () => {
+    const schema = articleSchema({
+      title: 'Footing',
+      slug: 'footing',
+      comments: [
+        { author_name: 'Rafiq', body: 'Useful.', rating: 5, created_at: '2026-01-01T00:00:00Z' },
+        { author_name: 'Shirin', body: 'One question.', rating: null, created_at: null },
+      ],
+    });
+
+    expect(schema.commentCount).toBe(2);
+    expect(schema.comment?.[0]).toMatchObject({ '@type': 'Comment', text: 'Useful.' });
+    // Google does not support review snippets on an Article, so a rating in
+    // the markup could never be shown honestly and is not emitted.
+    expect(schema).not.toHaveProperty('aggregateRating');
+  });
+
+  it('omits the comment fields entirely when there are none', () => {
+    const schema = articleSchema({ title: 'Footing', slug: 'footing' });
+
+    expect(schema).not.toHaveProperty('commentCount');
+    expect(schema).not.toHaveProperty('comment');
+  });
+
+  it('declares the language the page is actually written in', () => {
+    expect(articleSchema({ title: 'Footing', slug: 'footing' }).inLanguage).toBe('bn-BD');
+    expect(
+      articleSchema({ title: 'Footing', slug: 'footing', locale: 'en' }).inLanguage,
+    ).toBe('en');
+  });
 });

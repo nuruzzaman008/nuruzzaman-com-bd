@@ -22,6 +22,7 @@ const SCREENS = [
   '/dashboard/posts',
   '/dashboard/pages',
   '/dashboard/media',
+  '/dashboard/comments',
   '/dashboard/redirects',
   '/dashboard/products',
   '/dashboard/orders',

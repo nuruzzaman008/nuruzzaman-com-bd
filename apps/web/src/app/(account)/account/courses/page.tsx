@@ -7,11 +7,16 @@ import { ButtonLink } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
-import { date, number } from '@/lib/format';
+import { counted, date, number } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('আমার কোর্স');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.customer.courses.title);
+}
 
 /** Tone per enrolment state; the wording comes from the shared status map. */
 const STATUS_TONES: Record<string, 'success' | 'info' | 'warning'> = {
@@ -22,6 +27,8 @@ const STATUS_TONES: Record<string, 'success' | 'info' | 'warning'> = {
 };
 
 export default async function AccountCoursesPage() {
+  const { locale, t } = await adminDictionary();
+
   const [enrollments, certificates, wishlist] = await Promise.all([
     sessionApi<{ data: Enrollment[] }>('/account/courses'),
     sessionApi<{ data: Certificate[] }>('/account/certificates'),
@@ -31,14 +38,16 @@ export default async function AccountCoursesPage() {
   return (
     <div className="space-y-10">
       <section>
-        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">আমার কোর্স</h1>
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+          {t.customer.courses.title}
+        </h1>
 
         {enrollments.data.length === 0 ? (
           <EmptyState
             className="mt-6"
-            title="এখনো কোনো কোর্সে ভর্তি হননি"
-            description="কোর্স কিনলে সেটি এখানে যুক্ত হবে এবং অগ্রগতি সংরক্ষিত থাকবে।"
-            action={<ButtonLink href="/courses">কোর্স দেখুন</ButtonLink>}
+            title={t.customer.courses.emptyTitle}
+            description={t.customer.courses.emptyBody}
+            action={<ButtonLink href="/courses">{t.customer.courses.browse}</ButtonLink>}
           />
         ) : (
           <ul className="mt-6 space-y-4">
@@ -47,26 +56,31 @@ export default async function AccountCoursesPage() {
                 <Card className="p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h2 className="font-bold text-navy">{enrollment.course.title}</h2>
+                      <h2 className="font-bold text-navy" data-authored="true">
+                        {enrollment.course.title}
+                      </h2>
                       <p className="mt-1 text-sm text-muted">
                         {enrollment.course.lesson_count
-                          ? `${number(enrollment.course.lesson_count)} টি লেসন`
+                          ? counted(enrollment.course.lesson_count, 'lesson', locale)
                           : null}
                         {enrollment.expires_at
-                          ? ` · মেয়াদ ${date(enrollment.expires_at)}`
+                          ? ` · ${t.customer.courses.expiresOn.replace(
+                              '{date}',
+                              date(enrollment.expires_at, locale) ?? '',
+                            )}`
                           : null}
                       </p>
                     </div>
                     <Badge tone={STATUS_TONES[enrollment.status] ?? 'info'}>
-                      {statusLabel('enrollment', enrollment.status)}
+                      {statusLabel('enrollment', enrollment.status, locale)}
                     </Badge>
                   </div>
 
                   <div className="mt-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted">অগ্রগতি</span>
-                      <span className="font-latin font-semibold text-navy">
-                        {enrollment.progress_percent}%
+                      <span className="text-muted">{t.customer.courses.progress}</span>
+                      <span className="font-semibold text-navy">
+                        {number(enrollment.progress_percent, locale)}%
                       </span>
                     </div>
                     <div
@@ -74,7 +88,10 @@ export default async function AccountCoursesPage() {
                       aria-valuenow={enrollment.progress_percent}
                       aria-valuemin={0}
                       aria-valuemax={100}
-                      aria-label={`${enrollment.course.title} অগ্রগতি`}
+                      aria-label={t.customer.courses.progressOf.replace(
+                        '{title}',
+                        enrollment.course.title,
+                      )}
                       className="mt-1.5 h-2 overflow-hidden rounded-full bg-line"
                     >
                       <div
@@ -92,16 +109,18 @@ export default async function AccountCoursesPage() {
                           : `/learn/${enrollment.course.slug}`
                       }
                     >
-                      {enrollment.progress_percent > 0 ? 'চালিয়ে যান' : 'শুরু করুন'}
+                      {enrollment.progress_percent > 0
+                        ? t.customer.courses.continue
+                        : t.customer.courses.start}
                     </ButtonLink>
                     <ButtonLink
                       href={`/account/courses/${enrollment.course.slug}`}
                       variant="secondary"
                     >
-                      অগ্রগতি ও মার্কস
+                      {t.customer.courses.progressAndMarks}
                     </ButtonLink>
                     <ButtonLink href={`/courses/${enrollment.course.slug}`} variant="ghost">
-                      কোর্স পাতা
+                      {t.customer.courses.coursePage}
                     </ButtonLink>
                   </div>
                 </Card>
@@ -113,19 +132,25 @@ export default async function AccountCoursesPage() {
 
       {wishlist.data.length > 0 ? (
         <section>
-          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">সংরক্ষিত কোর্স</h2>
+          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+            {t.customer.courses.saved}
+          </h2>
           <ul className="mt-4 space-y-3">
             {wishlist.data.map((course) => (
               <li key={course.slug}>
                 <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <div>
-                    <p className="font-semibold text-navy">{course.title}</p>
+                    <p className="font-semibold text-navy" data-authored="true">
+                      {course.title}
+                    </p>
                     {course.subtitle ? (
-                      <p className="mt-0.5 text-sm text-muted">{course.subtitle}</p>
+                      <p className="mt-0.5 text-sm text-muted" data-authored="true">
+                        {course.subtitle}
+                      </p>
                     ) : null}
                   </div>
                   <ButtonLink href={`/courses/${course.slug}`} variant="secondary">
-                    দেখুন
+                    {t.customer.view}
                   </ButtonLink>
                 </Card>
               </li>
@@ -136,22 +161,26 @@ export default async function AccountCoursesPage() {
 
       {certificates.data.length > 0 ? (
         <section>
-          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">সার্টিফিকেট</h2>
+          <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+            {t.customer.courses.certificates}
+          </h2>
           <ul className="mt-4 space-y-3">
             {certificates.data.map((certificate) => (
               <li key={certificate.verification_id}>
                 <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <div>
-                    <p className="font-semibold text-navy">{certificate.course_title}</p>
+                    <p className="font-semibold text-navy" data-authored="true">
+                      {certificate.course_title}
+                    </p>
                     <p className="font-latin text-xs text-muted">
-                      {certificate.verification_id} · {date(certificate.issued_at)}
+                      {certificate.verification_id} · {date(certificate.issued_at, locale)}
                     </p>
                   </div>
                   <Link
                     href={`/verify/${certificate.verification_id}`}
                     className="text-sm text-blue hover:underline"
                   >
-                    যাচাই পাতা
+                    {t.customer.courses.verifyPage}
                   </Link>
                 </Card>
               </li>

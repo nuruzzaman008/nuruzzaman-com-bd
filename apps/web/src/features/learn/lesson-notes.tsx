@@ -7,6 +7,7 @@ import type { LessonNote } from '@nuruzzaman/contracts';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Private note-taking on a lesson.
@@ -24,6 +25,7 @@ export function LessonNotes({
   lessonSlug: string;
   notes: LessonNote[];
 }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
@@ -43,7 +45,7 @@ export function LessonNotes({
       startTransition(() => router.refresh());
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'নোটটি সংরক্ষণ করা যায়নি।',
+        caught instanceof ApiError ? caught.message : t.learn.noteSaveFailed,
       );
     }
   }
@@ -53,18 +55,18 @@ export function LessonNotes({
       await api(`/learn/${encodeURIComponent(courseSlug)}/notes/${id}`, { method: 'DELETE' });
       startTransition(() => router.refresh());
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'নোটটি মুছে ফেলা যায়নি।');
+      setError(caught instanceof ApiError ? caught.message : t.learn.noteDeleteFailed);
     }
   }
 
   return (
     <section className="mt-10 border-t border-line pt-6">
-      <h2 className="font-bold text-navy">আমার নোট</h2>
-      <p className="mt-1 text-sm text-muted">নোট শুধু আপনি দেখতে পান।</p>
+      <h2 className="font-bold text-navy">{t.learn.myNotes}</h2>
+      <p className="mt-1 text-sm text-muted">{t.learn.notesPrivate}</p>
 
       <form onSubmit={save} className="mt-4">
         <label htmlFor="lesson-note" className="sr-only">
-          নতুন নোট
+          {t.learn.newNote}
         </label>
         <textarea
           id="lesson-note"
@@ -73,11 +75,11 @@ export function LessonNotes({
           required
           maxLength={5000}
           rows={3}
-          placeholder="এই লেসনের গুরুত্বপূর্ণ কথা লিখে রাখুন…"
+          placeholder={t.learn.notePlaceholder}
           className="w-full rounded-md border border-line px-3 py-2 text-sm"
         />
         <Button type="submit" disabled={isPending} className="mt-2">
-          {isPending ? 'সংরক্ষণ হচ্ছে…' : 'নোট সংরক্ষণ করুন'}
+          {isPending ? t.learn.savingNote : t.learn.saveNote}
         </Button>
       </form>
 
@@ -94,14 +96,16 @@ export function LessonNotes({
               key={note.id}
               className="flex items-start justify-between gap-3 rounded-md border border-line p-3"
             >
-              <p className="text-sm">{note.body}</p>
+              <p className="text-sm" data-authored="true">
+                {note.body}
+              </p>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => remove(note.id)}
-                aria-label="এই নোটটি মুছুন"
+                aria-label={t.learn.deleteNote}
               >
-                মুছুন
+                {t.learn.deleteNoteAction}
               </Button>
             </li>
           ))}

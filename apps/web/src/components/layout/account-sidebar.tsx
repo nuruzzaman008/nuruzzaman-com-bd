@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { User } from '@nuruzzaman/contracts';
 
+import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switcher';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { accountNav } from '@/lib/site';
@@ -38,12 +39,17 @@ export function AccountSidebar({ user }: { user: User }) {
                 href={item.href}
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-navy hover:bg-blue-soft hover:text-blue"
               >
-                {item.label}
+                {t.account.nav[item.key]}
               </Link>
             </li>
           ))}
         </ul>
       </nav>
+
+      {/* The same preference the admin panel uses. Without it a customer whose
+          account opens in English has no way back to Bengali: the public
+          switcher changes the URL, and these pages are not in the URL tree. */}
+      <AdminLanguageSwitcher tone="light" className="mt-4 -ms-2.5" />
 
       {/* The admin panel is a separate application, reached from the footer's
           staff-only entrance rather than from inside the customer account.

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Prose } from '@/components/ui/prose';
 import { api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Lesson body, video and completion control.
@@ -27,6 +28,7 @@ export function LessonPlayer({
   lesson: Lesson;
   isCompleted: boolean;
 }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [completed, setCompleted] = useState(isCompleted);
   const [busy, setBusy] = useState(false);
@@ -76,7 +78,7 @@ export function LessonPlayer({
       setCompleted(true);
       router.refresh();
     } catch {
-      setError('সম্পূর্ণ হিসেবে চিহ্নিত করা যায়নি। আবার চেষ্টা করুন।');
+      setError(t.learn.markFailed);
     } finally {
       setBusy(false);
     }
@@ -84,7 +86,9 @@ export function LessonPlayer({
 
   return (
     <article>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{lesson.title}</h1>
+      <h1 data-authored="true" className="text-[length:var(--step-h1)] font-bold text-navy">
+        {lesson.title}
+      </h1>
 
       {lesson.playback ? (
         lesson.playback.available && lesson.playback.url ? (
@@ -99,7 +103,7 @@ export function LessonPlayer({
           </div>
         ) : lesson.type === 'video' ? (
           <Callout tone="info" className="mt-6">
-            {lesson.playback.message ?? 'এই লেসনের ভিডিও এখনো যুক্ত করা হয়নি।'}
+            {lesson.playback.message ?? t.learn.noVideo}
           </Callout>
         ) : null
       ) : null}
@@ -108,11 +112,13 @@ export function LessonPlayer({
 
       {lesson.assets?.length ? (
         <section className="mt-8">
-          <h2 className="font-bold text-navy">লেসনের ফাইল</h2>
+          <h2 className="font-bold text-navy">{t.learn.lessonFiles}</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {lesson.assets.map((asset) => (
               <li key={asset.id} className="rounded-lg border border-line bg-white px-4 py-3">
-                <span className="font-medium text-navy">{asset.title}</span>
+                <span className="font-medium text-navy" data-authored="true">
+                  {asset.title}
+                </span>
                 {asset.checksum_sha256 ? (
                   <span className="font-latin mt-1 block text-xs break-all text-muted">
                     SHA-256: {asset.checksum_sha256}
@@ -126,10 +132,10 @@ export function LessonPlayer({
 
       <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-line pt-6">
         {completed ? (
-          <p className="font-semibold text-success">এই লেসনটি সম্পূর্ণ হয়েছে।</p>
+          <p className="font-semibold text-success">{t.learn.lessonComplete}</p>
         ) : (
           <Button type="button" size="lg" onClick={markComplete} disabled={busy}>
-            {busy ? 'সংরক্ষণ হচ্ছে…' : 'সম্পূর্ণ হিসেবে চিহ্নিত করুন'}
+            {busy ? t.learn.marking : t.learn.markComplete}
           </Button>
         )}
 

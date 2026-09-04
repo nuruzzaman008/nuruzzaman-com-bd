@@ -57,11 +57,17 @@ class PostResource extends JsonResource
              * the course pages already follow.
              */
             'comment_count' => $this->whenCounted('approvedComments'),
+            /*
+             * `rated_count` is only selected by the single-article query, so it
+             * is read out of the loaded attributes rather than off the model:
+             * a list endpoint never asks for it, and touching a missing
+             * attribute is a 500 under strict mode.
+             */
             'rating' => $this->when(
-                $this->rated_count > 0,
+                ($rated = (int) ($this->resource->getAttributes()['rated_count'] ?? 0)) > 0,
                 fn () => [
                     'average' => round((float) $this->rating_average, 2),
-                    'count' => (int) $this->rated_count,
+                    'count' => $rated,
                 ],
                 null,
             ),

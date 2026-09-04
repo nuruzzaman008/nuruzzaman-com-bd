@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Phase 1 activation request.
@@ -17,6 +18,7 @@ import { ApiError, api } from '@/lib/api/browser';
  * recovery file - the API refuses those by design.
  */
 export function ActivationRequestForm({ orders }: { orders: Order[] }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -55,15 +57,15 @@ export function ActivationRequestForm({ orders }: { orders: Order[] }) {
           setMessage(caught.message);
         }
       } else {
-        setMessage('রিকোয়েস্ট পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
+        setMessage(t.customer.activation.failed);
       }
     }
   }
 
   if (orders.length === 0) {
     return (
-      <Callout tone="info" title="পরিশোধিত অর্ডার প্রয়োজন">
-        অ্যাক্টিভেশন রিকোয়েস্ট পাঠাতে একটি পরিশোধিত অর্ডার থাকতে হবে।
+      <Callout tone="info" title={t.customer.activation.needsPaidOrder}>
+        {t.customer.activation.needsPaidOrderBody}
       </Callout>
     );
   }
@@ -78,7 +80,7 @@ export function ActivationRequestForm({ orders }: { orders: Order[] }) {
         </Callout>
       ) : null}
 
-      <Field label="কোন অর্ডারের জন্য" required error={errors.order_number?.[0]}>
+      <Field label={t.customer.activation.orderLabel} required error={errors.order_number?.[0]}>
         {(props) => (
           <Select name="order_number" {...props}>
             {orders.map((order) => (
@@ -90,12 +92,12 @@ export function ActivationRequestForm({ orders }: { orders: Order[] }) {
         )}
       </Field>
 
-      <Field label="অনুরোধের ধরন" required error={errors.request_type?.[0]}>
+      <Field label={t.customer.activation.requestType} required error={errors.request_type?.[0]}>
         {(props) => (
           <Select name="request_type" defaultValue="activation" {...props}>
-            <option value="activation">নতুন অ্যাক্টিভেশন</option>
-            <option value="refill">ক্রেডিট রিফিল</option>
-            <option value="recovery">লাইসেন্স রিকভারি</option>
+            <option value="activation">{t.customer.activation.typeActivation}</option>
+            <option value="refill">{t.customer.activation.typeRefill}</option>
+            <option value="recovery">{t.customer.activation.typeRecovery}</option>
           </Select>
         )}
       </Field>
@@ -103,33 +105,30 @@ export function ActivationRequestForm({ orders }: { orders: Order[] }) {
       <Field
         label="Machine ID"
         required
-        hint="সফটওয়্যারের License & System টুল থেকে কপি করুন। এটি এনক্রিপ্ট করে রাখা হয় এবং কখনো সম্পূর্ণ আকারে দেখানো হয় না।"
+        hint={t.customer.activation.machineIdHint}
         error={errors.machine_id?.[0]}
       >
         {(props) => <Input name="machine_id" className="font-latin" spellCheck={false} {...props} />}
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="AutoCAD ভার্সন" error={errors.autocad_version?.[0]}>
+        <Field label={t.customer.activation.autocadVersion} error={errors.autocad_version?.[0]}>
           {(props) => <Input name="autocad_version" placeholder="2025" {...props} />}
         </Field>
 
-        <Field label="Windows ভার্সন" error={errors.windows_version?.[0]}>
+        <Field label={t.customer.activation.windowsVersion} error={errors.windows_version?.[0]}>
           {(props) => <Input name="windows_version" placeholder="Windows 11 Pro" {...props} />}
         </Field>
       </div>
 
-      <Field label="অতিরিক্ত তথ্য" error={errors.customer_note?.[0]}>
+      <Field label={t.customer.activation.note} error={errors.customer_note?.[0]}>
         {(props) => <Textarea name="customer_note" {...props} />}
       </Field>
 
-      <Callout tone="warning">
-        কোনো recovery ফাইল, `.nbk`/`.nbrk` ফাইল বা private key আপলোড করতে বলা হবে না। কেউ
-        চাইলে সেটি আমাদের পক্ষ থেকে নয়।
-      </Callout>
+      <Callout tone="warning">{t.customer.activation.neverAskWarning}</Callout>
 
       <Button type="submit" size="lg" disabled={busy}>
-        {busy ? 'পাঠানো হচ্ছে…' : 'রিকোয়েস্ট পাঠান'}
+        {busy ? t.customer.activation.sending : t.customer.activation.send}
       </Button>
     </form>
   );

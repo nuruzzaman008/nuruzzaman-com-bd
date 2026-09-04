@@ -29,6 +29,13 @@ bash "${ROOT}/infra/scripts/mysql.sh"
 # environment.
 APP_KEY_VALUE="$(grep -E '^APP_KEY=' "${ROOT}/apps/api/.env" | cut -d= -f2-)"
 
+# Without these, publishing an article or approving a comment changes the
+# database and nothing else: the Next.js cache keeps serving the old page for
+# up to five minutes and the change looks lost. The secret is the one the
+# frontend already reads, so the two sides agree by construction.
+WEB_PORT="${NB_WEB_PORT:-3200}"
+REVALIDATE_SECRET="$(grep -E '^NEXT_REVALIDATE_SECRET=' "${ROOT}/apps/web/.env.local" 2>/dev/null | cut -d= -f2-)"
+
 cat > "${ROOT}/apps/api/.env.local" <<ENV
 APP_ENV=local
 APP_DEBUG=true
@@ -46,8 +53,10 @@ SESSION_DOMAIN=localhost
 SESSION_COOKIE=nuruzzaman_session
 QUEUE_CONNECTION=sync
 MAIL_MAILER=log
-SANCTUM_STATEFUL_DOMAINS=localhost:3200,127.0.0.1:3200
-FRONTEND_URL=http://localhost:3200
+SANCTUM_STATEFUL_DOMAINS=localhost:${WEB_PORT},127.0.0.1:${WEB_PORT}
+FRONTEND_URL=http://localhost:${WEB_PORT}
+NEXT_REVALIDATE_URL=http://host.docker.internal:${WEB_PORT}/api/revalidate
+NEXT_REVALIDATE_SECRET=${REVALIDATE_SECRET}
 ENV
 
 # Pass a chosen admin password through when the caller set one, so

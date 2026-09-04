@@ -7,6 +7,8 @@ import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
+import { statusLabel } from '@/lib/status';
 
 /**
  * Payment result screen.
@@ -26,6 +28,7 @@ export function PaymentResult({
   outcome: 'success' | 'failed' | 'cancelled';
   reference: string | null;
 }) {
+  const { locale, t } = useLocale();
   const [status, setStatus] = useState<PaymentStatus | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +59,7 @@ export function PaymentResult({
         }
       } catch {
         if (!cancelled) {
-          setError('পেমেন্টের অবস্থা যাচাই করা যায়নি।');
+          setError(t.checkout.checkFailed);
         }
       }
     };
@@ -67,18 +70,18 @@ export function PaymentResult({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [outcome, reference]);
+  }, [outcome, reference, t.checkout.checkFailed]);
 
   if (outcome === 'cancelled') {
     return (
       <Card className="p-6">
-        <Callout tone="warning" title="পেমেন্ট বাতিল করা হয়েছে" role="status">
-          আপনার কার্ট অক্ষত আছে। চাইলে আবার চেকআউট করতে পারেন।
+        <Callout tone="warning" title={t.checkout.cancelled} role="status">
+          {t.checkout.cancelledBody}
         </Callout>
         <div className="mt-5 flex flex-wrap gap-3">
-          <ButtonLink href="/cart">কার্টে ফিরুন</ButtonLink>
+          <ButtonLink href="/cart">{t.checkout.backToCart}</ButtonLink>
           <ButtonLink href="/support" variant="secondary">
-            সহায়তা
+            {t.checkout.help}
           </ButtonLink>
         </div>
       </Card>
@@ -88,13 +91,13 @@ export function PaymentResult({
   if (outcome === 'failed') {
     return (
       <Card className="p-6">
-        <Callout tone="danger" title="পেমেন্ট সম্পন্ন হয়নি" role="alert">
-          কোনো টাকা কাটা হয়নি। ভিন্ন কার্ড বা মাধ্যম দিয়ে আবার চেষ্টা করতে পারেন।
+        <Callout tone="danger" title={t.checkout.failed} role="alert">
+          {t.checkout.failedBody}
         </Callout>
         <div className="mt-5 flex flex-wrap gap-3">
-          <ButtonLink href="/checkout">আবার চেষ্টা করুন</ButtonLink>
+          <ButtonLink href="/checkout">{t.checkout.tryAgain}</ButtonLink>
           <ButtonLink href="/contact" variant="secondary">
-            যোগাযোগ করুন
+            {t.checkout.contactUs}
           </ButtonLink>
         </div>
       </Card>
@@ -112,43 +115,42 @@ export function PaymentResult({
           {error}
         </Callout>
       ) : settled ? (
-        <Callout tone="success" title="পেমেন্ট নিশ্চিত হয়েছে" role="status">
-          আপনার অর্ডার প্রস্তুত করা হচ্ছে। ডাউনলোড ও কোর্স অ্যাক্সেস অ্যাকাউন্টে যুক্ত হবে।
+        <Callout tone="success" title={t.checkout.confirmed} role="status">
+          {t.checkout.confirmedBody}
         </Callout>
       ) : needsReview ? (
-        <Callout tone="warning" title="পেমেন্ট যাচাইয়ের অপেক্ষায়" role="status">
-          গেটওয়ে এই লেনদেনটি ম্যানুয়াল যাচাইয়ের জন্য চিহ্নিত করেছে। যাচাই শেষ হলে
-          অ্যাকাউন্টে অ্যাক্সেস যুক্ত হবে এবং আপনাকে ইমেইল করা হবে।
+        <Callout tone="warning" title={t.checkout.awaitingConfirmation} role="status">
+          {t.checkout.awaitingBody}
         </Callout>
       ) : stillWaiting ? (
-        <Callout tone="info" title="নিশ্চিত করা হচ্ছে" role="status">
-          গেটওয়ে থেকে সার্ভার-টু-সার্ভার নিশ্চিতকরণের অপেক্ষা করা হচ্ছে। এই পাতাটি খোলা
-          রাখুন; সাধারণত কয়েক সেকেন্ড লাগে।
+        <Callout tone="info" title={t.checkout.confirming} role="status">
+          {t.checkout.confirmingBody}
         </Callout>
       ) : (
-        <Callout tone="warning" title="এখনো নিশ্চিত হয়নি" role="status">
-          নিশ্চিতকরণ আসতে দেরি হচ্ছে। টাকা কেটে থাকলে স্বয়ংক্রিয় reconciliation প্রক্রিয়া
-          এটি ধরে ফেলবে; অ্যাকাউন্টের অর্ডার পাতায় অবস্থা দেখতে পারবেন।
+        <Callout tone="warning" title={t.checkout.notConfirmedYet} role="status">
+          {t.checkout.notConfirmedBody}
         </Callout>
       )}
 
       {status ? (
         <dl className="mt-5 space-y-2 border-t border-line pt-4 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">অর্ডার</dt>
+            <dt className="text-muted">{t.checkout.order}</dt>
             <dd className="font-latin font-medium text-navy">{status.order_number}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">অবস্থা</dt>
-            <dd className="font-latin font-medium text-navy">{status.order_status}</dd>
+            <dt className="text-muted">{t.checkout.status}</dt>
+            <dd className="font-medium text-navy">
+              {statusLabel('order', status.order_status, locale)}
+            </dd>
           </div>
         </dl>
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-3">
-        <ButtonLink href="/account/orders">অর্ডার দেখুন</ButtonLink>
+        <ButtonLink href="/account/orders">{t.checkout.viewOrders}</ButtonLink>
         <ButtonLink href="/account/downloads" variant="secondary">
-          ডাউনলোড
+          {t.checkout.downloads}
         </ButtonLink>
       </div>
     </Card>

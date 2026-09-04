@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Requests one protected file.
@@ -14,12 +15,14 @@ import { Button } from '@/components/ui/button';
 export function DownloadButton({
   slug,
   disabled,
-  label = 'ডাউনলোড করুন',
+  label,
 }: {
   slug: string;
   disabled?: boolean;
+  /** Overrides the default wording; the default follows the reader's language. */
   label?: string;
 }) {
+  const { t } = useLocale();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +47,7 @@ export function DownloadButton({
           | { error?: { message?: string } }
           | null;
 
-        setError(body?.error?.message ?? 'ডাউনলোড শুরু করা যায়নি।');
+        setError(body?.error?.message ?? t.customer.downloads.failed);
 
         return;
       }
@@ -72,7 +75,7 @@ export function DownloadButton({
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch {
-      setError('ডাউনলোড শুরু করা যায়নি।');
+      setError(t.customer.downloads.failed);
     } finally {
       setBusy(false);
     }
@@ -81,7 +84,7 @@ export function DownloadButton({
   return (
     <div>
       <Button type="button" onClick={download} disabled={disabled || busy}>
-        {busy ? 'প্রস্তুত হচ্ছে…' : label}
+        {busy ? t.customer.downloads.preparing : (label ?? t.customer.downloads.download)}
       </Button>
       {error ? (
         <p role="alert" className="mt-2 text-sm text-danger">

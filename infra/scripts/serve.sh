@@ -50,7 +50,8 @@ for port in "${WEB_PORT}" "${API_PORT}"; do
 done
 
 echo "starting the API on ${API_PORT}..."
-TTY_FLAG= bash "${ROOT}/infra/scripts/dev-api.sh" "${API_PORT}" "${SEED}" &
+# The API needs the web port to address the revalidation webhook back at us.
+TTY_FLAG= NB_WEB_PORT="${WEB_PORT}"   bash "${ROOT}/infra/scripts/dev-api.sh" "${API_PORT}" "${SEED}" &
 
 # The API is not usable the moment the container starts: migrations and, on a
 # fresh run, the seeders have to finish first.

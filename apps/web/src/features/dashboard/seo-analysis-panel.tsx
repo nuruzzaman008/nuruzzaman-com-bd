@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { analyzeSeo, type CheckStatus, type SeoInput } from '@/lib/seo-analysis/analyze';
 import { cn } from '@/lib/cn';
+import { number } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
@@ -68,7 +69,7 @@ export function SeoAnalysisPanel({
     excerpt?: string;
   };
 }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [values, setValues] = useState<SeoInput | null>(null);
 
   useEffect(() => {
@@ -116,13 +117,13 @@ export function SeoAnalysisPanel({
           <h2 className="font-bold text-navy">{t.admin.seoPanel.title}</h2>
           <p className="mt-0.5 text-xs text-muted">
             {t.admin.seoPanel.summary
-              .replace('{passed}', String(analysis.passed))
-              .replace('{warned}', String(analysis.warned))
-              .replace('{failed}', String(analysis.failed))}
+              .replace('{passed}', number(analysis.passed, locale))
+              .replace('{warned}', number(analysis.warned, locale))
+              .replace('{failed}', number(analysis.failed, locale))}
           </p>
         </div>
         {scored ? (
-          <p className={cn('font-latin text-3xl font-bold', tone)}>{analysis.score}</p>
+          <p className={cn('text-3xl font-bold', tone)}>{number(analysis.score, locale)}</p>
         ) : (
           <p className="max-w-[11rem] text-end text-xs font-semibold text-muted">
             {t.admin.seoPanel.scoreLocked}

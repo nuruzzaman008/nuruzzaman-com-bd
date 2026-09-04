@@ -2,17 +2,16 @@ import type { Dictionary } from '@/lib/i18n/dictionary';
 
 export type NavItem = {
   href: string;
-  /** Bengali label, used when an item has no dictionary key. */
-  label: string;
   /**
-   * Key into `Dictionary['nav']`. Items that carry one are translated; items
-   * without one show `label` in both languages, which is right for names that
-   * do not translate.
+   * A name that is the same in both languages - a product name, say. Every
+   * other item carries a key instead, so that one set of words is translated
+   * rather than two sets kept in step by hand.
    */
+  label?: string;
+  /** Key into `Dictionary['nav']`. */
   labelKey?: keyof Dictionary['nav'];
   /** Key into `Dictionary['pageTitle']`, for links named after a page. */
   titleKey?: keyof Dictionary['pageTitle'];
-  description?: string;
   /** Key into `Dictionary['navDescription']`, for the mobile menu blurb. */
   descriptionKey?: keyof Dictionary['navDescription'];
 };
@@ -32,60 +31,57 @@ export function navItemLabel(item: NavItem, t: Dictionary): string {
     return t.pageTitle[item.titleKey];
   }
 
-  return item.label;
+  // Nothing left to fall back to but the path, which at least says where the
+  // link goes rather than rendering an empty control.
+  return item.label ?? item.href;
 }
 
 /** Primary navigation, in the order the information architecture defines. */
 export const primaryNav: NavItem[] = [
-  { href: '/', label: 'হোম', labelKey: 'home' },
-  { href: '/courses', label: 'কোর্স', labelKey: 'courses', descriptionKey: 'courses', description: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স' },
-  {
-    href: '/engineering-tools',
-    label: 'ইঞ্জিনিয়ারিং টুলস',
-    labelKey: 'tools',
-    descriptionKey: 'tools',
-    description: 'AutoCAD-এর জন্য NB Engineering Tools',
-  },
-  { href: '/blog', label: 'ব্লগ', labelKey: 'blog', descriptionKey: 'blog', description: 'যাচাই করা টেকনিক্যাল আর্টিকেল' },
-  { href: '/resources', label: 'রিসোর্স', labelKey: 'resources', descriptionKey: 'resources', description: 'চেকলিস্ট ও টেমপ্লেট' },
-  { href: '/about', label: 'পরিচিতি', labelKey: 'about' },
-  { href: '/support', label: 'সাপোর্ট', labelKey: 'support', descriptionKey: 'support', description: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স' },
+  { href: '/', labelKey: 'home' },
+  { href: '/courses', labelKey: 'courses', descriptionKey: 'courses' },
+  { href: '/engineering-tools', labelKey: 'tools', descriptionKey: 'tools' },
+  { href: '/blog', labelKey: 'blog', descriptionKey: 'blog' },
+  { href: '/resources', labelKey: 'resources', descriptionKey: 'resources' },
+  { href: '/about', labelKey: 'about' },
+  { href: '/support', labelKey: 'support', descriptionKey: 'support' },
 ];
 
 export const supportNav: NavItem[] = [
-  { href: '/support/installation', label: 'ইনস্টলেশন গাইড', titleKey: 'supportInstallation' },
-  { href: '/support/activation', label: 'অ্যাক্টিভেশন', titleKey: 'supportActivation' },
-  {
-    href: '/support/license-recovery',
-    label: 'লাইসেন্স রিকভারি',
-    titleKey: 'supportLicenseRecovery',
-  },
-  { href: '/support/release-notes', label: 'রিলিজ নোট', titleKey: 'supportReleaseNotes' },
-  {
-    href: '/support/system-requirements',
-    label: 'সিস্টেম রিকোয়ারমেন্ট',
-    titleKey: 'supportSystemRequirements',
-  },
-  { href: '/faq', label: 'সাধারণ জিজ্ঞাসা', titleKey: 'faq' },
-  { href: '/contact', label: 'যোগাযোগ', titleKey: 'contact' },
+  { href: '/support/installation', titleKey: 'supportInstallation' },
+  { href: '/support/activation', titleKey: 'supportActivation' },
+  { href: '/support/license-recovery', titleKey: 'supportLicenseRecovery' },
+  { href: '/support/release-notes', titleKey: 'supportReleaseNotes' },
+  { href: '/support/system-requirements', titleKey: 'supportSystemRequirements' },
+  { href: '/faq', titleKey: 'faq' },
+  { href: '/contact', titleKey: 'contact' },
 ];
 
 export const legalNav: NavItem[] = [
-  { href: '/privacy-policy', label: 'গোপনীয়তা নীতি', titleKey: 'privacy' },
-  { href: '/terms', label: 'ব্যবহারের শর্তাবলি', titleKey: 'terms' },
-  { href: '/refund-policy', label: 'রিফান্ড নীতি', titleKey: 'refund' },
-  { href: '/software-eula', label: 'সফটওয়্যার EULA', titleKey: 'eula' },
-  { href: '/course-terms', label: 'কোর্স শর্তাবলি', titleKey: 'courseTerms' },
-  { href: '/engineering-disclaimer', label: 'ইঞ্জিনিয়ারিং দাবিত্যাগ', titleKey: 'disclaimer' },
+  { href: '/privacy-policy', titleKey: 'privacy' },
+  { href: '/terms', titleKey: 'terms' },
+  { href: '/refund-policy', titleKey: 'refund' },
+  { href: '/software-eula', titleKey: 'eula' },
+  { href: '/course-terms', titleKey: 'courseTerms' },
+  { href: '/engineering-disclaimer', titleKey: 'disclaimer' },
 ];
 
-export const accountNav: NavItem[] = [
-  { href: '/account', label: 'ওভারভিউ' },
-  { href: '/account/orders', label: 'অর্ডার' },
-  { href: '/account/downloads', label: 'ডাউনলোড' },
-  { href: '/account/courses', label: 'আমার কোর্স' },
-  { href: '/account/activation-requests', label: 'অ্যাক্টিভেশন রিকোয়েস্ট' },
-  { href: '/account/support', label: 'সাপোর্ট টিকিট' },
+/**
+ * The customer account nav.
+ *
+ * Keys rather than labels, for the same reason the admin nav uses them: this
+ * is a signed-in application, its language follows the reader's choice, and a
+ * hard-coded Bengali label put Bengali items under an English shell.
+ */
+export type AccountNavItem = { href: string; key: keyof Dictionary['account']['nav'] };
+
+export const accountNav: AccountNavItem[] = [
+  { href: '/account', key: 'overview' },
+  { href: '/account/orders', key: 'orders' },
+  { href: '/account/downloads', key: 'downloads' },
+  { href: '/account/courses', key: 'courses' },
+  { href: '/account/activation-requests', key: 'activationRequests' },
+  { href: '/account/support', key: 'support' },
 ];
 
 /** An admin nav item. Its label is always a dictionary key. */

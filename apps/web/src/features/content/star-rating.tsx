@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { cn } from '@/lib/cn';
+import { decimal, number } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
 
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -40,11 +41,12 @@ export function StarDisplay({
   count?: number;
   className?: string;
 }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const rounded = Math.round(value);
+  const shown = decimal(value, 1, locale);
 
   return (
-    <span className={cn('inline-flex items-center gap-1.5', className)}>
+    <span data-star-rating="true" className={cn('inline-flex items-center gap-1.5', className)}>
       <span className="flex items-center gap-0.5 text-amber" aria-hidden="true">
         {STARS.map((star) => (
           <span key={star} className="size-4">
@@ -52,15 +54,18 @@ export function StarDisplay({
           </span>
         ))}
       </span>
-      <span className="font-latin text-sm font-semibold text-navy">{value.toFixed(1)}</span>
+      <span className="text-sm font-semibold text-navy">{shown}</span>
       {count === undefined ? null : (
         <span className="text-xs text-muted">
-          ({t.comments.fromCount.replace('{count}', String(count))})
+          (
+          {(count === 1 ? t.comments.fromCountOne : t.comments.fromCount).replace(
+            '{count}',
+            number(count, locale),
+          )}
+          )
         </span>
       )}
-      <span className="sr-only">
-        {t.comments.outOfFive.replace('{value}', value.toFixed(1))}
-      </span>
+      <span className="sr-only">{t.comments.outOfFive.replace('{value}', shown)}</span>
     </span>
   );
 }
@@ -76,7 +81,7 @@ export function StarDisplay({
  * article, and forcing a star out of them would make every average meaningless.
  */
 export function StarInput({ name = 'rating' }: { name?: string }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [value, setValue] = useState(0);
   const [hovered, setHovered] = useState(0);
 
@@ -112,7 +117,10 @@ export function StarInput({ name = 'rating' }: { name?: string }) {
               className="sr-only"
             />
             <span className="sr-only">
-              {t.comments.starCount.replace('{count}', String(star))}
+              {(star === 1 ? t.comments.starCountOne : t.comments.starCount).replace(
+                '{count}',
+                number(star, locale),
+              )}
             </span>
             <span className="block size-7">
               <Star filled={star <= shown} />

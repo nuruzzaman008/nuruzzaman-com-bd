@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useId, useTransition } from 'react';
 
 import { cn } from '@/lib/cn';
 import { ADMIN_LOCALE_COOKIE } from '@/lib/i18n/admin-locale';
@@ -27,10 +27,21 @@ function persistAdminLocale(option: Locale): void {
  *
  * A year-long, lax cookie: it is a display preference, it should survive a
  * browser restart, and it carries nothing about the person.
+ *
+ * Two tones because the same control sits on two grounds: the navy admin
+ * sidebar and the white account sidebar. One set of colours would be
+ * unreadable on one of them.
  */
-export function AdminLanguageSwitcher({ className }: { className?: string }) {
+export function AdminLanguageSwitcher({
+  className,
+  tone = 'inverse',
+}: {
+  className?: string;
+  tone?: 'inverse' | 'light';
+}) {
   const { locale, t } = useLocale();
   const router = useRouter();
+  const labelId = useId();
   const [isPending, startTransition] = useTransition();
 
   function choose(option: Locale) {
@@ -48,11 +59,11 @@ export function AdminLanguageSwitcher({ className }: { className?: string }) {
       className={cn('flex items-center gap-1', className)}
       aria-busy={isPending}
     >
-      <span className="sr-only" id="admin-language-label">
+      <span className="sr-only" id={labelId}>
         {t.language.label}
       </span>
 
-      <ul className="flex items-center gap-1" aria-labelledby="admin-language-label">
+      <ul className="flex items-center gap-1" aria-labelledby={labelId}>
         {LOCALES.map((option) => {
           const isActive = option === locale;
 
@@ -65,9 +76,13 @@ export function AdminLanguageSwitcher({ className }: { className?: string }) {
                 onClick={() => choose(option)}
                 className={cn(
                   'inline-flex min-h-9 items-center rounded-lg px-2.5 text-sm transition-colors',
-                  isActive
-                    ? 'bg-white/15 font-bold text-white'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white',
+                  tone === 'inverse'
+                    ? isActive
+                      ? 'bg-white/15 font-bold text-white'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                    : isActive
+                      ? 'bg-blue-soft font-bold text-blue'
+                      : 'text-muted hover:bg-blue-soft hover:text-blue',
                 )}
               >
                 {LOCALE_LABEL[option]}

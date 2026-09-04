@@ -115,6 +115,23 @@ export function number(value: number, locale: Locale = DEFAULT_LOCALE): string {
   return new Intl.NumberFormat(INTL_LOCALE[locale]).format(value);
 }
 
+/**
+ * A number with a fixed number of decimals, in the reader's own digits.
+ *
+ * `toFixed` would print 4.5 as Latin digits on a page whose every other figure
+ * is Bengali, which reads as a bug rather than as a rating.
+ */
+export function decimal(
+  value: number,
+  digits: number,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  return new Intl.NumberFormat(INTL_LOCALE[locale], {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
 export function fileSize(bytes: number | null | undefined): string | null {
   if (!bytes || bytes <= 0) {
     return null;

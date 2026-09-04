@@ -1,26 +1,29 @@
 # Test report
 
-Run on **3 September 2026** (updated after the sign-in fixes) against the versions in
+Run on **4 September 2026** (updated after reader comments and the bilingual
+signed-in areas) against the versions in
 [DEPENDENCY_VERSIONS.md](DEPENDENCY_VERSIONS.md).
 
 ## Summary
 
 | Suite | Result | Notes |
 |---|---|---|
-| Laravel unit + feature (PHPUnit) | **128 passed, 543 assertions** | Run in Docker on SQLite in memory |
-| API contract test | **passed** | Every admin route is documented bar six declared exclusions |
-| Frontend unit + component (Vitest) | **37 passed** | 6 files |
-| End-to-end (Playwright), mock API | **57 passed** | 19 tests across desktop / tablet / mobile |
-| End-to-end (Playwright), real Laravel API | **57 passed** | `--workers=1`; see "Running E2E against the real API" |
+| Laravel unit + feature (PHPUnit) | **156 passed, 645 assertions** | Run in Docker against MySQL 8.4 — the same engine as production, so a driver-specific query fails here rather than after deployment |
+| API contract test | **passed** | Every route the router knows is documented bar the declared exclusions |
+| Frontend unit + component (Vitest) | **68 passed** | 8 files |
+| End-to-end (Playwright), mock API | **96 passed** | 32 tests across desktop / tablet / mobile |
+| Bilingual sweep (`tools/check-english.mjs`) | **clean** | 28 English routes, no Bengali interface text left |
+| Public smoke (`tools/smoke.mjs`) | **clean** | Mobile menu, both sign-ins, the footer's admin entrance |
+| Admin smoke (`tools/admin-smoke.mjs`) | **clean** | 15 screens English by default; the switcher persists across screens and reloads |
 | TypeScript (`tsc --noEmit`) | **clean** | Web app and contracts package |
 | ESLint | **clean** | 0 errors, 0 warnings |
 | OpenAPI lint (Redocly) | **valid** | 23 style warnings, 0 errors |
-| Production build (`next build`) | **succeeds** | 61 routes |
+| Production build (`next build`) | **succeeds** | 104 routes, Bengali and English |
 
 ## Laravel suite
 
 ```text
-PHPUnit 12.5.34 - OK (128 tests, 543 assertions)
+PHPUnit 12.5.34 - OK (156 tests, 645 assertions)
 ```
 
 | Area | What is covered |
@@ -43,12 +46,13 @@ PHPUnit 12.5.34 - OK (128 tests, 543 assertions)
 | `CourseEngagementTest` | A question is held for moderation and only its author sees it meanwhile; a non-enrolled visitor can neither read nor ask; publishing makes it visible to the class; notes are private to their writer and cannot be deleted by guessing an id; the gradebook reports an ungraded assignment as ungraded, not zero; wishlist add is idempotent; the course list exposes its track and the track filter rejects an unknown value |
 | `CoursePrerequisiteTest` | A free enrolment is blocked until the prerequisite is completed; completing it clears the block; a purchase is never blocked, because the learner has already paid; reciprocal and self-referential prerequisites are refused |
 | `ApiContractTest` | Every route the router knows is documented in the OpenAPI spec, bar six declared exclusions |
+| `PostCommentTest` | Commenting needs a session; a new comment is held and appears in neither the list, the count nor the rating until approved; an approved one is listed and counted, and a reader is never told its moderation state; a comment without a rating does not drag the average down; one comment per reader per article; the honeypot and the length and range rules; only a moderator can work the queue; approving puts it on the page and rejecting takes it off again |
 | `PublicContentTest` | Only published posts are listed; drafts 404; raw HTML stripped from Markdown; a course with no lessons is never listed; legal pages report they are awaiting review; the sitemap feed excludes drafts; unconfigured settings stay null; search covers published records only |
 
 ## Frontend suite
 
 ```text
-Vitest 3.2.7 - 37 passed (6 files)
+Vitest 3.2.7 - 68 passed (8 files)
 ```
 
 * `format.test.ts` — a null price stays null rather than becoming zero; UTC is
@@ -57,7 +61,13 @@ Vitest 3.2.7 - 37 passed (6 files)
 * `seo.test.ts` — CMS SEO overrides win; noindex is honoured; private pages are
   never indexable; JSON-LD escapes a closing tag; breadcrumb positions start at
   one; **no Offer without a published price**; **no aggregateRating without real
-  reviews**; a reviewer is recorded when one exists.
+  reviews**; a reviewer is recorded when one exists; an article carries its
+  approved comments but **never an aggregateRating**, because Google does not
+  support review snippets on an Article; the declared language follows the page.
+* `seo-analysis.test.ts` — the item-wise checks, and the score that is withheld
+  until a focus keyword is set.
+* `i18n-labels.test.ts` — every taxonomy and status label resolves in both
+  languages, and an unmapped value falls back to the raw one rather than blank.
 * `robots-sitemap.test.ts` — every private surface is disallowed; the sitemap
   lists published content, excludes private routes, and does not duplicate CMS
   pages.
@@ -72,7 +82,7 @@ Vitest 3.2.7 - 37 passed (6 files)
 ## End-to-end
 
 ```text
-Playwright 1.62.1 - 57 passed (desktop 1440, tablet 768, mobile Pixel 5)
+Playwright 1.62.1 - 96 passed (desktop 1440, tablet 768, mobile Pixel 5)
 ```
 
 Covered: the home page and primary navigation; reaching an article from the blog

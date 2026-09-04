@@ -7,55 +7,65 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('সাপোর্ট টিকিট');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.customer.support.title);
+}
 
 export default async function AccountSupportPage() {
+  const { locale, t } = await adminDictionary();
   const tickets = await sessionApi<{ data: SupportTicket[] }>('/account/support-tickets');
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">সাপোর্ট টিকিট</h1>
-      <p className="mt-2 text-muted">
-        অর্ডারের সঙ্গে যুক্ত টিকিট খুললে উত্তর দ্রুত হয়।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.customer.support.title}
+      </h1>
+      <p className="mt-2 text-muted">{t.customer.support.intro}</p>
 
       <div className="mt-6">
         <DataTable
-          caption="আপনার সাপোর্ট টিকিট"
+          caption={t.customer.support.caption}
           rows={tickets.data}
           getRowKey={(ticket) => ticket.reference}
           empty={
             <EmptyState
-              title="কোনো টিকিট নেই"
-              description="প্রশ্ন থাকলে যোগাযোগ পাতা থেকে বার্তা পাঠান।"
-              action={<ButtonLink href="/contact">যোগাযোগ</ButtonLink>}
+              title={t.customer.support.emptyTitle}
+              description={t.customer.support.emptyBody}
+              action={<ButtonLink href="/contact">{t.pageTitle.contact}</ButtonLink>}
             />
           }
           columns={[
             {
               key: 'reference',
-              header: 'রেফারেন্স',
+              header: t.customer.support.reference,
               render: (ticket) => (
                 <span className="font-latin font-semibold text-navy">{ticket.reference}</span>
               ),
             },
-            { key: 'subject', header: 'বিষয়', render: (ticket) => ticket.subject },
+            {
+              key: 'subject',
+              header: t.customer.support.subject,
+              render: (ticket) => <span data-authored="true">{ticket.subject}</span>,
+            },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.customer.support.status,
               render: (ticket) => (
                 <Badge tone={ticket.status === 'resolved' ? 'success' : 'info'}>
-                  {statusLabel('ticket', ticket.status)}
+                  {statusLabel('ticket', ticket.status, locale)}
                 </Badge>
               ),
             },
             {
               key: 'created',
-              header: 'খোলা হয়েছে',
-              render: (ticket) => date(ticket.created_at) ?? '—',
+              header: t.customer.support.opened,
+              render: (ticket) => date(ticket.created_at, locale) ?? '—',
             },
           ]}
         />

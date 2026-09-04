@@ -18,12 +18,12 @@ export function navLabel(item: NavItem, t: ReturnType<typeof useLocale>['t']): s
   return navItemLabel(item, t);
 }
 
-/** The mobile menu's one-line blurb, translated where a key exists. */
+/** The mobile menu's one-line blurb, for the items that carry one. */
 export function navDescription(
   item: NavItem,
   t: ReturnType<typeof useLocale>['t'],
 ): string | undefined {
-  return item.descriptionKey ? t.navDescription[item.descriptionKey] : item.description;
+  return item.descriptionKey ? t.navDescription[item.descriptionKey] : undefined;
 }
 
 export function PrimaryNav() {

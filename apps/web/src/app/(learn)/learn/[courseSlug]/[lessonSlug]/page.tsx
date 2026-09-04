@@ -9,13 +9,19 @@ import { LessonPlayer } from '@/features/learn/lesson-player';
 import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/container';
 import { sessionApi } from '@/lib/api/server';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('কোর্স প্লেয়ার');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.learn.playerTitle);
+}
 
 export default async function LessonPage(props: {
   params: Promise<{ courseSlug: string; lessonSlug: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const { courseSlug, lessonSlug } = await props.params;
 
   let outline: CourseOutline;
@@ -75,7 +81,7 @@ export default async function LessonPage(props: {
     <Container size="wide" className="py-8">
       <div className="grid gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <CourseOutlineNav outline={outline} currentSlug={lessonSlug} />
+          <CourseOutlineNav outline={outline} currentSlug={lessonSlug} locale={locale} />
         </aside>
 
         <div className="rounded-[--radius-card] border border-line bg-white p-6 sm:p-8">
@@ -93,11 +99,11 @@ export default async function LessonPage(props: {
               />
             </>
           ) : (
-            <Callout tone="warning" title="এই লেসনটি এখনো খোলেনি" role="status">
+            <Callout tone="warning" title={t.learn.lockedTitle} role="status">
               <p>{lockedMessage}</p>
               <p className="mt-2">
                 <Link href={`/courses/${courseSlug}`} className="underline">
-                  কোর্সের বিস্তারিত দেখুন
+                  {t.learn.courseDetails}
                 </Link>
               </p>
             </Callout>

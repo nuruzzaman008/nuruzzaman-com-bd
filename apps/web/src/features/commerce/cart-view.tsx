@@ -9,13 +9,15 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { EmptyState, LoadingRegion } from '@/components/ui/states';
 import { ApiError, api } from '@/lib/api/browser';
-import { price } from '@/lib/format';
+import { number, price } from '@/lib/format';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * The cart is authoritative on the server: this view only sends variant ids and
  * quantities, then re-renders whatever totals the API returns.
  */
 export function CartView() {
+  const { locale, t } = useLocale();
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -34,7 +36,7 @@ export function CartView() {
         }
       } catch {
         if (!cancelled) {
-          setError('কার্ট লোড করা যায়নি।');
+          setError(t.cart.loadFailed);
         }
       } finally {
         if (!cancelled) {
@@ -46,7 +48,7 @@ export function CartView() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t.cart.loadFailed]);
 
   async function mutate(fn: () => Promise<{ data: Cart }>) {
     setBusy(true);
@@ -56,22 +58,22 @@ export function CartView() {
       const response = await fn();
       setCart(response.data);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'পরিবর্তন সংরক্ষণ করা যায়নি।');
+      setError(caught instanceof ApiError ? caught.message : t.cart.updateFailed);
     } finally {
       setBusy(false);
     }
   }
 
   if (loading) {
-    return <LoadingRegion label="কার্ট লোড হচ্ছে" />;
+    return <LoadingRegion label={t.cart.loading} />;
   }
 
   if (!cart || cart.lines.length === 0) {
     return (
       <EmptyState
-        title="আপনার কার্ট খালি"
-        description="শপ থেকে একটি পণ্য বা কোর্স যোগ করুন।"
-        action={<ButtonLink href="/shop">শপে যান</ButtonLink>}
+        title={t.cart.emptyTitle}
+        description={t.cart.emptyBody}
+        action={<ButtonLink href="/shop">{t.customer.goToShop}</ButtonLink>}
       />
     );
   }
@@ -86,7 +88,7 @@ export function CartView() {
         ) : null}
 
         {cart.blockers.length > 0 ? (
-          <Callout tone="warning" title="চেকআউটের আগে ঠিক করতে হবে" role="alert">
+          <Callout tone="warning" title={t.cart.blockedTitle} role="alert">
             <ul className="list-disc space-y-1 ps-5">
               {cart.blockers.map((blocker) => (
                 <li key={blocker}>{blocker}</li>
@@ -122,11 +124,11 @@ export function CartView() {
 
                   <div className="text-end">
                     <p className="font-bold text-navy">
-                      {price(line.line_total_minor, cart.currency)}
+                      {price(line.line_total_minor, cart.currency, locale)}
                     </p>
                     {line.unit_price_minor !== null && line.quantity > 1 ? (
                       <p className="text-xs text-muted">
-                        {price(line.unit_price_minor, cart.currency)} × {line.quantity}
+                        {price(line.unit_price_minor, cart.currency, locale)} × {number(line.quantity, locale)}
                       </p>
                     ) : null}
                   </div>
@@ -134,7 +136,7 @@ export function CartView() {
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <label className="text-sm text-muted" htmlFor={`qty-${line.variant_id}`}>
-                    পরিমাণ
+                    {t.cart.quantity}
                   </label>
                   <input
                     id={`qty-${line.variant_id}`}
@@ -171,7 +173,7 @@ export function CartView() {
                       )
                     }
                   >
-                    সরান
+                    {t.cart.remove}
                   </Button>
                 </div>
               </Card>
@@ -182,34 +184,37 @@ export function CartView() {
 
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <Card className="p-6">
-          <h2 className="font-bold text-navy">সারসংক্ষেপ</h2>
+          <h2 className="font-bold text-navy">{t.cart.summary}</h2>
 
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-muted">সাবটোটাল</dt>
-              <dd>{price(cart.subtotal_minor, cart.currency)}</dd>
+              <dt className="text-muted">{t.cart.subtotal}</dt>
+              <dd>{price(cart.subtotal_minor, cart.currency, locale)}</dd>
             </div>
             {cart.discount_minor > 0 ? (
               <div className="flex justify-between text-success">
-                <dt>ছাড়{cart.coupon_code ? ` (${cart.coupon_code})` : ''}</dt>
-                <dd>-{price(cart.discount_minor, cart.currency)}</dd>
+                <dt>
+                  {t.ui.discount}
+                  {cart.coupon_code ? ` (${cart.coupon_code})` : ''}
+                </dt>
+                <dd>-{price(cart.discount_minor, cart.currency, locale)}</dd>
               </div>
             ) : null}
             {cart.tax_minor > 0 ? (
               <div className="flex justify-between">
-                <dt className="text-muted">কর</dt>
-                <dd>{price(cart.tax_minor, cart.currency)}</dd>
+                <dt className="text-muted">{t.cart.tax}</dt>
+                <dd>{price(cart.tax_minor, cart.currency, locale)}</dd>
               </div>
             ) : null}
             <div className="flex justify-between border-t border-line pt-3 text-base font-bold text-navy">
-              <dt>সর্বমোট</dt>
-              <dd>{price(cart.total_minor, cart.currency)}</dd>
+              <dt>{t.cart.grandTotal}</dt>
+              <dd>{price(cart.total_minor, cart.currency, locale)}</dd>
             </div>
           </dl>
 
           <div className="mt-5 border-t border-line pt-5">
             <label htmlFor="coupon" className="text-sm font-semibold text-navy">
-              কুপন কোড
+              {t.cart.couponCode}
             </label>
             <div className="mt-2 flex gap-2">
               <input
@@ -231,7 +236,7 @@ export function CartView() {
                   )
                 }
               >
-                প্রয়োগ
+                {t.cart.apply}
               </Button>
             </div>
             {cart.coupon_error ? (
@@ -246,7 +251,7 @@ export function CartView() {
               className={cart.is_purchasable ? 'w-full' : 'pointer-events-none w-full opacity-50'}
               aria-disabled={!cart.is_purchasable}
             >
-              চেকআউটে যান
+              {t.cart.goToCheckout}
             </ButtonLink>
           </div>
         </Card>

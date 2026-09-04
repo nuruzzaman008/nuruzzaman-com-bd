@@ -91,7 +91,7 @@ export function MobileNav() {
                 className="block rounded-lg px-3 py-3 text-base font-semibold text-navy hover:bg-blue-soft hover:text-blue"
               >
                 {navLabel(item, t)}
-                {item.description ? (
+                {item.descriptionKey ? (
                   <span className="mt-0.5 block text-xs font-normal text-muted">
                     {navDescription(item, t)}
                   </span>

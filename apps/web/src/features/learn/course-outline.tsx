@@ -3,6 +3,8 @@ import type { CourseOutline } from '@nuruzzaman/contracts';
 
 import { cn } from '@/lib/cn';
 import { duration, number } from '@/lib/format';
+import { getDictionary } from '@/lib/i18n/dictionary';
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
 
 /**
  * The player sidebar. Locked lessons render as plain text rather than links, so
@@ -11,19 +13,25 @@ import { duration, number } from '@/lib/format';
 export function CourseOutlineNav({
   outline,
   currentSlug,
+  locale = DEFAULT_LOCALE,
 }: {
   outline: CourseOutline;
   currentSlug: string;
+  locale?: Locale;
 }) {
+  const t = getDictionary(locale);
+
   return (
-    <nav aria-label="কোর্স কারিকুলাম">
+    <nav aria-label={t.learn.curriculum}>
       <div className="rounded-[--radius-card] border border-line bg-white p-4">
-        <p className="text-sm font-bold text-navy">{outline.course.title}</p>
+        <p className="text-sm font-bold text-navy" data-authored="true">
+          {outline.course.title}
+        </p>
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">অগ্রগতি</span>
-            <span className="font-latin font-semibold text-navy">
-              {outline.enrollment.progress_percent}%
+            <span className="text-muted">{t.learn.progress}</span>
+            <span className="font-semibold text-navy">
+              {number(outline.enrollment.progress_percent, locale)}%
             </span>
           </div>
           <div
@@ -31,7 +39,7 @@ export function CourseOutlineNav({
             aria-valuenow={outline.enrollment.progress_percent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="কোর্সের অগ্রগতি"
+            aria-label={t.learn.progress}
             className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"
           >
             <div
@@ -46,9 +54,11 @@ export function CourseOutlineNav({
         {outline.sections.map((section, index) => (
           <li key={section.id}>
             <p className="text-xs font-semibold tracking-wide text-muted uppercase">
-              মডিউল {number(index + 1)}
+              {t.learn.module.replace('{number}', number(index + 1, locale))}
             </p>
-            <p className="mt-0.5 text-sm font-bold text-navy">{section.title}</p>
+            <p className="mt-0.5 text-sm font-bold text-navy" data-authored="true">
+              {section.title}
+            </p>
 
             <ul className="mt-2 space-y-1">
               {section.lessons.map((lesson) => {
@@ -62,8 +72,8 @@ export function CourseOutlineNav({
                           &#128274;
                         </span>
                         <span>
-                          {lesson.title}
-                          <span className="block text-xs">আগের লেসন সম্পূর্ণ করলে খুলবে</span>
+                          <span data-authored="true">{lesson.title}</span>
+                          <span className="block text-xs">{t.learn.lockedLesson}</span>
                         </span>
                       </p>
                     </li>
@@ -84,8 +94,10 @@ export function CourseOutlineNav({
                         {lesson.is_completed ? '\u2713' : '\u25CB'}
                       </span>
                       <span>
-                        {lesson.title}
-                        {lesson.is_completed ? <span className="sr-only"> (সম্পূর্ণ)</span> : null}
+                        <span data-authored="true">{lesson.title}</span>
+                        {lesson.is_completed ? (
+                          <span className="sr-only">{t.learn.completedSuffix}</span>
+                        ) : null}
                         {lesson.duration_seconds ? (
                           <span className="block text-xs font-normal text-muted">
                             {duration(lesson.duration_seconds)}
