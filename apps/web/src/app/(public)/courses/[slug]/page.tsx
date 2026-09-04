@@ -14,13 +14,15 @@ import { PriceTag } from '@/components/ui/price';
 import { Prose } from '@/components/ui/prose';
 import { publicApi } from '@/lib/api/server';
 import { counted, date, duration, number } from '@/lib/format';
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata, courseSchema, jsonLd } from '@/lib/seo';
 
-async function loadCourse(slug: string): Promise<Course> {
+async function loadCourse(slug: string, locale: Locale = DEFAULT_LOCALE): Promise<Course> {
   try {
     const response = await publicApi<{ data: Course }>(`/courses/${encodeURIComponent(slug)}`, {
-      tags: ['courses', `course:${slug}`],
+      query: { locale },
+      tags: ['courses', `course:${slug}`, `course:${slug}:${locale}`],
     });
 
     return response.data;
@@ -33,11 +35,12 @@ async function loadCourse(slug: string): Promise<Course> {
   }
 }
 
-export async function generateMetadata(props: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+): Promise<Metadata> {
+  const { locale } = pageDictionary(props.locale);
   const { slug } = await props.params;
-  const course = await loadCourse(slug);
+  const course = await loadCourse(slug, locale);
 
   return buildMetadata({
     title: course.title,
@@ -73,7 +76,7 @@ export default async function CoursePage(
 ) {
   const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
-  const course = await loadCourse(slug);
+  const course = await loadCourse(slug, locale);
 
   const purchasable = course.variants?.find((variant) => variant.is_purchasable) ?? null;
   const previewLesson = course.sections
@@ -160,7 +163,14 @@ export default async function CoursePage(
             ) : null}
 
             {course.description_html ? (
-              <Prose html={course.description_html} className="mt-8" />
+              <div className="mt-8">
+                {course.body_translated ? null : (
+                  <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
+                    {t.cms.untranslatedBody}
+                  </Callout>
+                )}
+                <Prose html={course.description_html} />
+              </div>
             ) : null}
 
             <div className="mt-10 grid gap-8 sm:grid-cols-2">

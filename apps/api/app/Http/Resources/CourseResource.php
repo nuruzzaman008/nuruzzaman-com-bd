@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\CourseTracks;
+use App\Support\RequestLocale;
 use App\Support\Markdown;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -22,9 +23,12 @@ class CourseResource extends JsonResource
                 fn () => $this->id,
             ),
             'slug' => $this->slug,
-            'title' => $this->title,
-            'subtitle' => $this->subtitle,
+            'title' => RequestLocale::pick($request, $this->title, $this->title_en),
+            'subtitle' => RequestLocale::pick($request, $this->subtitle, $this->subtitle_en),
             'description_html' => Markdown::toHtml($this->description_markdown),
+            // As with an article: the heading is translated, the description
+            // and the outcomes are not, and the page says which it is showing.
+            'body_translated' => ! RequestLocale::isEnglish($request),
             'level' => $this->level,
             'track' => $this->track,
             'track_name' => CourseTracks::name($this->track),
@@ -37,7 +41,7 @@ class CourseResource extends JsonResource
             // learner is expected to have finished first.
             'prerequisite_courses' => $this->whenLoaded('prerequisiteCourses', fn () => $this->prerequisiteCourses->map(fn ($course) => [
                 'slug' => $course->slug,
-                'title' => $course->title,
+                'title' => RequestLocale::pick($request, $course->title, $course->title_en),
                 'is_blocking' => (bool) $course->pivot->is_blocking,
             ])->values()),
             'required_software' => $this->required_software ?? [],

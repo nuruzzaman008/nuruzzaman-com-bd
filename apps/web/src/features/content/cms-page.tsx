@@ -10,8 +10,8 @@ import { Prose } from '@/components/ui/prose';
 import { TableOfContents } from '@/components/ui/table-of-contents';
 import { publicApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
-import { pageDictionary } from '@/lib/i18n/page';
 import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
+import { pageDictionary } from '@/lib/i18n/page';
 import { buildMetadata } from '@/lib/seo';
 
 /**
@@ -20,52 +20,32 @@ import { buildMetadata } from '@/lib/seo';
  * Legal pages keep a visible DRAFT notice until an admin records a real
  * professional review, so nobody mistakes seeded wording for approved wording.
  *
- * TRANSLATION: an English page is a separate CMS document under the `-en`
- * suffix, edited in the admin like any other. When one does not exist the
- * Bengali document is rendered with a visible notice saying so. Nothing here
- * machine-translates a body: a policy or a set of installation steps that says
- * something slightly different in one language than the other is worse than one
- * the reader can see is untranslated.
+ * TRANSLATION: an English page is a separate CMS document under the same slug
+ * plus `-en`, edited in the admin like any other. The API resolves that from
+ * `?locale=en` and falls back to the Bengali document, telling us which it sent
+ * in `translated`. Nothing here machine-translates a body: a policy or a set of
+ * installation steps that says something slightly different in one language
+ * than the other is worse than one the reader can see is untranslated.
  */
-function englishSlug(slug: string): string {
-  return `${slug}-en`;
-}
-
-async function fetchPage(slug: string): Promise<Page | null> {
+export async function loadCmsPage(
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Page> {
   try {
     const response = await publicApi<{ data: Page }>(`/pages/${encodeURIComponent(slug)}`, {
-      tags: ['pages', `page:${slug}`],
+      query: { locale },
+      // Tagged per language: revalidating one must not serve the other's body.
+      tags: ['pages', `page:${slug}`, `page:${slug}:${locale}`],
     });
 
     return response.data;
   } catch (error) {
     if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
-      return null;
+      notFound();
     }
 
     throw error;
   }
-}
-
-export async function loadCmsPage(
-  slug: string,
-  locale: Locale = DEFAULT_LOCALE,
-): Promise<{ page: Page; translated: boolean }> {
-  if (locale !== DEFAULT_LOCALE) {
-    const translated = await fetchPage(englishSlug(slug));
-
-    if (translated) {
-      return { page: translated, translated: true };
-    }
-  }
-
-  const page = await fetchPage(slug);
-
-  if (!page) {
-    notFound();
-  }
-
-  return { page, translated: locale === DEFAULT_LOCALE };
 }
 
 export async function cmsPageMetadata(
@@ -73,7 +53,7 @@ export async function cmsPageMetadata(
   path: string,
   locale: Locale = DEFAULT_LOCALE,
 ): Promise<Metadata> {
-  const { page } = await loadCmsPage(slug, locale);
+  const page = await loadCmsPage(slug, locale);
 
   return buildMetadata({
     title: page.title,
@@ -95,7 +75,7 @@ export async function CmsPage({
   locale?: Locale;
 }) {
   const { locale: active, t } = pageDictionary(locale);
-  const { page, translated } = await loadCmsPage(slug, active);
+  const page = await loadCmsPage(slug, active);
   const isLegal = page.template === 'legal';
 
   return (
@@ -114,7 +94,7 @@ export async function CmsPage({
       </header>
 
       <div className="mt-6 max-w-3xl space-y-3">
-        {translated ? null : (
+        {page.translated ? null : (
           <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
             {t.cms.untranslatedBody}
           </Callout>

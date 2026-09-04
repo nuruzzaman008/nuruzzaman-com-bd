@@ -65,8 +65,9 @@ export default async function CoursesPage(
       level: searchParams.level,
       track: searchParams.track,
       per_page: 12,
+      locale,
     },
-    tags: ['courses'],
+    tags: ['courses', `courses:${locale}`],
   });
 
   return (

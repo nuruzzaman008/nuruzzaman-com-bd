@@ -56,7 +56,10 @@ export default async function TopicPage(
     loadCategory(slug),
     publicApi<{ data: PostSummary[]; meta?: { current_page?: number; last_page?: number } }>(
       '/posts',
-      { query: { category: slug, page: searchParams.page, per_page: 12 }, tags: ['posts'] },
+      {
+        query: { category: slug, page: searchParams.page, per_page: 12, locale },
+        tags: ['posts', `posts:${locale}`],
+      },
     ),
   ]);
 

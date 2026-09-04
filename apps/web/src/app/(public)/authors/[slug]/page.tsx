@@ -44,14 +44,14 @@ export async function generateMetadata(props: {
 export default async function AuthorPage(
   props: LocalizedPageProps & { params: Promise<{ slug: string }> },
 ) {
-  const { t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
 
   const [author, posts] = await Promise.all([
     loadAuthor(slug),
     publicApi<{ data: PostSummary[] }>('/posts', {
-      query: { author: slug, per_page: 12 },
-      tags: ['posts'],
+      query: { author: slug, per_page: 12, locale },
+      tags: ['posts', `posts:${locale}`],
     }),
   ]);
 

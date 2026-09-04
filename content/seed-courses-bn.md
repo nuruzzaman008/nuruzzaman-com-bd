@@ -14,7 +14,9 @@
 slug: nb-engineering-tools-complete-workflow
 track: engineering-software
 title: NB Engineering Tools: সম্পূর্ণ প্র্যাকটিক্যাল ওয়ার্কফ্লো
+title_en: NB Engineering Tools: the complete practical workflow
 subtitle: ইনস্টলেশন থেকে একটি সম্পূর্ণ ড্রয়িং সেট পর্যন্ত
+subtitle_en: From installation to a finished drawing set
 level: intermediate
 language: Bangla
 sequential: true
@@ -39,12 +41,12 @@ sections: ইনস্টলেশন ও অ্যাক্টিভেশন|L
 সেটিও শেখানো হয়। চূড়ান্ত দায়িত্ব সবসময় যোগ্য প্রকৌশলীর।
 
 @@@
-
 ---
 slug: autocad-structural-drawing-productivity
 track: autocad-productivity
 title: AutoCAD Structural Drawing Productivity for Civil Engineers
 subtitle: একই কাজ অর্ধেক সময়ে — টেমপ্লেট, স্ট্যান্ডার্ড ও অটোমেশন
+subtitle_en: The same work in half the time - templates, standards and automation
 level: beginner
 language: Bangla
 sequential: false
@@ -64,12 +66,13 @@ sections: ড্রয়িং স্ট্যান্ডার্ড কে�
 পদ্ধতি শেখানো হয়।
 
 @@@
-
 ---
 slug: rcc-footing-design-detailing-bangla
 track: foundation-geotechnical
 title: RCC Footing Design & Detailing: প্র্যাকটিক্যাল বাংলা কোর্স
+title_en: RCC footing design and detailing: a practical course
 subtitle: হিসাব থেকে ড্রয়িং — একটি ফুটিংয়ের সম্পূর্ণ পথ
+subtitle_en: From the calculation to the drawing - one footing, end to end
 level: intermediate
 language: Bangla
 sequential: true
@@ -93,12 +96,13 @@ sections: লোড ও bearing capacity|আইসোলেটেড ফুট�
 জিওটেকনিক্যাল রিপোর্ট, লোড ও প্রযোজ্য কোড অনুযায়ী স্বাধীনভাবে যাচাই করুন।
 
 @@@
-
 ---
 slug: structural-load-path-basics-bangla
 track: structural-engineering
 title: স্ট্রাকচারাল লোড পাথ — ছাদ থেকে মাটি পর্যন্ত
+title_en: Structural load paths: from roof to soil
 subtitle: প্রতিটি কিলোনিউটন কোথা দিয়ে নামে, সেটি ধরতে পারা
+subtitle_en: Being able to follow where every kilonewton goes
 level: beginner
 language: Bangla
 sequential: true
@@ -123,12 +127,13 @@ Analysis software সংখ্যা দেয়, কিন্তু সংখ�
 সীমাবদ্ধতা স্পষ্ট করে বলা।
 
 @@@
-
 ---
 slug: pile-foundation-design-bangla
 track: foundation-geotechnical
 title: পাইল ফাউন্ডেশন ডিজাইন — প্র্যাকটিক্যাল বাংলা কোর্স
+title_en: Pile foundation design: a practical course
 subtitle: মাটির রিপোর্ট থেকে pile cap ড্রয়িং পর্যন্ত
+subtitle_en: From the soil report to the pile cap drawing
 level: advanced
 language: Bangla
 sequential: true
@@ -148,12 +153,13 @@ sections: মাটির রিপোর্ট পড়া|পাইলের 
 এগোনো উচিত নয় তা স্পষ্ট করা হয়।
 
 @@@
-
 ---
 slug: quantity-estimation-bangla
 track: quantity-estimation
 title: কোয়ান্টিটি ও এস্টিমেট — ড্রয়িং থেকে BOQ
+title_en: Quantities and estimating: from drawing to BOQ
 subtitle: কংক্রিট, স্টিল ও ফিনিশিংয়ের হিসাব যেভাবে মেলে
+subtitle_en: How the concrete, steel and finishing figures are made to agree
 level: beginner
 language: Bangla
 sequential: false
@@ -173,12 +179,13 @@ sections: এস্টিমেটের ভিত্তি|কংক্রি�
 তৈরি করতে শেখায়।
 
 @@@
-
 ---
 slug: concrete-quality-site-practice-bangla
 track: construction-quality
 title: কংক্রিটের মান ও সাইট প্র্যাকটিস
+title_en: Concrete quality and site practice
 subtitle: মিক্স থেকে কিউরিং — যা সত্যিই strength ঠিক করে
+subtitle_en: From mix to curing - what actually decides the strength
 level: beginner
 language: Bangla
 sequential: false
@@ -198,12 +205,13 @@ compaction ও কিউরিং — এই চারটি ধাপেই প
 প্রতিটি ধাপে কী মাপতে হবে এবং কোন সংখ্যাটা কী বলে, তা দেখানো হয়।
 
 @@@
-
 ---
 slug: rcc-beam-design-detailing-bangla
 track: rcc-design-detailing
 title: RCC বিম ডিজাইন ও ডিটেইলিং
+title_en: RCC beam design and detailing
 subtitle: Moment ও shear থেকে bar bending schedule পর্যন্ত
+subtitle_en: From moment and shear to the bar bending schedule
 level: intermediate
 language: Bangla
 sequential: true
@@ -227,12 +235,13 @@ Analysis software বিমের moment দেয়, কিন্তু সে
 বাঁকবে, কোথায় থামবে — এটাই প্রকৌশলীর কাজ। এই কোর্স সেই অংশটুকুতে মনোযোগ দেয়।
 
 @@@
-
 ---
 slug: column-design-bangla
 track: rcc-design-detailing
 title: কলাম ডিজাইন — axial থেকে biaxial
+title_en: Column design: from axial to biaxial
 subtitle: Short ও slender কলাম, interaction diagram ও ডিটেইলিং
+subtitle_en: Short and slender columns, interaction diagrams and detailing
 level: advanced
 language: Bangla
 sequential: true
@@ -252,12 +261,13 @@ sections: কলামের ধরন|Axial ও bending|Slenderness|ডিট�
 যায় তা সংখ্যা দিয়ে দেখানো হয়।
 
 @@@
-
 ---
 slug: retaining-wall-design-bangla
 track: foundation-geotechnical
 title: রিটেইনিং ওয়াল ডিজাইন
+title_en: Retaining wall design
 subtitle: মাটির চাপ থেকে stability ও reinforcement
+subtitle_en: From earth pressure to stability and reinforcement
 level: intermediate
 language: Bangla
 sequential: true
@@ -277,12 +287,13 @@ sliding চেক না করা। এই কোর্সে চারটি 
 অনুমান স্পষ্ট করে লেখা হয়।
 
 @@@
-
 ---
 slug: staircase-design-bangla
 track: rcc-design-detailing
 title: সিঁড়ি ডিজাইন — জ্যামিতি থেকে reinforcement
+title_en: Staircase design: from geometry to reinforcement
 subtitle: Dog-legged সিঁড়ির সম্পূর্ণ হিসাব ও ড্রয়িং
+subtitle_en: The complete calculation and drawing for a dog-legged stair
 level: beginner
 language: Bangla
 sequential: false

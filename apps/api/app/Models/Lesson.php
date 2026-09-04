@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Lesson extends Model
 {
     protected $fillable = [
-        'course_id', 'course_section_id', 'slug', 'title', 'type', 'body_markdown',
+        'course_id', 'course_section_id', 'slug', 'title', 'title_en', 'type',
+        'body_markdown',
         'video_provider', 'video_asset_id', 'duration_seconds', 'is_free_preview',
         'position', 'drip_days',
     ];

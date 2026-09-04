@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\Markdown;
+use App\Support\RequestLocale;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,8 +14,12 @@ class PostSummaryResource extends JsonResource
     {
         return [
             'slug' => $this->slug,
-            'title' => $this->title,
-            'excerpt' => $this->excerpt ?: Markdown::excerpt($this->body_markdown),
+            'title' => RequestLocale::pick($request, $this->title, $this->title_en),
+            'excerpt' => RequestLocale::pick(
+                $request,
+                $this->excerpt ?: Markdown::excerpt($this->body_markdown),
+                $this->excerpt_en,
+            ),
             'cover_url' => $this->whenLoaded('cover', fn () => $this->cover?->url()),
             'cover_alt' => $this->whenLoaded('cover', fn () => $this->cover?->alt_text),
             'reading_minutes' => $this->reading_minutes ?? Markdown::readingMinutes($this->body_markdown),

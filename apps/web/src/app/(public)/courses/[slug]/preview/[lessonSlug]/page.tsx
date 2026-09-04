@@ -9,7 +9,7 @@ import { Container } from '@/components/ui/container';
 import { Prose } from '@/components/ui/prose';
 import { publicApi } from '@/lib/api/server';
 import { duration } from '@/lib/format';
-import { getDictionary } from '@/lib/i18n/dictionary';
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata } from '@/lib/seo';
 
@@ -17,11 +17,18 @@ import { buildMetadata } from '@/lib/seo';
  * A free preview lesson. The API only serves lessons explicitly flagged as a
  * preview here; everything else needs an enrolment and goes through /learn.
  */
-async function loadPreview(courseSlug: string, lessonSlug: string): Promise<Lesson> {
+async function loadPreview(
+  courseSlug: string,
+  lessonSlug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Lesson> {
   try {
     const response = await publicApi<{ data: Lesson }>(
       `/courses/${encodeURIComponent(courseSlug)}/preview/${encodeURIComponent(lessonSlug)}`,
-      { tags: ['courses', `course:${courseSlug}`] },
+      {
+        query: { locale },
+        tags: ['courses', `course:${courseSlug}`, `course:${courseSlug}:${locale}`],
+      },
     );
 
     return response.data;
@@ -34,16 +41,17 @@ async function loadPreview(courseSlug: string, lessonSlug: string): Promise<Less
   }
 }
 
-export async function generateMetadata(props: {
-  params: Promise<{ slug: string; lessonSlug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: LocalizedPageProps & { params: Promise<{ slug: string; lessonSlug: string }> },
+): Promise<Metadata> {
+  const { locale, t } = pageDictionary(props.locale);
   const { slug, lessonSlug } = await props.params;
-  const lesson = await loadPreview(slug, lessonSlug);
+  const lesson = await loadPreview(slug, lessonSlug, locale);
 
   return buildMetadata({
-    title: `${lesson.title} — ${getDictionary('bn').course.previewMetaSuffix}`,
+    title: `${lesson.title} — ${t.course.previewMetaSuffix}`,
     description: lesson.course.title
-      ? `${lesson.course.title}: ${getDictionary('bn').course.previewMetaDescription}`
+      ? `${lesson.course.title}: ${t.course.previewMetaDescription}`
       : null,
     path: `/courses/${slug}/preview/${lessonSlug}`,
   });
@@ -54,7 +62,7 @@ export default async function PreviewLessonPage(
 ) {
   const { locale, t } = pageDictionary(props.locale);
   const { slug, lessonSlug } = await props.params;
-  const lesson = await loadPreview(slug, lessonSlug);
+  const lesson = await loadPreview(slug, lessonSlug, locale);
 
   return (
     <Container size="narrow" className="py-10 sm:py-14">

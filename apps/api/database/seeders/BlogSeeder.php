@@ -62,7 +62,11 @@ class BlogSeeder extends Seeder
                 ['slug' => $meta['slug']],
                 [
                     'title' => $meta['title'],
+                    // Optional: a heading and a summary the English site can
+                    // show. The body stays in the language it was written in.
+                    'title_en' => $meta['title_en'] ?? null,
                     'excerpt' => $meta['excerpt'] ?? Markdown::excerpt($document['body']),
+                    'excerpt_en' => $meta['excerpt_en'] ?? null,
                     'body_markdown' => $document['body'],
                     'author_id' => $author?->getKey(),
                     'reviewed_by_author_id' => $reviewed ? $author?->getKey() : null,

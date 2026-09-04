@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\CourseTracks;
+use App\Support\RequestLocale;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,8 +14,8 @@ class CourseSummaryResource extends JsonResource
     {
         return [
             'slug' => $this->slug,
-            'title' => $this->title,
-            'subtitle' => $this->subtitle,
+            'title' => RequestLocale::pick($request, $this->title, $this->title_en),
+            'subtitle' => RequestLocale::pick($request, $this->subtitle, $this->subtitle_en),
             'level' => $this->level,
             'track' => $this->track,
             'track_name' => CourseTracks::name($this->track),

@@ -15,13 +15,15 @@ import { TableOfContents } from '@/components/ui/table-of-contents';
 import { publicApi, tryPublicApi } from '@/lib/api/server';
 import { date, isoDate, minutes } from '@/lib/format';
 import { taxonomyLabel } from '@/lib/i18n/labels';
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { articleSchema, buildMetadata, jsonLd } from '@/lib/seo';
 
-async function loadPost(slug: string): Promise<Post> {
+async function loadPost(slug: string, locale: Locale = DEFAULT_LOCALE): Promise<Post> {
   try {
     const response = await publicApi<{ data: Post }>(`/posts/${encodeURIComponent(slug)}`, {
-      tags: ['posts', `post:${slug}`],
+      query: { locale },
+      tags: ['posts', `post:${slug}`, `post:${slug}:${locale}`],
     });
 
     return response.data;
@@ -35,11 +37,12 @@ async function loadPost(slug: string): Promise<Post> {
   }
 }
 
-export async function generateMetadata(props: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+): Promise<Metadata> {
+  const { locale } = pageDictionary(props.locale);
   const { slug } = await props.params;
-  const post = await loadPost(slug);
+  const post = await loadPost(slug, locale);
 
   return buildMetadata({
     title: post.title,
@@ -59,14 +62,14 @@ export default async function BlogPostPage(
 ) {
   const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
-  const post = await loadPost(slug);
+  const post = await loadPost(slug, locale);
 
   const category = post.categories?.[0];
   const categoryName = category ? taxonomyLabel(t, category.slug, category.name, locale) : null;
 
   const related = await tryPublicApi<{ data: PostSummary[] }>(
     `/posts/${encodeURIComponent(slug)}/related`,
-    { tags: ['posts'] },
+    { query: { locale }, tags: ['posts', `posts:${locale}`] },
   );
 
   return (
@@ -177,6 +180,12 @@ export default async function BlogPostPage(
 
           <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
             <div>
+              {post.body_translated ? null : (
+                <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
+                  {t.cms.untranslatedBody}
+                </Callout>
+              )}
+
               <Prose html={post.body_html} />
 
               {post.tags?.length ? (

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\Markdown;
+use App\Support\RequestLocale;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,8 +16,18 @@ class PostResource extends JsonResource
             'id' => $this->id,
             'slug' => $this->slug,
             'status' => $this->status->value,
-            'title' => $this->title,
-            'excerpt' => $this->excerpt ?: Markdown::excerpt($this->body_markdown),
+            'title' => RequestLocale::pick($request, $this->title, $this->title_en),
+            'excerpt' => RequestLocale::pick(
+                $request,
+                $this->excerpt ?: Markdown::excerpt($this->body_markdown),
+                $this->excerpt_en,
+            ),
+            // The heading and the summary have an English form; the body does
+            // not. It carries load figures, bar spacings and code clauses, and
+            // a translation that drifted on any of those would be a hazard
+            // rather than a cosmetic problem. False here tells the page to say
+            // so rather than serve a language the reader did not choose.
+            'body_translated' => ! RequestLocale::isEnglish($request),
             // Rendered server-side with raw HTML stripped, so the frontend never
             // has to trust or sanitise author input itself.
             'body_html' => Markdown::toHtml($this->body_markdown),

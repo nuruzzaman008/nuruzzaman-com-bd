@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\Markdown;
+use App\Support\RequestLocale;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,7 +24,7 @@ class LessonResource extends JsonResource
     {
         return [
             'slug' => $this->slug,
-            'title' => $this->title,
+            'title' => RequestLocale::pick($request, $this->title, $this->title_en),
             'type' => $this->type->value,
             'body_html' => Markdown::toHtml($this->body_markdown),
             'duration_seconds' => $this->duration_seconds,
@@ -31,7 +32,10 @@ class LessonResource extends JsonResource
             'position' => $this->position,
             'course' => [
                 'slug' => $this->whenLoaded('course', fn () => $this->course?->slug),
-                'title' => $this->whenLoaded('course', fn () => $this->course?->title),
+                'title' => $this->whenLoaded(
+                    'course',
+                    fn () => RequestLocale::pick($request, $this->course?->title, $this->course?->title_en),
+                ),
             ],
             'assets' => $this->whenLoaded('assets', fn () => $this->assets->map(fn ($asset) => [
                 'id' => $asset->id,

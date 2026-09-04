@@ -17,7 +17,8 @@ class Course extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'slug', 'title', 'subtitle', 'description_markdown', 'status', 'level', 'track',
+        'slug', 'title', 'title_en', 'subtitle', 'subtitle_en',
+        'description_markdown', 'status', 'level', 'track',
         'language', 'cover_media_id', 'outcomes', 'audience', 'prerequisites',
         'required_software', 'estimated_minutes', 'access_duration_days',
         'sequential', 'pass_percentage', 'issues_certificate', 'support_policy',

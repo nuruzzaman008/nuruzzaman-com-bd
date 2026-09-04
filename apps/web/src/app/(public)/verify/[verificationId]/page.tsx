@@ -8,20 +8,20 @@ import { Container } from '@/components/ui/container';
 import { LocaleLink } from '@/components/ui/locale-link';
 import { tryPublicApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
-import { getDictionary } from '@/lib/i18n/dictionary';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata } from '@/lib/seo';
 
 type VerifyResult = Certificate & { valid: boolean; reason: string | null };
 
-export async function generateMetadata(props: {
-  params: Promise<{ verificationId: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: LocalizedPageProps & { params: Promise<{ verificationId: string }> },
+): Promise<Metadata> {
+  const { t } = pageDictionary(props.locale);
   const { verificationId } = await props.params;
 
   return buildMetadata({
-    title: `${getDictionary('bn').pageTitle.verify} — ${verificationId}`,
-    description: getDictionary('bn').verify.metaDescription,
+    title: `${t.pageTitle.verify} — ${verificationId}`,
+    description: t.verify.metaDescription,
     path: `/verify/${verificationId}`,
   });
 }

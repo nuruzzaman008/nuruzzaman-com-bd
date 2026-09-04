@@ -214,6 +214,9 @@
         "summary": "List posts",
         "parameters": [
           {
+            "$ref": "#/components/parameters/Locale"
+          },
+          {
             "name": "category",
             "in": "query",
             "schema": {
@@ -303,6 +306,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/Locale"
           }
         ],
         "responses": {
@@ -527,6 +533,7 @@
         ],
         "operationId": "getPage",
         "summary": "Get page",
+        "description": "With locale=en the `<slug>-en` document is returned when one exists, otherwise the Bengali document with translated=false.",
         "parameters": [
           {
             "name": "slug",
@@ -535,6 +542,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/Locale"
           }
         ],
         "responses": {
@@ -683,6 +693,9 @@
         "summary": "List courses",
         "parameters": [
           {
+            "$ref": "#/components/parameters/Locale"
+          },
+          {
             "name": "level",
             "in": "query",
             "schema": {
@@ -752,6 +765,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/Locale"
           }
         ],
         "responses": {
@@ -803,6 +819,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/Locale"
           }
         ],
         "responses": {
@@ -1019,6 +1038,7 @@
         ],
         "operationId": "search",
         "summary": "Search",
+        "description": "Matches both languages whatever locale says; only the result text follows it. An English reader searching a Bengali term still finds the article, which matters on a site whose articles are written in Bengali.",
         "parameters": [
           {
             "name": "q",
@@ -1029,6 +1049,9 @@
               "minLength": 2,
               "maxLength": 120
             }
+          },
+          {
+            "$ref": "#/components/parameters/Locale"
           }
         ],
         "responses": {
@@ -10713,6 +10736,18 @@
       }
     },
     "parameters": {
+      "Locale": {
+        "name": "locale",
+        "in": "query",
+        "description": "Language for titles, summaries and CMS bodies. Defaults to Bengali. Where no English text has been written the Bengali is returned and a translation flag on the payload says so. A query parameter rather than Accept-Language, so a response cannot be cached under the wrong language.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "bn",
+            "en"
+          ]
+        }
+      },
       "Page": {
         "name": "page",
         "in": "query",
@@ -11127,6 +11162,7 @@
               "id",
               "status",
               "body_html",
+              "body_translated",
               "toc",
               "funnel_stage",
               "reviewed_at"
@@ -11134,6 +11170,10 @@
             "properties": {
               "id": {
                 "type": "integer"
+              },
+              "body_translated": {
+                "type": "boolean",
+                "description": "False when locale=en was asked for. Titles and summaries have an English form; article bodies do not, because they carry load figures, bar spacings and code clauses."
               },
               "status": {
                 "type": "string",
@@ -11196,6 +11236,7 @@
           "slug",
           "title",
           "body_html",
+          "translated",
           "toc",
           "template",
           "awaiting_legal_review",
@@ -11226,6 +11267,10 @@
           },
           "body_html": {
             "type": "string"
+          },
+          "translated": {
+            "type": "boolean",
+            "description": "False when locale=en was asked for but no `<slug>-en` document exists, so this is the Bengali page."
           },
           "body_markdown": {
             "type": "string",
@@ -11711,6 +11756,7 @@
             "type": "object",
             "required": [
               "description_html",
+              "body_translated",
               "outcomes",
               "audience",
               "prerequisites",
@@ -11724,6 +11770,10 @@
             "properties": {
               "description_html": {
                 "type": "string"
+              },
+              "body_translated": {
+                "type": "boolean",
+                "description": "False when locale=en was asked for. The title and subtitle have an English form; the description and the outcomes do not."
               },
               "outcomes": {
                 "type": "array",

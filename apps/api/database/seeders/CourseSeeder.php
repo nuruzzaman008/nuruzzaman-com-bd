@@ -44,7 +44,11 @@ class CourseSeeder extends Seeder
                 ['slug' => $meta['slug']],
                 [
                     'title' => $meta['title'],
+                    // Optional: a heading the English site can show. The
+                    // description and the outcomes stay as they were written.
+                    'title_en' => $meta['title_en'] ?? null,
                     'subtitle' => $meta['subtitle'] ?? null,
+                    'subtitle_en' => $meta['subtitle_en'] ?? null,
                     'description_markdown' => $document['body'],
                     'level' => $meta['level'] ?? 'beginner',
                     // An unknown track would silently break catalogue browsing,
@@ -106,6 +110,7 @@ class CourseSeeder extends Seeder
                 [
                     'course_section_id' => $section->getKey(),
                     'title' => $meta['title'],
+                    'title_en' => $meta['title_en'] ?? null,
                     'type' => $meta['type'] ?? 'text',
                     'body_markdown' => $document['body'],
                     'duration_seconds' => isset($meta['duration_seconds'])

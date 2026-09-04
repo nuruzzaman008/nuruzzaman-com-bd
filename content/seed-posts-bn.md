@@ -11,7 +11,9 @@
 ---
 slug: isolated-footing-size-check-bangla
 title: আইসোলেটেড ফুটিংয়ের সাইজ যাচাই — ধাপে ধাপে হিসাব
+title_en: Checking an isolated footing size, step by step
 excerpt: একটি বাস্তব সংখ্যা দিয়ে দেখানো হলো কীভাবে bearing pressure থেকে আইসোলেটেড ফুটিংয়ের প্রাথমিক সাইজ বের করবেন এবং কোথায় ভুল হয়।
+excerpt_en: A worked example with real numbers: getting a first footing size from the allowable bearing pressure, and where it usually goes wrong.
 categories: foundation-geotechnical|rcc-design-detailing
 funnel_stage: awareness
 search_intent: informational
@@ -86,11 +88,12 @@ bending moment, development length এবং settlement আলাদাভাব
 এই হিসাব কোনো নির্দিষ্ট প্রকল্পের জন্য প্রকৌশল পরামর্শ নয়।
 
 @@@
-
 ---
 slug: autocad-layer-standard-bangla
 title: AutoCAD লেয়ার স্ট্যান্ডার্ড — একটি টিমের জন্য কার্যকর কাঠামো
+title_en: An AutoCAD layer standard a team can actually keep to
 excerpt: ড্রয়িং টিমে সবচেয়ে বেশি সময় নষ্ট হয় অসামঞ্জস্যপূর্ণ লেয়ার থেকে। একটি সহজ নামকরণ নিয়ম এবং তা প্রয়োগের ব্যবহারিক ধাপ।
+excerpt_en: A practical layer setup for structural drawings, and what makes a standard survive contact with a deadline.
 categories: autocad-productivity|engineering-software
 funnel_stage: awareness
 search_intent: informational
@@ -157,11 +160,12 @@ meta_description: ছোট ও মাঝারি প্রকৌশল টি�
 এই কাঠামোটি তখন ভেতরের কাজের জন্য রেখে ডেলিভারির আগে `LAYTRANS` দিয়ে রূপান্তর করুন।
 
 @@@
-
 ---
 slug: one-way-slab-thickness-bangla
 title: ওয়ান-ওয়ে স্ল্যাবের বেধ নির্ধারণ — deflection নিয়ন্ত্রণের সহজ হিসাব
+title_en: Sizing a one-way slab: the deflection check that decides it
 excerpt: স্ল্যাবের বেধ কত হবে তা প্রথমে deflection নিয়ন্ত্রণ থেকে ঠিক করা হয়। একটি সংখ্যাসহ উদাহরণ এবং কোথায় হিসাব বদলায়।
+excerpt_en: Slab thickness is set by deflection control first. The simple check, and the span/depth ratios it rests on.
 categories: rcc-design-detailing|structural-engineering
 funnel_stage: awareness
 search_intent: informational
@@ -246,11 +250,12 @@ M_u ≈ 9.03 x 3.85² / 10 = 13.4 kN·m/m
 প্রকৃত deflection হিসাব আলাদাভাবে করতে হবে।
 
 @@@
-
 ---
 slug: rebar-lap-length-quick-reference-bangla
 title: রড ল্যাপ লেংথ — ফিল্ডে কাজে লাগে এমন হিসাব
+title_en: Rebar lap length: the figures that are useful on site
 excerpt: ল্যাপ লেংথ মুখস্থ সংখ্যা নয়। কোন কোন বিষয়ে এটি বদলায়, এবং একটি বাস্তব হিসাব দিয়ে দেখানো হলো।
+excerpt_en: Lap length is not a number to memorise. What changes it, and one worked example you can follow.
 categories: rcc-design-detailing|construction-quality
 funnel_stage: consideration
 search_intent: informational
@@ -320,11 +325,12 @@ Seismic detailing, বিশেষ confinement বা প্রি-কাস্�
 প্রকল্পের কোড এডিশন ও স্ট্রাকচারাল নোট সবসময় অগ্রাধিকার পাবে।
 
 @@@
-
 ---
 slug: nb-engineering-tools-workflow-overview
 title: NB Engineering Tools দিয়ে একটি ড্রয়িং সেট তৈরির ওয়ার্কফ্লো
+title_en: Producing a drawing set with NB Engineering Tools
 excerpt: টুলগুলো আলাদা করে নয়, একটি বাস্তব ড্রয়িং সেটের ক্রম অনুযায়ী কীভাবে ব্যবহার করবেন।
+excerpt_en: Not the tools one by one, but the order a real drawing set is built in, and where each one fits.
 categories: autocad-productivity|engineering-software
 funnel_stage: decision
 search_intent: commercial
@@ -347,11 +353,12 @@ meta_description: NB Engineering Tools-এর feature group-গুলো এক�
 ফাইলের নাম দেখে কোনো ক্ষমতা অনুমান করে লেখা হবে না।
 
 @@@
-
 ---
 slug: bnbc-load-combination-notes
 title: BNBC অনুযায়ী লোড কম্বিনেশন — কাজের নোট
+title_en: Load combinations under BNBC: working notes
 excerpt: কোন কম্বিনেশন কখন নিয়ন্ত্রক হয় এবং হাতে যাচাই করার সময় কী দেখা উচিত।
+excerpt_en: Which combination governs when, and what to look at when you check the result by hand.
 categories: bnbc-code-application|structural-engineering
 funnel_stage: awareness
 search_intent: informational

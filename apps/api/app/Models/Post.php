@@ -17,7 +17,8 @@ class Post extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'slug', 'title', 'excerpt', 'body_markdown', 'status', 'author_id',
+        'slug', 'title', 'title_en', 'excerpt', 'excerpt_en', 'body_markdown',
+        'status', 'author_id',
         'reviewed_by_author_id', 'reviewed_at', 'cover_media_id', 'reading_minutes',
         'funnel_stage', 'search_intent', 'scheduled_for', 'published_at',
         'content_updated_at', 'created_by', 'updated_by',

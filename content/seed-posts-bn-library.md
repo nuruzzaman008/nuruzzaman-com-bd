@@ -16,7 +16,9 @@
 ---
 slug: spt-n-value-to-allowable-bearing-capacity
 title: SPT N-value থেকে allowable bearing capacity — কীভাবে, আর কোথায় সাবধান
+title_en: From SPT N-value to allowable bearing capacity, and where to be careful
 excerpt: মাঠের SPT N থেকে প্রাথমিক bearing capacity বের করার প্রচলিত পথ, correction গুলো, এবং কেন এই সংখ্যা চূড়ান্ত ডিজাইনের ভিত্তি নয়।
+excerpt_en: The usual route from a field SPT N to a first bearing capacity, the corrections it needs, and why the number is not a design basis on its own.
 categories: foundation-geotechnical
 funnel_stage: awareness
 search_intent: informational
@@ -80,11 +82,12 @@ q_a ≈ 10 × 10 = 100 kPa
 দেখে service load ও ফুটিংয়ের নিজের ওজন মিলিয়ে চূড়ান্ত করুন।
 
 @@@
-
 ---
 slug: footing-punching-shear-check-bangla
 title: ফুটিংয়ে punching shear চেক — যেখানে সবচেয়ে বেশি ভুল হয়
+title_en: Punching shear in a footing: where most mistakes happen
 excerpt: Two-way shear ফুটিং ডিজাইনের সবচেয়ে সাধারণ নিয়ন্ত্রক শর্ত। critical section কোথায়, আর হিসাবটা ধাপে ধাপে কেমন।
+excerpt_en: Two-way shear is the most common governing condition in footing design. Where the critical perimeter sits, and what people get wrong about it.
 categories: foundation-geotechnical|rcc-design-detailing
 funnel_stage: consideration
 search_intent: informational
@@ -157,11 +160,12 @@ V_u = 1224 kN  <  φV_c = 1893 kN  → ঠিক আছে
 আলাদা এবং বেশি রক্ষণশীল হিসাব।
 
 @@@
-
 ---
 slug: development-length-lap-splice-bangla
 title: Development length ও lap splice — সংখ্যা কোথা থেকে আসে
+title_en: Development length and lap splices: where the numbers come from
 excerpt: কেন rod-কে একটা নির্দিষ্ট দৈর্ঘ্য কংক্রিটে ঢুকতেই হয়, সেই দৈর্ঘ্য কীভাবে বের করবেন, আর lap কোথায় দিলে সমস্যা।
+excerpt_en: Why a bar has to run a certain length into concrete, how that length is arrived at, and what changes it.
 categories: rcc-design-detailing
 funnel_stage: awareness
 search_intent: informational
@@ -238,11 +242,12 @@ Class B splice (সবচেয়ে সাধারণ) = `1.3 × l_d`:
 ডিটেইলে যাচাই করে নিন।
 
 @@@
-
 ---
 slug: slab-thickness-deflection-control-bangla
 title: স্ল্যাবের পুরুত্ব — deflection দিয়েই ঠিক হয়, moment দিয়ে নয়
+title_en: Slab thickness is set by deflection, not by moment
 excerpt: বেশিরভাগ two-way স্ল্যাবে পুরুত্ব নির্ধারণ করে span/depth অনুপাত, strength নয়। সংখ্যা দিয়ে দেখানো হলো কেন।
+excerpt_en: In most two-way slabs the span/depth ratio decides the thickness, and the strength check follows rather than leads.
 categories: rcc-design-detailing|structural-engineering
 funnel_stage: awareness
 search_intent: informational
@@ -301,11 +306,12 @@ Two-way action-এ এটি গ্রহণযোগ্য সীমার ম�
 - ভারী partition বা ভঙ্গুর finish থাকলে আলাদা deflection হিসাব দরকার।
 
 @@@
-
 ---
 slug: column-tributary-area-load-bangla
 title: Tributary area দিয়ে কলাম লোড — দ্রুত অথচ যথেষ্ট
+title_en: Column load from tributary area: quick, and good enough
 excerpt: প্রাথমিক সাইজিংয়ের জন্য কলামে কত লোড আসছে তা tributary area দিয়ে বের করার ধাপ, এবং কোথায় এই পদ্ধতি ভুল করে।
+excerpt_en: Getting the load arriving at a column from its tributary area, which is all preliminary sizing needs.
 categories: structural-engineering
 funnel_stage: awareness
 search_intent: informational
@@ -379,11 +385,12 @@ P_u = 1.2 D + 1.6 L = 1.2 × 1344 + 1.6 × 360 = 1613 + 576 ≈ 2189 kN
 - চূড়ান্ত সাইজের জন্য analysis model থেকে reaction নিন।
 
 @@@
-
 ---
 slug: bnbc-load-combination-guide-bangla
 title: Load combination — কোনটা কখন, আর কেন সবগুলো লাগে
+title_en: Load combinations: which one when, and why you need all of them
 excerpt: Strength design-এ ব্যবহৃত প্রধান combination গুলো, কোনটা কোন ধরনের member নিয়ন্ত্রণ করে, এবং সহজ ভুল।
+excerpt_en: The main combinations used in strength design, which member each tends to govern, and why dropping one is not safe.
 categories: bnbc-code-application|structural-engineering
 funnel_stage: consideration
 search_intent: informational
@@ -442,11 +449,12 @@ load থাকলে অতিরিক্ত combination যোগ হয়, �
 factor আলাদা করে ধরতে হতে পারে।
 
 @@@
-
 ---
 slug: concrete-cube-test-28-day-strength-bangla
 title: কংক্রিট কিউব টেস্ট — ২৮ দিনের রিপোর্ট কীভাবে পড়বেন
+title_en: Reading a 28-day concrete cube test report
 excerpt: একটি কিউব ফেল করলেই ব্যাচ ফেল নয়। গ্রহণযোগ্যতার শর্ত, গড়ের নিয়ম, আর কম রেজাল্ট এলে পরের ধাপ।
+excerpt_en: One failing cube is not a failing batch. The acceptance conditions, the rule about averages, and what to do when a result is low.
 categories: construction-quality
 funnel_stage: awareness
 search_intent: informational
@@ -507,11 +515,12 @@ acceptance criteria প্রকল্পের স্পেসিফিকে�
 উপরের সংখ্যাগুলো প্রচলিত অনুশীলনের উদাহরণ — প্রকল্পের নিজস্ব শর্তই চূড়ান্ত।
 
 @@@
-
 ---
 slug: concrete-cover-exposure-bangla
 title: কংক্রিট cover — সংখ্যাটা কেন এত গুরুত্বপূর্ণ
+title_en: Concrete cover: why the number matters so much
 excerpt: Cover কম হলে কী হয়, exposure অনুযায়ী কত রাখতে হয়, এবং সাইটে cover ঠিক রাখার ব্যবহারিক উপায়।
+excerpt_en: What cover is protecting against, how exposure changes it, and what happens on site when it is lost.
 categories: bnbc-code-application|construction-quality
 funnel_stage: awareness
 search_intent: informational
@@ -564,11 +573,12 @@ Beam-এ ৪০ mm cover ধরে ডিজাইন করা, অথচ স�
 জল ধারণকারী কাঠামোর ক্ষেত্রে আলাদা শর্ত থাকে।
 
 @@@
-
 ---
 slug: bar-bending-schedule-steel-quantity-bangla
 title: Bar bending schedule — স্টিলের পরিমাণ ধাপে ধাপে
+title_en: Bar bending schedule: working out the steel quantity
 excerpt: একটি beam-এর BBS তৈরি করে দেখানো হলো cutting length, hook, bend deduction আর ওজনের হিসাব কীভাবে মেলে।
+excerpt_en: Building a BBS from a drawing step by step, including the cuts, bends and laps that are easy to miss.
 categories: quantity-estimation|rcc-design-detailing
 funnel_stage: consideration
 search_intent: informational
@@ -657,11 +667,12 @@ Bend allowance ও deduction-এর মান প্রকল্পভেদে 
 পরিমাণ পাবে। Wastage সাধারণত আলাদা ৩–৫% হিসেবে যোগ হয়, উপরের হিসাবে তা নেই।
 
 @@@
-
 ---
 slug: concrete-volume-material-estimate-bangla
 title: কংক্রিটের উপকরণ হিসাব — ১:২:৪ মিক্সে কত সিমেন্ট, বালু, খোয়া
+title_en: Estimating concrete materials: cement, sand and aggregate in a 1:2:4 mix
 excerpt: Wet volume থেকে dry volume, তারপর প্রতিটি উপকরণের পরিমাণ — একটি স্ল্যাবের উদাহরণ দিয়ে পুরো হিসাব।
+excerpt_en: How the material quantities for a given concrete volume are arrived at, and the allowances that belong in the figure.
 categories: quantity-estimation
 funnel_stage: awareness
 search_intent: informational
@@ -735,11 +746,12 @@ design mix ও কিউব টেস্টই ভিত্তি**, nominal অ
 পরিকল্পনার জন্য, strength-এর প্রতিশ্রুতি হিসেবে নয়।
 
 @@@
-
 ---
 slug: autocad-layer-standard-bangla
 title: AutoCAD লেয়ার স্ট্যান্ডার্ড — একটি ব্যবহারিক সেটআপ
+title_en: An AutoCAD layer standard a team can actually keep to
 excerpt: নাম দেওয়ার নিয়ম, lineweight পরিকল্পনা আর template হিসেবে সংরক্ষণ — যাতে প্রতিটি ড্রয়িং একই রকম প্রিন্ট হয়।
+excerpt_en: A practical layer setup for structural drawings, and what makes a standard survive contact with a deadline.
 categories: autocad-productivity
 funnel_stage: awareness
 search_intent: informational
@@ -801,11 +813,12 @@ named (STB) style বেশি নমনীয়, কিন্তু দল ছ
 রূপান্তর করা যায়। ম্যাপিং একবার সংরক্ষণ করে রাখলে পরের বার এক ক্লিকেই হয়।
 
 @@@
-
 ---
 slug: mouza-map-scale-and-georeference-bangla
 title: মৌজা ম্যাপ থেকে CAD — স্কেল ও অবস্থান ঠিক রাখার ধাপ
+title_en: Mouza map to CAD: keeping the scale and the position right
 excerpt: স্ক্যান করা মৌজা শিট AutoCAD-এ এনে সঠিক স্কেলে বসানো, দাগের সীমানা তোলা এবং ক্ষেত্রফল যাচাইয়ের ব্যবহারিক পদ্ধতি।
+excerpt_en: The steps that keep a scanned mouza map at true scale and in the right place once it is in CAD.
 categories: mouza-drawing-workflow|autocad-productivity
 funnel_stage: consideration
 search_intent: informational
@@ -867,11 +880,12 @@ SCALE → ছবি নির্বাচন → base point (পরিচিত 
 রেকর্ডই একমাত্র ভিত্তি।
 
 @@@
-
 ---
 slug: pile-capacity-static-formula-bangla
 title: পাইলের ক্ষমতা — static formula দিয়ে প্রাথমিক হিসাব
+title_en: Pile capacity: a first estimate from the static formula
 excerpt: Skin friction ও end bearing আলাদা করে বোঝা, একটি bored pile-এর সংখ্যা দিয়ে হিসাব, এবং কেন load test বাদ দেওয়া যায় না।
+excerpt_en: Skin friction and end bearing, what the static formula assumes, and why it is a starting point rather than an answer.
 categories: foundation-geotechnical
 funnel_stage: consideration
 search_intent: informational
@@ -946,11 +960,12 @@ Q_all = 2112 / 2.5 ≈ 845 kN
   প্রাথমিক পরিকল্পনার জন্য; চূড়ান্ত গ্রহণযোগ্যতা test দিয়েই নির্ধারিত হয়।
 
 @@@
-
 ---
 slug: steel-connection-bolt-shear-bangla
 title: বোল্ট কানেকশন — shear ও bearing চেক
+title_en: Bolted connections: the shear and bearing checks
 excerpt: একটি সাধারণ শিয়ার কানেকশনে কয়টি বোল্ট লাগবে, এবং কেন bearing চেক প্রায়ই নিয়ন্ত্রক হয়।
+excerpt_en: Checking a bolt group for shear and the plate for bearing, with the failure modes each one is guarding against.
 categories: steel-design|structural-engineering
 funnel_stage: consideration
 search_intent: informational

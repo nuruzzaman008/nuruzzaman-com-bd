@@ -28,7 +28,7 @@ const GROUP_KEYS: {
 export default async function SearchPage(
   props: LocalizedPageProps & { searchParams: Promise<{ q?: string }> },
 ) {
-  const { t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary(props.locale);
   const GROUPS = GROUP_KEYS.map((group) => ({ ...group, label: t.search[group.label] }));
   const { q } = await props.searchParams;
   const term = (q ?? '').trim();
@@ -36,7 +36,7 @@ export default async function SearchPage(
   const results =
     term.length >= 2
       ? await tryPublicApi<{ data: SearchResults }>('/search', {
-          query: { q: term },
+          query: { q: term, locale },
           revalidate: 60,
         })
       : null;

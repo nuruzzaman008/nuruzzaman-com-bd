@@ -37,12 +37,12 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
   // Fetched in parallel so one slow query does not serialise the whole render.
   const [posts, courses, products, settings] = await Promise.all([
     publicApi<{ data: PostSummary[] }>('/posts', {
-      query: { per_page: 3 },
-      tags: ['posts'],
+      query: { per_page: 3, locale: active },
+      tags: ['posts', `posts:${active}`],
     }),
     tryPublicApi<{ data: CourseSummary[] }>('/courses', {
-      query: { per_page: 3 },
-      tags: ['courses'],
+      query: { per_page: 3, locale: active },
+      tags: ['courses', `courses:${active}`],
     }),
     tryPublicApi<{ data: ProductSummary[] }>('/products', {
       query: { per_page: 3 },
