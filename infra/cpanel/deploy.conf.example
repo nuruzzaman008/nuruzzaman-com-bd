@@ -45,6 +45,15 @@ NB_PUBLIC_SITE_URL="https://nuruzzaman.com.bd"
 # handshake on every request.
 NB_INTERNAL_API_URL="https://api.nuruzzaman.com.bd/api/v1"
 
+# Where Next forwards /api and /sanctum. The ORIGIN only - no /api/v1.
+#
+# This is what keeps the browser on one origin. In the Docker topology Nginx
+# does this routing and the variable stays unset; on cPanel there is no Nginx,
+# so Next has to. Leave it out and the browser talks to a second origin: the
+# session cookie is not sent, /sanctum/csrf-cookie 404s, and every sign-in
+# fails with a CSRF error that looks exactly like a wrong password.
+NB_API_PROXY="https://api.nuruzzaman.com.bd"
+
 # ---------------------------------------------------------------------------
 # Toolchain
 #

@@ -38,7 +38,7 @@ const child = spawn(process.execPath, [server], {
     // Stands in for Nginx: /api and /sanctum are proxied to Laravel so the
     // browser sees a single origin. Without it the session cookie is not sent
     // and every write fails the CSRF check with a 419.
-    NEXT_DEV_API_PROXY: `http://127.0.0.1:${apiPort}`,
+    NB_API_PROXY: `http://127.0.0.1:${apiPort}`,
   },
 });
 

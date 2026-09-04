@@ -299,9 +299,14 @@ if [ "${DEPLOY_WEB}" = "1" ]; then
   if [ "${BUILD_WEB}" = "1" ]; then
     : "${NB_PUBLIC_SITE_URL:?NB_PUBLIC_SITE_URL is not set in ${CONFIG}}"
     : "${NB_INTERNAL_API_URL:?NB_INTERNAL_API_URL is not set in ${CONFIG}}"
+    : "${NB_API_PROXY:?NB_API_PROXY is not set in ${CONFIG}. On cPanel there is
+  no Nginx to route /api and /sanctum to Laravel, so Next has to do it. Without
+  it the browser leaves the origin, the session cookie is not sent, and every
+  sign-in fails with a CSRF error that looks like a wrong password.}"
 
     note "site url   ${NB_PUBLIC_SITE_URL}"
     note "api url    ${NB_INTERNAL_API_URL}"
+    note "api proxy  ${NB_API_PROXY}"
 
     # Both of these are read at BUILD time, not at run time: the site URL is
     # baked into the client bundle and the API URL into the generated pages.
@@ -311,9 +316,13 @@ if [ "${DEPLOY_WEB}" = "1" ]; then
     # production mode regardless.
     run "${NPM_BIN}" --prefix "${SOURCE}" ci --include=dev --no-audit --no-fund
 
+    # All three are read at build time and baked in: the site URL into the
+    # client bundle, the API URL into the generated pages, the proxy target
+    # into the routes manifest.
     run env \
       NEXT_PUBLIC_SITE_URL="${NB_PUBLIC_SITE_URL}" \
       INTERNAL_API_URL="${NB_INTERNAL_API_URL}" \
+      NB_API_PROXY="${NB_API_PROXY}" \
       "${NPM_BIN}" --prefix "${SOURCE}" run build
   else
     note "build skipped (NB_BUILD_WEB=0) - deploying whatever is in .next/"
@@ -358,6 +367,21 @@ require('./apps/web/server.js');
 ENTRY
   else
     note "would write ${NB_WEB_ROOT}/server.js"
+  fi
+
+  # The proxy is the difference between a site people can sign in to and one
+  # they cannot, and it is baked into the build rather than set at run time -
+  # so it is worth confirming it actually made it in.
+  MANIFEST="${NB_WEB_ROOT}/apps/web/.next/routes-manifest.json"
+
+  if [ "${DRY_RUN}" != "1" ] && [ -f "${MANIFEST}" ]; then
+    if grep -q '"/sanctum/:path' "${MANIFEST}"; then
+      note "/api and /sanctum are proxied to Laravel"
+    else
+      fail "the build has no /api or /sanctum rewrite, so the browser would
+  leave the origin and sign-in would fail with a CSRF error. Set NB_API_PROXY
+  in ${CONFIG} and deploy again."
+    fi
   fi
 
   # Passenger restarts on the next request when this file's mtime changes.

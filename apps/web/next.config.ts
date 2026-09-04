@@ -44,18 +44,26 @@ const nextConfig: NextConfig = {
   },
 
   /**
-   * Local-only stand-in for Nginx.
+   * Keeps `/api` and `/sanctum` on the same origin as the site.
    *
-   * In production Nginx serves the site, `/api` and `/sanctum` from one origin,
-   * which is what makes the Sanctum session cookie and the CSRF handshake work.
-   * Pointing the browser at a second origin instead breaks both: the cookie is
-   * not sent, `/sanctum/csrf-cookie` 404s, and every write fails with a 419.
+   * The browser talks to `/api/v1` and `/sanctum/csrf-cookie` as same-origin
+   * paths, and that is what makes the Sanctum session cookie and the CSRF
+   * handshake work. Point the browser at a second origin instead and both
+   * break: the cookie is not sent, `/sanctum/csrf-cookie` 404s, and every write
+   * fails with a 419 that reads, wrongly, like a bad password.
    *
-   * Set NEXT_DEV_API_PROXY to the Laravel origin to reproduce the production
-   * topology locally. It is unset in production, where Nginx does this.
+   * Something has to do that routing. In the Docker topology it is Nginx, and
+   * NB_API_PROXY stays unset. On hosting with no Nginx in front - a cPanel
+   * account, where Passenger serves the domain - Next does it itself: set
+   * NB_API_PROXY to the Laravel origin and the two rewrites below stand in.
+   *
+   * Read at BUILD time, because Next bakes rewrites into the routes manifest.
+   * Changing it means building again, not restarting.
+   *
+   * NEXT_DEV_API_PROXY is the old name for the same thing and still works.
    */
   async rewrites() {
-    const target = process.env.NEXT_DEV_API_PROXY;
+    const target = process.env.NB_API_PROXY ?? process.env.NEXT_DEV_API_PROXY;
 
     if (!target) {
       return [];

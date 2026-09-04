@@ -94,14 +94,20 @@ php artisan queue:work --tries=3 --max-time=3600
 
 ## Docker ছাড়া হোস্টিং
 
-Docker/Nginx-এ অ্যাক্সেস না থাকলে:
+cPanel-এর ধাপে ধাপে নির্দেশনা আলাদা ফাইলে:
+[DEPLOY_CPANEL_BN.md](DEPLOY_CPANEL_BN.md) — রিপোজিটরির `.cpanel.yml` ও
+`infra/cpanel/deploy.sh` সেটিই চালায়।
+
+সারসংক্ষেপ, Docker/Nginx-এ অ্যাক্সেস না থাকলে:
 
 1. **Laravel** — যেকোনো cPanel/LiteSpeed/PHP হোস্টে; document root
    `apps/api/public`।
 2. **Next.js** — হোস্টিং প্যানেলের Node.js অ্যাপ্লিকেশন ম্যানেজার বা PM2 দিয়ে
    `node apps/web/.next/standalone/apps/web/server.js` চালান।
-3. প্যানেলের reverse proxy দিয়ে `/api`, `/sanctum`, `/storage`, `/up` PHP-তে এবং
-   বাকি সব Node পোর্টে পাঠান।
+3. `/api`, `/sanctum`, `/storage`, `/up` PHP-তে এবং বাকি সব Node-এ পাঠান।
+   প্যানেলে reverse proxy না থাকলে (সাধারণত থাকে না) Next নিজেই এই রাউটিং করতে
+   পারে — বিল্ডের সময় `NB_API_PROXY` সেট করুন। ব্রাউজার এক origin-এই থাকতে
+   হবে, নইলে Sanctum-এর session cookie যাবে না এবং প্রতিটি সাইন ইন 419 দেবে।
 
 হোস্ট যদি দীর্ঘস্থায়ী Node প্রসেস **চালাতেই না পারে**, তবে এই আর্কিটেকচার সেখানে
 ডিপ্লয় হবে না। সেক্ষেত্রে static export দিয়ে ফিচার ভাঙার বদলে ফ্রন্টএন্ডকে

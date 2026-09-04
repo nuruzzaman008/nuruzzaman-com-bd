@@ -94,7 +94,7 @@ if [ "${NEEDS_BUILD}" = "1" ]; then
     cd "${ROOT}/apps/web"
     NEXT_PUBLIC_SITE_URL="http://localhost:${WEB_PORT}" \
     INTERNAL_API_URL="${API_URL}" \
-    NEXT_DEV_API_PROXY="http://127.0.0.1:${API_PORT}" \
+    NB_API_PROXY="http://127.0.0.1:${API_PORT}" \
       npx next build
   )
   printf '%s' "${PORTS}" > "${MARKER}"

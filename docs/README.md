@@ -14,6 +14,7 @@
 | [THREAT_MODEL.md](THREAT_MODEL.md) | হুমকি, প্রতিকার, কোডে কোথায় — এবং জানা সীমাবদ্ধতা |
 | [ADMIN_GUIDE_BN.md](ADMIN_GUIDE_BN.md) | রোল, প্রকাশের ধাপ, দাম, রিলিজ, অ্যাক্টিভেশন রিভিউ |
 | [DEPLOYMENT_BN.md](DEPLOYMENT_BN.md) | টপোলজি, Docker, মাইগ্রেশন, রোলব্যাক, Redis ছাড়া চালানো |
+| [DEPLOY_CPANEL_BN.md](DEPLOY_CPANEL_BN.md) | Docker ছাড়া cPanel হোস্টিং-এ ডিপ্লয়: .cpanel.yml, Node অ্যাপ, /api proxy |
 | [BACKUP_RESTORE_BN.md](BACKUP_RESTORE_BN.md) | কী ব্যাকআপ, কত ঘন ঘন, restore drill |
 | [CONFIGURATION_CHECKLIST_BN.md](CONFIGURATION_CHECKLIST_BN.md) | **মালিকের করণীয়** — দাম, ক্রেডেনশিয়াল, আইনি অনুমোদন |
 | [MEDIA_REQUIREMENTS_BN.md](MEDIA_REQUIREMENTS_BN.md) | কোন ছবি, কী মাপে দরকার |
