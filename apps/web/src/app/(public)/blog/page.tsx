@@ -8,7 +8,10 @@ import { Container } from '@/components/ui/container';
 import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/states';
 import { publicApi, tryPublicApi } from '@/lib/api/server';
+import { taxonomyLabel } from '@/lib/i18n/labels';
+import { localizePath } from '@/lib/i18n/locale';
 import { buildMetadata } from '@/lib/seo';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 export const metadata: Metadata = buildMetadata({
   title: 'ব্লগ — যাচাই করা টেকনিক্যাল আর্টিকেল',
@@ -19,9 +22,10 @@ export const metadata: Metadata = buildMetadata({
 
 type Search = { page?: string; category?: string; sort?: string };
 
-export default async function BlogIndexPage(props: {
-  searchParams: Promise<Search>;
-}) {
+export default async function BlogIndexPage(
+  props: LocalizedPageProps & { searchParams: Promise<Search> },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const searchParams = await props.searchParams;
 
   const [posts, categories] = await Promise.all([
@@ -44,38 +48,37 @@ export default async function BlogIndexPage(props: {
     <Container className="py-10 sm:py-14">
       <Breadcrumbs
         trail={[
-          { name: 'হোম', path: '/' },
-          { name: 'ব্লগ', path: '/blog' },
+          { name: t.common.home, path: '/' },
+          { name: t.blog.heading, path: '/blog' },
         ]}
       />
 
       <header className="mt-6 max-w-3xl">
-        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">ব্লগ</h1>
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.blog.heading}</h1>
         <p className="mt-3 text-muted">
-          প্রতিটি লেখায় একটি সরাসরি উত্তর, একটি বাস্তব উদাহরণ, ব্যবহৃত অ্যাজাম্পশন এবং
-          সীমাবদ্ধতা স্পষ্ট করে দেওয়া থাকে। ইঞ্জিনিয়ার-রিভিউ ছাড়া কোনো লেখা প্রকাশ হয় না।
+          {t.blog.intro}
         </p>
       </header>
 
       {categories && categories.data.length > 0 ? (
-        <nav aria-label="বিষয় অনুযায়ী ছাঁকুন" className="mt-8">
+        <nav aria-label={t.common.filterByTopic} className="mt-8">
           <ul className="flex flex-wrap gap-2">
             <li>
               <Link
-                href="/blog"
+                href={localizePath('/blog', locale)}
                 aria-current={searchParams.category ? undefined : 'page'}
                 className="inline-flex min-h-11 items-center rounded-full border border-line bg-white px-4 text-sm font-semibold text-navy aria-[current=page]:border-blue aria-[current=page]:bg-blue aria-[current=page]:text-white hover:border-blue"
               >
-                সব
+                {t.common.all}
               </Link>
             </li>
             {categories.data.map((category) => (
               <li key={category.slug}>
                 <Link
-                  href={`/topics/${category.slug}`}
+                  href={localizePath(`/topics/${category.slug}`, locale)}
                   className="inline-flex min-h-11 items-center rounded-full border border-line bg-white px-4 text-sm font-semibold text-navy hover:border-blue hover:text-blue"
                 >
-                  {category.name}
+                  {taxonomyLabel(t, category.slug, category.name, locale)}
                 </Link>
               </li>
             ))}
@@ -94,8 +97,8 @@ export default async function BlogIndexPage(props: {
       ) : (
         <EmptyState
           className="mt-8"
-          title="এখানে এখনো কোনো লেখা নেই"
-          description="নতুন আর্টিকেল প্রকাশিত হলে এই তালিকায় যুক্ত হবে।"
+          title={t.blog.emptyTitle}
+          description={t.blog.emptyDescription}
         />
       )}
 

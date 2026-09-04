@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { DownloadAsset, Product, SiteSettings } from '@nuruzzaman/contracts';
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
-import { PRODUCT_FAQ } from '@/features/catalog/product-faq';
+import { productFaq } from '@/features/catalog/product-faq';
 import { MODULE_COUNT, PRODUCT_MODULES } from '@/features/catalog/product-modules';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
@@ -20,7 +20,9 @@ import {
   productSchema,
   softwareApplicationSchema,
 } from '@/lib/seo';
-import { supportNav } from '@/lib/site';
+import { navItemLabel, supportNav } from '@/lib/site';
+import { localizePath } from '@/lib/i18n/locale';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 // Title and description are the owner's own, from the product document. The
 // AutoCAD version numbers are deliberately left out of the title: which
@@ -35,18 +37,6 @@ export const metadata: Metadata = buildMetadata({
 });
 
 /** Facts stated in the owner's published product document, and nothing else. */
-const VERIFIED_FACTS = [
-  'NB Engineering Tools v6.0',
-  'Structural & Engineering Design Tools for AutoCAD',
-  'Windows 10 / 11, 64-bit',
-  '২৫টি engineering/productivity মডিউল + ১টি core/security মডিউল = মোট ২৬টি compiled VLX মডিউল',
-  'AutoCAD Ribbon এবং classic pull-down menu',
-  'Machine activation, token/credit licensing, signed activation ও refill workflow',
-  'Professional Windows Setup EXE',
-  'Vendor-verified license recovery',
-  'ডেভেলপার: Engr. Md. Nuruzzaman, RSE',
-];
-
 const GROUP_ORDER = [
   'Layout, Grid & Schedule',
   'Footing & Foundation',
@@ -57,18 +47,13 @@ const GROUP_ORDER = [
   'License & System',
 ];
 
-const INSTALL_STEPS = [
-  'Machine ID নিন',
-  'লাইসেন্স ক্রয় ও অ্যাক্টিভেশন সম্পন্ন করুন',
-  'Signed activation key প্রয়োগ করুন',
-  'প্রয়োজন অনুযায়ী token refill নিন',
-  'ইঞ্জিনিয়ারিং টুল ব্যবহার শুরু করুন',
-];
-
-export default async function EngineeringToolsPage() {
+export default async function EngineeringToolsPage({ locale }: LocalizedPageProps) {
+  const { locale: active, t } = pageDictionary(locale);
+  const faq = productFaq(active);
   const [product, release, settings] = await Promise.all([
     tryPublicApi<{ data: Product }>('/products/nb-engineering-tools', {
-      tags: ['products', 'product:nb-engineering-tools'],
+      query: { locale: active },
+      tags: ['products', 'product:nb-engineering-tools', `product-locale:${active}`],
     }),
     tryPublicApi<{ data: DownloadAsset }>('/releases/nb-engineering-tools-v6', {
       tags: ['releases'],
@@ -93,8 +78,8 @@ export default async function EngineeringToolsPage() {
 
   const schemas = [
     breadcrumbSchema([
-      { name: 'হোম', path: '/' },
-      { name: 'ইঞ্জিনিয়ারিং টুলস', path: '/engineering-tools' },
+      { name: t.common.home, path: '/' },
+      { name: t.tools.heading, path: '/engineering-tools' },
     ]),
     softwareApplicationSchema({
       name: 'NB Engineering Tools',
@@ -104,7 +89,7 @@ export default async function EngineeringToolsPage() {
       path: '/engineering-tools',
       price: cheapest ?? null,
     }),
-    faqSchema(PRODUCT_FAQ),
+    faqSchema(faq),
     ...(tools
       ? [
           productSchema({
@@ -125,8 +110,8 @@ export default async function EngineeringToolsPage() {
       <Container className="pt-10">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'ইঞ্জিনিয়ারিং টুলস', path: '/engineering-tools' },
+            { name: t.common.home, path: '/' },
+            { name: t.tools.heading, path: '/engineering-tools' },
           ]}
         />
       </Container>
@@ -140,27 +125,26 @@ export default async function EngineeringToolsPage() {
                 Structural &amp; Engineering Design Tools for AutoCAD
               </h1>
               <p className="mt-4 text-lg text-muted">
-                Footing, combined footing, pile cap, beam, slab, column, grid ও geotechnical
-                workflow-এর জন্য একটি professional AutoCAD automation suite। Ribbon এবং classic
-                pull-down menu — দুইভাবেই কাজ করে।
+                {t.tools.lede}
               </p>
 
               <Callout tone="warning" className="mt-6">
                 <p>
-                  <strong>সামঞ্জস্য:</strong> মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান commercial
-                  build {designedFor}, Windows 10/11 64-bit-এর জন্য প্রস্তুত।
+                  <strong>{t.tools.compatibilityLabel}</strong> {t.tools.compatibilityBody}{' '}
+                  {designedFor}
+                  {t.tools.compatibilitySuffix}
                 </p>
                 <p className="mt-2">
                   {tested
-                    ? `রানটাইম-টেস্ট করা ভার্সন: ${tested}।`
-                    : 'ভিন্ন AutoCAD ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে। রানটাইম-টেস্টের প্রমাণ ছাড়া কোনো ভার্সনকে পরীক্ষিত বলা হয় না।'}
+                    ? `${t.tools.testedVersions}: ${tested}.`
+                    : t.tools.untested}
                 </p>
               </Callout>
 
               <section className="mt-10">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">যাচাই করা তথ্য</h2>
+                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.verifiedFacts}</h2>
                 <ul className="mt-4 space-y-2 text-sm">
-                  {VERIFIED_FACTS.map((fact) => (
+                  {t.tools.verifiedFactsList.map((fact) => (
                     <li key={fact} className="flex gap-2">
                       <span
                         aria-hidden="true"
@@ -174,12 +158,11 @@ export default async function EngineeringToolsPage() {
 
               <section className="mt-12">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  মডিউল তালিকা
+                  {t.tools.moduleList}
                 </h2>
                 <p className="mt-2 text-sm text-muted">
-                  {MODULE_COUNT}টি compiled মডিউল, কাজ অনুযায়ী সাজানো। নিচে প্রতিটি মডিউলের
-                  ঘোষিত ব্যবহার লেখা আছে — ভেতরের কমান্ডের নির্ভুলতা, গতি বা কোড-সামঞ্জস্য নিয়ে
-                  এমন কোনো দাবি করা হচ্ছে না যা পরীক্ষা করা হয়নি।
+                  {MODULE_COUNT}
+                  {t.tools.moduleIntro}
                 </p>
 
                 <div className="mt-6 space-y-8">
@@ -197,7 +180,11 @@ export default async function EngineeringToolsPage() {
                             <dt className="font-latin text-sm font-bold text-navy">
                               {module.name}
                             </dt>
-                            <dd className="text-sm text-muted">{module.purpose}</dd>
+                            <dd data-authored="true" className="text-sm text-muted">
+                              {active === 'en'
+                                ? (module.purposeEn ?? module.purpose)
+                                : module.purpose}
+                            </dd>
                           </div>
                         ))}
                       </dl>
@@ -206,21 +193,20 @@ export default async function EngineeringToolsPage() {
                 </div>
 
                 <p className="mt-4 text-xs text-muted">
-                  মডিউলের কার্যকারিতা ভার্সন অনুযায়ী পরিবর্তিত ও উন্নত হতে পারে।
+                  {t.tools.moduleNote}
                 </p>
               </section>
 
               <section className="mt-12">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  লাইসেন্স, Machine ID ও টোকেন
+                  {t.tools.licensing}
                 </h2>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <Card className="p-5">
-                    <h3 className="font-bold text-navy">Machine activation</h3>
+                    <h3 className="font-bold text-navy">{t.tools.machineActivation}</h3>
                     <p className="mt-2 text-sm text-muted">
-                      প্রতিটি সমর্থিত কম্পিউটার একটি Machine ID তৈরি করে এবং লাইসেন্স তার সাথে
-                      bind হয়।
+                      {t.tools.machineActivationBody}
                     </p>
                     <p className="font-latin mt-3 rounded-md bg-surface px-3 py-2 text-xs text-navy">
                       NBM-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX
@@ -228,54 +214,48 @@ export default async function EngineeringToolsPage() {
                   </Card>
 
                   <Card className="p-5">
-                    <h3 className="font-bold text-navy">Token / credit</h3>
+                    <h3 className="font-bold text-navy">{t.tools.tokenCredit}</h3>
                     <p className="mt-2 text-sm text-muted">
-                      Activation ব্যবহারের অনুমতি দেয়; token নির্দিষ্ট paid operation চালানোর
-                      ক্রেডিট। সক্রিয় লাইসেন্স থাকলেও paid operation-এর জন্য পর্যাপ্ত token
-                      লাগতে পারে।
+                      {t.tools.tokenCreditBody}
                     </p>
                   </Card>
                 </div>
 
-                <h3 className="mt-8 font-bold text-navy">টোকেন কীভাবে খরচ হয়</h3>
+                <h3 className="mt-8 font-bold text-navy">{t.tools.tokenSpendHeading}</h3>
                 <ul className="mt-3 space-y-2 text-sm text-muted">
-                  <li>প্রতিটি টুলের token cost এক নয়।</li>
-                  <li>কিছু টুল সফল command session অনুযায়ী charge করে।</li>
+                  <li>{t.tools.tokenSpend1}</li>
+                  <li>{t.tools.tokenSpend2}</li>
                   <li>
-                    কিছু design টুল সফল <strong>unique design</strong> অনুযায়ী charge করে —
-                    যেমন ২৪টি ফুটিং নির্বাচন করেও unique design ২টি হলে ২টিই গোনা হয়।
+                    {t.tools.tokenSpend3Prefix} <strong>{t.tools.tokenSpend3Strong}</strong>{' '}
+                    {t.tools.tokenSpend3Suffix}
                   </li>
-                  <li>বাতিল বা ব্যর্থ operation-এ প্রযোজ্য টুলের যুক্তি অনুযায়ী charge না-ও হতে পারে।</li>
+                  <li>{t.tools.tokenSpend4}</li>
                 </ul>
 
                 <Callout tone="warning" className="mt-6">
                   <p>
-                    <strong>Windows reinstall বা format:</strong> স্থানীয় license/token ডেটা
-                    মুছে যেতে পারে। Token শূন্য হয়ে গেলে আগের token স্বয়ংক্রিয়ভাবে ফিরে পাওয়ার
-                    নিশ্চয়তা নেই।
+                    <strong>{t.tools.reinstallLabel}</strong> {t.tools.reinstallBody}
                   </p>
                   <p className="mt-2">
-                    Windows setup-এর সর্বোচ্চ ৩০ মিনিট আগে তোলা স্পষ্ট screenshot থাকলে ভেন্ডর
-                    যাচাইয়ের পর অবশিষ্ট balance পুনরায় issue করা যেতে পারে। বিস্তারিত শর্ত ও
-                    ব্যতিক্রম{' '}
+                    {t.tools.screenshotBody}{' '}
                     <Link href="/support/license-recovery" className="text-blue underline">
-                      লাইসেন্স রিকভারি পাতায়
-                    </Link>{' '}
-                    দেখুন।
+                      {t.tools.recoveryLink}
+                    </Link>
+                    {t.tools.screenshotSuffix}
                   </p>
                 </Callout>
               </section>
 
               <section className="mt-12">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">ইনস্টলেশন</h2>
+                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.installation}</h2>
                 <p className="font-latin mt-3 rounded-[--radius-card] border border-line bg-surface px-4 py-3 text-sm text-navy">
                   Welcome → System Check → License Agreement → Install → Finish
                 </p>
                 <p className="mt-3 text-sm text-muted">
-                  ইনস্টল শেষে AutoCAD চালু করলে NB Engineering Tools Ribbon পাওয়া যায়। এরপর:
+                  {t.tools.installationBody}
                 </p>
                 <ol className="mt-4 space-y-2 text-sm">
-                  {INSTALL_STEPS.map((step, index) => (
+                  {t.tools.installSteps.map((step, index) => (
                     <li key={step} className="flex gap-3">
                       <span className="font-latin flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-soft text-xs font-bold text-blue">
                         {index + 1}
@@ -287,15 +267,22 @@ export default async function EngineeringToolsPage() {
               </section>
 
               {tools?.description_html ? (
-                <Prose html={tools.description_html} className="mt-12" />
+                <div className="mt-12">
+                  {tools.copy_translated ? null : (
+                    <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
+                      {t.cms.untranslatedBody}
+                    </Callout>
+                  )}
+                  <Prose html={tools.description_html} data-authored="true" />
+                </div>
               ) : null}
 
               <section className="mt-12">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  সাধারণ জিজ্ঞাসা
+                  {t.tools.faq}
                 </h2>
                 <dl className="mt-5 divide-y divide-line rounded-[--radius-card] border border-line">
-                  {PRODUCT_FAQ.map((item) => (
+                  {faq.map((item) => (
                     <div key={item.question} className="px-5 py-4">
                       <dt className="font-bold text-navy">{item.question}</dt>
                       <dd className="mt-1.5 text-sm text-muted">{item.answer}</dd>
@@ -306,11 +293,7 @@ export default async function EngineeringToolsPage() {
 
               <Callout tone="info" className="mt-10">
                 <p>
-                  <strong>ইঞ্জিনিয়ারিং দায়িত্ব:</strong> সফটওয়্যারটি design ও drawing automation
-                  দেয়, কিন্তু চূড়ান্ত engineering সিদ্ধান্ত, ডিজাইন যাচাই, কোড সঙ্গতি, কাঠামোগত
-                  নিরাপত্তা ও ড্রয়িংয়ের নির্ভুলতার দায়িত্ব যোগ্য প্রকৌশলীর। কোনো স্বয়ংক্রিয়
-                  ফলাফল স্বাধীন engineering review ছাড়া চূড়ান্ত নির্মাণ-সিদ্ধান্ত হিসেবে ব্যবহার
-                  করা উচিত নয়।
+                  <strong>{t.tools.responsibilityLabel}</strong> {t.tools.responsibilityBody}
                 </p>
               </Callout>
             </div>
@@ -321,29 +304,29 @@ export default async function EngineeringToolsPage() {
                   <AddToCart variants={tools.variants ?? []} />
                 ) : (
                   <Callout tone="info">
-                    পণ্যের তথ্য লোড করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।
+                    {t.tools.loadFailed}
                   </Callout>
                 )}
 
                 <dl className="mt-6 space-y-3 border-t border-line pt-5 text-sm">
                   <div className="flex justify-between gap-3">
-                    <dt className="text-muted">ভার্সন</dt>
+                    <dt className="text-muted">{t.tools.version}</dt>
                     <dd className="font-latin font-medium text-navy">
                       {release?.data?.version ?? 'v6.0'}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-muted">প্ল্যাটফর্ম</dt>
+                    <dt className="text-muted">{t.tools.platform}</dt>
                     <dd className="font-latin font-medium text-navy">Windows 10 / 11, 64-bit</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-muted">মডিউল</dt>
+                    <dt className="text-muted">{t.tools.modules}</dt>
                     <dd className="font-latin font-medium text-navy">{MODULE_COUNT}</dd>
                   </div>
                   <div>
                     <dt className="text-muted">SHA-256</dt>
                     <dd className="font-latin mt-1 break-all text-xs text-navy">
-                      {release?.data?.checksum_sha256 ?? 'ফাইল প্রকাশের পর দেওয়া হবে'}
+                      {release?.data?.checksum_sha256 ?? t.tools.checksumPending}
                     </dd>
                   </div>
                 </dl>
@@ -351,8 +334,11 @@ export default async function EngineeringToolsPage() {
                 <ul className="mt-6 space-y-2 border-t border-line pt-5 text-sm">
                   {supportNav.slice(0, 4).map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} className="text-blue hover:underline">
-                        {item.label}
+                      <Link
+                        href={localizePath(item.href, active)}
+                        className="text-blue hover:underline"
+                      >
+                        {navItemLabel(item, t)}
                       </Link>
                     </li>
                   ))}
@@ -360,7 +346,7 @@ export default async function EngineeringToolsPage() {
 
                 {supportEmail ? (
                   <p className="mt-5 border-t border-line pt-5 text-sm text-muted">
-                    টেকনিক্যাল ও লাইসেন্স সাপোর্ট:{' '}
+                    {t.tools.supportLine}{' '}
                     <a href={`mailto:${supportEmail}`} className="font-latin text-blue hover:underline">
                       {supportEmail}
                     </a>

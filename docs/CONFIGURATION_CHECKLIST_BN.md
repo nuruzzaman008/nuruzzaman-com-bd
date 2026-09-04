@@ -200,5 +200,10 @@ npm run api:artisan -- db:seed --class=Database\Seeders\AdminUserSeeder --force
 - [ ] `SESSION_SECURE_COOKIE=true` এবং HTTPS যাচাই করা
 - [ ] MySQL ব্যাকআপ ও একটি সফল restore drill
 - [ ] `NB_LEGAL_REVIEWED=true` শুধু প্রকৃত পর্যালোচনার পরে
+- [ ] ছয়টি আইনি পাতার **ইংরেজি সংস্করণ** — `/en`-এ এখন বাংলা লেখাই দেখানো হয়
+      (সঙ্গে “not available in English yet” নোটিশ), কারণ অনূদিত আইনি ভাষা
+      পর্যালোচনা ছাড়া নীতি হিসেবে প্রকাশ করা হয়নি। পেশাগত পর্যালোচনার পরে
+      `content/seed-pages-en.md`-এ `<slug>-en` নামে যোগ করুন — বিস্তারিত
+      [BILINGUAL_BN.md](BILINGUAL_BN.md)
 
 সম্পূর্ণ তালিকা: [LAUNCH_CHECKLIST_BN.md](LAUNCH_CHECKLIST_BN.md)

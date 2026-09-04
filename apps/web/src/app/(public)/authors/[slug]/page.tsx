@@ -8,6 +8,7 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/states';
 import { publicApi } from '@/lib/api/server';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata, jsonLd, profilePageSchema } from '@/lib/seo';
 
 async function loadAuthor(slug: string): Promise<Author> {
@@ -40,7 +41,10 @@ export async function generateMetadata(props: {
   });
 }
 
-export default async function AuthorPage(props: { params: Promise<{ slug: string }> }) {
+export default async function AuthorPage(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+) {
+  const { t } = pageDictionary(props.locale);
   const { slug } = await props.params;
 
   const [author, posts] = await Promise.all([
@@ -72,9 +76,9 @@ export default async function AuthorPage(props: { params: Promise<{ slug: string
       <Container className="py-10 sm:py-14">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'ব্লগ', path: '/blog' },
-            { name: author.name, path: `/authors/${author.slug}` },
+            { name: t.common.home, path: '/' },
+            { name: t.nav.blog, path: '/blog' },
+            { name: author.name, path: `/authors/${author.slug}`, authored: true },
           ]}
         />
 
@@ -84,7 +88,9 @@ export default async function AuthorPage(props: { params: Promise<{ slug: string
           <AuthorBio author={author} />
         </div>
 
-        <h2 className="mt-12 text-[length:var(--step-h2)] font-bold text-navy">প্রকাশিত লেখা</h2>
+        <h2 className="mt-12 text-[length:var(--step-h2)] font-bold text-navy">
+          {t.post.authorWorks}
+        </h2>
 
         {posts.data.length > 0 ? (
           <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,7 +101,7 @@ export default async function AuthorPage(props: { params: Promise<{ slug: string
             ))}
           </ul>
         ) : (
-          <EmptyState className="mt-6" title="এখনো কোনো প্রকাশিত লেখা নেই" />
+          <EmptyState className="mt-6" title={t.post.authorEmpty} />
         )}
       </Container>
     </>

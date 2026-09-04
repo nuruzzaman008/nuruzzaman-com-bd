@@ -1,7 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
 
+import { localizeHref } from '@/components/ui/locale-link';
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent' | 'inverse';
 type Size = 'sm' | 'md' | 'lg';
@@ -46,15 +50,28 @@ export function Button({
   );
 }
 
+/**
+ * A link styled as a button. The href is rewritten for the language the reader
+ * is in, so a call to action on an English page does not drop them back onto
+ * the Bengali site.
+ */
 export function ButtonLink({
   variant = 'primary',
   size = 'md',
   className,
   children,
+  href,
   ...props
 }: ComponentProps<typeof Link> & { variant?: Variant; size?: Size; children: ReactNode }) {
+  const { locale } = useLocale();
+  const target = typeof href === 'string' ? localizeHref(href, locale) : href;
+
   return (
-    <Link className={cn(BASE, SIZES[size], VARIANTS[variant], className)} {...props}>
+    <Link
+      href={target}
+      className={cn(BASE, SIZES[size], VARIANTS[variant], className)}
+      {...props}
+    >
       {children}
     </Link>
   );

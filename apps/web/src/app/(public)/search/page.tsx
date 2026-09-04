@@ -6,6 +6,7 @@ import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/states';
 import { tryPublicApi } from '@/lib/api/server';
 import { privateMetadata } from '@/lib/seo';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 // Internal search results are never indexed: they are thin, query-shaped
 // duplicates of content that is already indexed on its own page.
@@ -14,13 +15,21 @@ export const metadata: Metadata = privateMetadata(
   'সাইটের প্রকাশিত কনটেন্টের মধ্যে খুঁজুন।',
 );
 
-const GROUPS: { key: keyof Omit<SearchResults, 'query'>; label: string; base: string }[] = [
-  { key: 'posts', label: 'আর্টিকেল', base: '/blog' },
-  { key: 'courses', label: 'কোর্স', base: '/courses' },
-  { key: 'products', label: 'প্রোডাক্ট', base: '/shop' },
+const GROUP_KEYS: {
+  key: keyof Omit<SearchResults, 'query'>;
+  label: 'articles' | 'courses' | 'products';
+  base: string;
+}[] = [
+  { key: 'posts', label: 'articles', base: '/blog' },
+  { key: 'courses', label: 'courses', base: '/courses' },
+  { key: 'products', label: 'products', base: '/shop' },
 ];
 
-export default async function SearchPage(props: { searchParams: Promise<{ q?: string }> }) {
+export default async function SearchPage(
+  props: LocalizedPageProps & { searchParams: Promise<{ q?: string }> },
+) {
+  const { t } = pageDictionary(props.locale);
+  const GROUPS = GROUP_KEYS.map((group) => ({ ...group, label: t.search[group.label] }));
   const { q } = await props.searchParams;
   const term = (q ?? '').trim();
 
@@ -38,11 +47,11 @@ export default async function SearchPage(props: { searchParams: Promise<{ q?: st
 
   return (
     <Container size="narrow" className="py-10 sm:py-14">
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">সার্চ</h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.search.heading}</h1>
 
       <form method="get" action="/search" role="search" className="mt-6">
         <label htmlFor="search-input" className="block text-sm font-semibold text-navy">
-          কী খুঁজছেন?
+          {t.search.label}
         </label>
         <div className="mt-2 flex gap-2">
           <input
@@ -53,25 +62,25 @@ export default async function SearchPage(props: { searchParams: Promise<{ q?: st
             minLength={2}
             maxLength={120}
             required
-            placeholder="যেমন: ফুটিং, ল্যাপ লেংথ, লেয়ার স্ট্যান্ডার্ড"
+            placeholder={t.search.placeholder}
             className="block min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm focus:border-blue focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-blue"
           />
           <button
             type="submit"
             className="inline-flex min-h-11 items-center rounded-lg bg-blue px-5 text-sm font-semibold text-white hover:bg-navy"
           >
-            খুঁজুন
+            {t.search.submit}
           </button>
         </div>
       </form>
 
       <div aria-live="polite" className="mt-8">
         {term.length < 2 ? (
-          <p className="text-sm text-muted">অন্তত দুইটি অক্ষর লিখে খুঁজুন।</p>
+          <p className="text-sm text-muted">{t.search.tooShort}</p>
         ) : total === 0 ? (
           <EmptyState
-            title={`"${term}" — কিছু পাওয়া যায়নি`}
-            description="অন্য শব্দ দিয়ে চেষ্টা করুন, অথবা ব্লগের বিষয়ভিত্তিক তালিকা দেখুন।"
+            title={`"${term}" — ${t.search.nothingFound}`}
+            description={t.search.noResultsDescription}
           />
         ) : (
           <div className="space-y-10">

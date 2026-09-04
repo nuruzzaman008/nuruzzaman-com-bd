@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import type { Certificate } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Container } from '@/components/ui/container';
+import { LocaleLink } from '@/components/ui/locale-link';
 import { tryPublicApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
+import { getDictionary } from '@/lib/i18n/dictionary';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata } from '@/lib/seo';
 
 type VerifyResult = Certificate & { valid: boolean; reason: string | null };
@@ -18,8 +20,8 @@ export async function generateMetadata(props: {
   const { verificationId } = await props.params;
 
   return buildMetadata({
-    title: `সার্টিফিকেট যাচাই — ${verificationId}`,
-    description: 'একটি সার্টিফিকেটের verification ID যাচাই করুন।',
+    title: `${getDictionary('bn').pageTitle.verify} — ${verificationId}`,
+    description: getDictionary('bn').verify.metaDescription,
     path: `/verify/${verificationId}`,
   });
 }
@@ -28,9 +30,10 @@ export async function generateMetadata(props: {
  * Public certificate check. It confirms or denies an id and shows nothing about
  * the holder beyond the name printed on the certificate itself.
  */
-export default async function VerifyPage(props: {
-  params: Promise<{ verificationId: string }>;
-}) {
+export default async function VerifyPage(
+  props: LocalizedPageProps & { params: Promise<{ verificationId: string }> },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const { verificationId } = await props.params;
 
   const response = await tryPublicApi<{ data: VerifyResult }>(
@@ -42,50 +45,52 @@ export default async function VerifyPage(props: {
 
   return (
     <Container size="narrow" className="py-14">
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">সার্টিফিকেট যাচাই</h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.pageTitle.verify}</h1>
       <p className="font-latin mt-2 text-sm text-muted">Verification ID: {verificationId}</p>
 
       <Card className="mt-8 p-6">
         {!result ? (
-          <Callout tone="danger" title="এই আইডির কোনো সার্টিফিকেট পাওয়া যায়নি" role="alert">
-            আইডিটি আবার মিলিয়ে দেখুন। সন্দেহ হলে সাপোর্টে জানান।
+          <Callout tone="danger" title={t.verify.notFoundTitle} role="alert">
+            {t.verify.notFoundBody}
           </Callout>
         ) : result.valid ? (
           <>
-            <Badge tone="success">বৈধ সার্টিফিকেট</Badge>
+            <Badge tone="success">{t.verify.valid}</Badge>
             <dl className="mt-5 space-y-4">
               <div>
-                <dt className="text-sm text-muted">প্রাপক</dt>
+                <dt className="text-sm text-muted">{t.verify.recipient}</dt>
                 <dd className="text-lg font-bold text-navy">{result.recipient_name}</dd>
               </div>
               <div>
-                <dt className="text-sm text-muted">কোর্স</dt>
+                <dt className="text-sm text-muted">{t.verify.course}</dt>
                 <dd className="font-medium text-navy">
                   {result.course_slug ? (
-                    <Link href={`/courses/${result.course_slug}`} className="hover:underline">
+                    <LocaleLink
+                      href={`/courses/${result.course_slug}`}
+                      className="hover:underline"
+                    >
                       {result.course_title}
-                    </Link>
+                    </LocaleLink>
                   ) : (
                     result.course_title
                   )}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted">ইস্যুর তারিখ</dt>
-                <dd className="font-medium text-navy">{date(result.issued_at) ?? '—'}</dd>
+                <dt className="text-sm text-muted">{t.verify.issuedOn}</dt>
+                <dd className="font-medium text-navy">{date(result.issued_at, locale) ?? '—'}</dd>
               </div>
             </dl>
           </>
         ) : (
-          <Callout tone="warning" title="এই সার্টিফিকেটটি আর বৈধ নয়" role="alert">
-            সার্টিফিকেটটি প্রত্যাহার করা হয়েছে।
+          <Callout tone="warning" title={t.verify.revokedTitle} role="alert">
+            {t.verify.revokedBody}
           </Callout>
         )}
       </Card>
 
       <p className="mt-6 text-xs text-muted">
-        সার্টিফিকেট কেবল কোর্স সম্পন্ন হওয়ার প্রমাণ। এটি কোনো পেশাগত লাইসেন্স নয় এবং
-        প্রকৌশল দায়িত্ব হস্তান্তর করে না।
+        {t.verify.note}
       </p>
     </Container>
   );

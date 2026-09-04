@@ -9,6 +9,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/states';
 import { publicApi } from '@/lib/api/server';
 import { buildMetadata, itemListSchema, jsonLd } from '@/lib/seo';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 export const metadata: Metadata = buildMetadata({
   title: 'শপ — সফটওয়্যার, ক্রেডিট ও কোর্স',
@@ -17,9 +18,12 @@ export const metadata: Metadata = buildMetadata({
   path: '/shop',
 });
 
-export default async function ShopPage(props: {
-  searchParams: Promise<{ page?: string; type?: string }>;
-}) {
+export default async function ShopPage(
+  props: LocalizedPageProps & {
+    searchParams: Promise<{ page?: string; type?: string }>;
+  },
+) {
+  const { t } = pageDictionary(props.locale);
   const searchParams = await props.searchParams;
 
   const products = await publicApi<{
@@ -51,22 +55,20 @@ export default async function ShopPage(props: {
       <Container className="py-10 sm:py-14">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'শপ', path: '/shop' },
+            { name: t.common.home, path: '/' },
+            { name: t.shop.heading, path: '/shop' },
           ]}
         />
 
         <header className="mt-6 max-w-3xl">
-          <h1 className="text-[length:var(--step-h1)] font-bold text-navy">শপ</h1>
+          <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.shop.heading}</h1>
           <p className="mt-3 text-muted">
-            সব পণ্য ডিজিটাল। ক্রয়ের পরে ডাউনলোড ও কোর্স অ্যাক্সেস আপনার অ্যাকাউন্টের সঙ্গে
-            যুক্ত থাকে।
+            {t.shop.intro}
           </p>
         </header>
 
         <Callout tone="info" className="mt-6 max-w-3xl">
-          যে পণ্যের দাম এখনো প্রকাশ করা হয়নি, সেখানে &ldquo;দাম জানতে যোগাযোগ করুন&rdquo;
-          দেখানো হয় — কোনো অনুমানভিত্তিক দাম দেখানো হয় না।
+          {t.shop.priceNotice}
         </Callout>
 
         {products.data.length > 0 ? (
@@ -80,8 +82,8 @@ export default async function ShopPage(props: {
         ) : (
           <EmptyState
             className="mt-8"
-            title="এখনো কোনো পণ্য প্রকাশ করা হয়নি"
-            description="পণ্য প্রকাশিত হলে এখানে দেখা যাবে।"
+            title={t.shop.emptyTitle}
+            description={t.shop.emptyDescription}
           />
         )}
 

@@ -634,6 +634,19 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of the product prose. Defaults to Bengali.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "bn",
+                "en"
+              ]
+            }
           }
         ],
         "responses": {
@@ -11405,6 +11418,7 @@
           "name",
           "tagline",
           "description_html",
+          "copy_translated",
           "feature_groups",
           "specs",
           "published_at"
@@ -11431,6 +11445,10 @@
           },
           "description_html": {
             "type": "string"
+          },
+          "copy_translated": {
+            "type": "boolean",
+            "description": "False when locale=en was asked for but no English copy exists, so the Bengali text is what is being returned."
           },
           "cover_url": {
             "type": [

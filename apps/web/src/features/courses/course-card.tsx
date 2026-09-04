@@ -1,19 +1,22 @@
+'use client';
+
 import Image from 'next/image';
-import Link from 'next/link';
 import type { CourseSummary } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { CoverArt } from '@/components/ui/cover-art';
-import { duration, number } from '@/lib/format';
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: 'শুরুর স্তর',
-  intermediate: 'মাঝারি স্তর',
-  advanced: 'উন্নত স্তর',
-};
+import { LocaleLink } from '@/components/ui/locale-link';
+import { counted, duration } from '@/lib/format';
+import { levelLabel, taxonomyLabel } from '@/lib/i18n/labels';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 export function CourseCard({ course }: { course: CourseSummary }) {
+  const { locale, t } = useLocale();
+  const trackName = course.track
+    ? taxonomyLabel(t, course.track, course.track_name, locale)
+    : (course.track_name ?? undefined);
+
   return (
     <Card
       as="article"
@@ -32,36 +35,40 @@ export function CourseCard({ course }: { course: CourseSummary }) {
         <CoverArt
           topic={course.track ?? undefined}
           seed={course.slug}
-          label={course.track_name ?? undefined}
+          label={trackName ?? undefined}
         />
       )}
 
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="teal">{LEVEL_LABELS[course.level] ?? course.level}</Badge>
+          <Badge tone="teal">{levelLabel(t, course.level)}</Badge>
           <Badge>{course.language}</Badge>
-          {course.issues_certificate ? <Badge tone="info">সার্টিফিকেট</Badge> : null}
+          {course.issues_certificate ? <Badge tone="info">{t.ui.certificate}</Badge> : null}
         </div>
 
-        <h3 className="mt-3 text-lg leading-snug font-bold text-navy">
-          <Link
+        <h3 data-authored="true" className="mt-3 text-lg leading-snug font-bold text-navy">
+          <LocaleLink
             href={`/courses/${course.slug}`}
             className="after:absolute after:inset-0 hover:text-blue"
           >
             {course.title}
-          </Link>
+          </LocaleLink>
         </h3>
 
         {course.subtitle ? (
-          <p className="mt-2 line-clamp-2 text-sm text-muted">{course.subtitle}</p>
+          <p data-authored="true" className="mt-2 line-clamp-2 text-sm text-muted">
+            {course.subtitle}
+          </p>
         ) : null}
 
         <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-          {course.lesson_count ? <span>{number(course.lesson_count)} টি লেসন</span> : null}
+          {course.lesson_count ? (
+            <span>{counted(course.lesson_count, 'lesson', locale)}</span>
+          ) : null}
           {course.estimated_minutes ? (
             <>
               <span aria-hidden="true">·</span>
-              <span>{duration(course.estimated_minutes * 60)}</span>
+              <span>{duration(course.estimated_minutes * 60, locale)}</span>
             </>
           ) : null}
         </p>

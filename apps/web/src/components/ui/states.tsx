@@ -1,6 +1,9 @@
+'use client';
+
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * The honest "there is nothing here" state. Used instead of inventing
@@ -41,10 +44,12 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 /** A loading region that announces itself once, rather than on every tick. */
-export function LoadingRegion({ label = 'লোড হচ্ছে' }: { label?: string }) {
+export function LoadingRegion({ label }: { label?: string }) {
+  const { t } = useLocale();
+
   return (
     <div role="status" aria-live="polite" className="space-y-3">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t.ui.loading}</span>
       <Skeleton className="h-6 w-2/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-5/6" />

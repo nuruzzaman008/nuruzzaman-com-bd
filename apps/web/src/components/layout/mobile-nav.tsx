@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { navDescription, navLabel } from '@/components/layout/primary-nav';
 import { localizePath } from '@/lib/i18n/locale';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { primaryNav, supportNav } from '@/lib/site';
 
 export function MobileNav() {
@@ -48,7 +49,7 @@ export function MobileNav() {
         onClick={() => setOpen((value) => !value)}
         className="inline-flex size-11 items-center justify-center rounded-lg border border-line text-navy hover:border-blue hover:text-blue"
       >
-        <span className="sr-only">{open ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'}</span>
+        <span className="sr-only">{open ? t.nav.closeMenu : t.nav.openMenu}</span>
         <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2">
           {open ? (
             <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
@@ -83,7 +84,7 @@ export function MobileNav() {
           </ul>
 
           <p className="mt-6 px-3 text-xs font-semibold tracking-[0.18em] text-muted uppercase">
-            সহায়তা
+            {t.footer.help}
           </p>
           <ul className="mt-2 space-y-1">
             {supportNav.map((item) => (
@@ -97,6 +98,14 @@ export function MobileNav() {
               </li>
             ))}
           </ul>
+
+          {/*
+            The header's switcher is hidden below md, so without this a reader on
+            a phone has no way to change language at all.
+          */}
+          <div className="mt-6 border-t border-line px-1 pt-4">
+            <LanguageSwitcher />
+          </div>
         </nav>
       </div>
     </div>

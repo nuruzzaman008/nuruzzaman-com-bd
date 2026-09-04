@@ -79,7 +79,19 @@ export function stripLocale(path: string): string {
  * These are signed-in applications: not indexed, so there is nothing for a
  * second URL to earn, and the language switcher hides itself on them.
  */
-const PRIVATE_PREFIXES = ['/account', '/dashboard', '/learn', '/checkout', '/cart'];
+const PRIVATE_PREFIXES = [
+  '/account',
+  '/dashboard',
+  '/learn',
+  '/checkout',
+  '/cart',
+  // The sign-in screens belong to the same application and have no English
+  // URL either, so a link to one is left exactly as it is.
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+];
 
 export function isPrivatePath(path: string): boolean {
   const clean = stripLocale(path);

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * A modal built on the native <dialog> element, so focus trapping, Escape and
@@ -24,6 +25,7 @@ export function Dialog({
   children?: ReactNode;
   footer?: ReactNode;
 }) {
+  const { t } = useLocale();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export function Dialog({
       <div className="flex justify-end gap-3 border-t border-line px-6 py-4">
         {footer ?? (
           <Button type="button" variant="secondary" onClick={onClose}>
-            বন্ধ করুন
+            {t.ui.close}
           </Button>
         )}
       </div>

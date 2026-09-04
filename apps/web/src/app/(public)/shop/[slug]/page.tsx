@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ApiError, type Product } from '@nuruzzaman/contracts';
 
@@ -9,14 +8,18 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Container } from '@/components/ui/container';
+import { LocaleLink } from '@/components/ui/locale-link';
 import { Prose } from '@/components/ui/prose';
 import { publicApi } from '@/lib/api/server';
+import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata, jsonLd, productSchema } from '@/lib/seo';
 
-async function loadProduct(slug: string): Promise<Product> {
+async function loadProduct(slug: string, locale: Locale = DEFAULT_LOCALE): Promise<Product> {
   try {
     const response = await publicApi<{ data: Product }>(`/products/${encodeURIComponent(slug)}`, {
-      tags: ['products', `product:${slug}`],
+      query: { locale },
+      tags: ['products', `product:${slug}`, `product-locale:${locale}`],
     });
 
     return response.data;
@@ -44,9 +47,12 @@ export async function generateMetadata(props: {
   });
 }
 
-export default async function ProductPage(props: { params: Promise<{ slug: string }> }) {
+export default async function ProductPage(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
-  const product = await loadProduct(slug);
+  const product = await loadProduct(slug, locale);
 
   const cheapest = (product.variants ?? [])
     .map((variant) => variant.price)
@@ -75,18 +81,25 @@ export default async function ProductPage(props: { params: Promise<{ slug: strin
       <Container className="py-10 sm:py-14">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'শপ', path: '/shop' },
-            { name: product.name, path: `/shop/${product.slug}` },
+            { name: t.common.home, path: '/' },
+            { name: t.shop.heading, path: '/shop' },
+            { name: product.name, path: `/shop/${product.slug}`, authored: true },
           ]}
         />
 
         <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div>
-            <h1 className="text-[length:var(--step-h1)] leading-tight font-bold text-navy">
+            <h1
+              data-authored="true"
+              className="text-[length:var(--step-h1)] leading-tight font-bold text-navy"
+            >
               {product.name}
             </h1>
-            {product.tagline ? <p className="mt-3 text-lg text-muted">{product.tagline}</p> : null}
+            {product.tagline ? (
+              <p data-authored="true" className="mt-3 text-lg text-muted">
+                {product.tagline}
+              </p>
+            ) : null}
 
             {product.cover_url ? (
               <Image
@@ -101,13 +114,20 @@ export default async function ProductPage(props: { params: Promise<{ slug: strin
             ) : null}
 
             {product.description_html ? (
-              <Prose html={product.description_html} className="mt-8" />
+              <div className="mt-8">
+                {product.copy_translated ? null : (
+                  <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
+                    {t.cms.untranslatedBody}
+                  </Callout>
+                )}
+                <Prose html={product.description_html} data-authored="true" />
+              </div>
             ) : null}
 
             {product.feature_groups?.length ? (
               <section className="mt-10">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  ফিচার গ্রুপ
+                  {t.product.featureGroups}
                 </h2>
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                   {product.feature_groups.map((group) => (
@@ -124,14 +144,18 @@ export default async function ProductPage(props: { params: Promise<{ slug: strin
 
             {product.specs && Object.keys(product.specs).length > 0 ? (
               <section className="mt-10">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">স্পেসিফিকেশন</h2>
+                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+                  {t.product.specifications}
+                </h2>
                 <dl className="mt-4 divide-y divide-line rounded-[--radius-card] border border-line bg-white">
                   {Object.entries(product.specs).map(([key, value]) => (
                     <div key={key} className="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
                       <dt className="font-latin text-sm font-semibold text-navy capitalize">
                         {key.replace(/_/g, ' ')}
                       </dt>
-                      <dd className="text-sm text-muted">{value}</dd>
+                      <dd data-authored="true" className="text-sm text-muted">
+                      {value}
+                    </dd>
                     </div>
                   ))}
                 </dl>
@@ -144,27 +168,26 @@ export default async function ProductPage(props: { params: Promise<{ slug: strin
               <AddToCart variants={product.variants ?? []} />
 
               <ul className="mt-6 space-y-2 border-t border-line pt-5 text-sm text-muted">
-                <li>ডিজিটাল ডেলিভারি — অ্যাকাউন্ট থেকে ডাউনলোড</li>
-                <li>SHA-256 চেকসাম প্রকাশ করা হয়</li>
-                <li>পেমেন্ট SSLCOMMERZ-এর hosted page-এ</li>
+                <li>{t.product.digitalDelivery}</li>
+                <li>{t.product.checksumPublished}</li>
+                <li>{t.product.paymentHosted}</li>
               </ul>
 
               <p className="mt-4 text-xs text-muted">
-                কেনার আগে{' '}
-                <Link href="/refund-policy" className="underline">
-                  রিফান্ড নীতি
-                </Link>{' '}
-                এবং{' '}
-                <Link href="/software-eula" className="underline">
+                {t.product.beforeBuying}{' '}
+                <LocaleLink href="/refund-policy" className="underline">
+                  {t.pageTitle.refund}
+                </LocaleLink>{' '}
+                {t.product.and}{' '}
+                <LocaleLink href="/software-eula" className="underline">
                   EULA
-                </Link>{' '}
-                পড়ে নিন।
+                </LocaleLink>
+                {t.product.readThem}
               </p>
             </Card>
 
             <Callout tone="warning" className="mt-4">
-              সফটওয়্যারটি একটি productivity aid। চূড়ান্ত যাচাই ও পেশাগত দায়িত্ব যোগ্য
-              ব্যবহারকারীর।
+              {t.product.productivityAid}
             </Callout>
           </aside>
         </div>

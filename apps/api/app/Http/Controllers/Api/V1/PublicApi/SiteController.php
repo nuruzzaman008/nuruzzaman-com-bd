@@ -62,7 +62,12 @@ class SiteController extends Controller
                         'slug' => $post->slug,
                         'updated_at' => ($post->content_updated_at ?? $post->published_at)?->toIso8601String(),
                     ]),
+                // The `-en` documents are translations of a page that is
+                // already listed, not pages of their own: they are served at the
+                // /en URL of their Bengali counterpart, so listing their slug
+                // would advertise a URL that does not exist.
                 'pages' => Page::query()->published()
+                    ->where('slug', 'not like', '%-en')
                     ->select('slug', 'updated_at')->get()
                     ->map(fn (Page $page) => [
                         'slug' => $page->slug,

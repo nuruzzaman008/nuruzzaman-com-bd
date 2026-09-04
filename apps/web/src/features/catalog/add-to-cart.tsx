@@ -9,6 +9,7 @@ import { Callout } from '@/components/ui/callout';
 import { PriceTag } from '@/components/ui/price';
 import { ApiError, api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Variant picker and add-to-cart control.
@@ -17,6 +18,7 @@ import { cn } from '@/lib/cn';
  * recalculated by the API, so nothing here can influence what is charged.
  */
 export function AddToCart({ variants }: { variants: ProductVariant[] }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -47,16 +49,14 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
       setError(
         caught instanceof ApiError
           ? caught.message
-          : 'কার্টে যোগ করা যায়নি। আবার চেষ্টা করুন।',
+          : t.shop.addFailed,
       );
     }
   }
 
   if (variants.length === 0) {
     return (
-      <Callout tone="info">
-        এই পণ্যের কোনো ভ্যারিয়েন্ট এখনো প্রকাশ করা হয়নি।
-      </Callout>
+      <Callout tone="info">{t.shop.noVariants}</Callout>
     );
   }
 
@@ -64,7 +64,7 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
     <div className="space-y-4">
       {variants.length > 1 ? (
         <fieldset>
-          <legend className="text-sm font-semibold text-navy">ভ্যারিয়েন্ট বেছে নিন</legend>
+          <legend className="text-sm font-semibold text-navy">{t.shop.chooseVariant}</legend>
           <div className="mt-3 space-y-2">
             {variants.map((variant) => (
               <label
@@ -108,20 +108,18 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
           onClick={addToCart}
           disabled={isPending}
         >
-          {isPending ? 'যোগ করা হচ্ছে…' : 'কার্টে যোগ করুন'}
+          {isPending ? t.shop.adding : t.shop.addToCart}
         </Button>
       ) : (
-        <Callout tone="info">
-          এই ভ্যারিয়েন্টের দাম এখনো প্রকাশ করা হয়নি। দাম জানতে সাপোর্টে যোগাযোগ করুন।
-        </Callout>
+        <Callout tone="info">{t.shop.variantUnpriced}</Callout>
       )}
 
       <div aria-live="polite">
         {added ? (
           <Callout tone="success" role="status">
-            কার্টে যোগ হয়েছে।{' '}
+            {t.shop.added}{' '}
             <a href="/cart" className="font-semibold underline">
-              কার্ট দেখুন
+              {t.shop.viewCart}
             </a>
           </Callout>
         ) : null}

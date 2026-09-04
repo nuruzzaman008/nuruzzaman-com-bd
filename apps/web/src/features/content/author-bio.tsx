@@ -1,13 +1,24 @@
+'use client';
+
 import Image from 'next/image';
 import type { Author } from '@nuruzzaman/contracts';
 
 import { Card } from '@/components/ui/card';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * The biography is owner-supplied. When it has not been written yet the card
  * shows the headline alone rather than filler text.
  */
-export function AuthorBio({ author, reviewer }: { author?: Author | null; reviewer?: Author | null }) {
+export function AuthorBio({
+  author,
+  reviewer,
+}: {
+  author?: Author | null;
+  reviewer?: Author | null;
+}) {
+  const { t } = useLocale();
+
   if (!author) {
     return null;
   }
@@ -41,11 +52,19 @@ export function AuthorBio({ author, reviewer }: { author?: Author | null; review
               </span>
             ) : null}
           </p>
-          {author.headline ? <p className="mt-1 text-sm text-muted">{author.headline}</p> : null}
-          {author.bio ? <p className="mt-2 text-sm text-ink">{author.bio}</p> : null}
+          {author.headline ? (
+            <p data-authored="true" className="mt-1 text-sm text-muted">
+              {author.headline}
+            </p>
+          ) : null}
+          {author.bio ? (
+            <p data-authored="true" className="mt-2 text-sm text-ink">
+              {author.bio}
+            </p>
+          ) : null}
           {reviewer && reviewer.name !== author.name ? (
             <p className="mt-3 text-xs text-muted">
-              টেকনিক্যাল রিভিউ: {reviewer.name}
+              {t.ui.technicalReview}: {reviewer.name}
               {reviewer.credentials ? ` ${reviewer.credentials}` : ''}
             </p>
           ) : null}

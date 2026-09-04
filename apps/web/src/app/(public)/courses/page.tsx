@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { CourseSummary } from '@nuruzzaman/contracts';
 
 import { CourseCard } from '@/features/courses/course-card';
-import { COURSE_TRACKS, TrackFilter } from '@/features/courses/track-filter';
+import { COURSE_TRACK_SLUGS, TrackFilter } from '@/features/courses/track-filter';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
@@ -10,16 +10,23 @@ import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/states';
 import { publicApi } from '@/lib/api/server';
 import { buildMetadata, itemListSchema, jsonLd } from '@/lib/seo';
+import { taxonomyLabel } from '@/lib/i18n/labels';
+import { localizePath } from '@/lib/i18n/locale';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 /**
  * A track view is a real category page, so it gets its own title and canonical.
  * Paged views canonicalise to page one, which is the URL worth indexing.
  */
-export async function generateMetadata(props: {
-  searchParams: Promise<{ track?: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: LocalizedPageProps & { searchParams: Promise<{ track?: string }> },
+): Promise<Metadata> {
+  const { locale, t } = pageDictionary(props.locale);
   const { track } = await props.searchParams;
-  const active = COURSE_TRACKS.find((entry) => entry.slug === track);
+  const active =
+    track && COURSE_TRACK_SLUGS.includes(track as never)
+      ? { slug: track, name: taxonomyLabel(t, track, null, locale) }
+      : null;
 
   if (!active) {
     return buildMetadata({
@@ -37,11 +44,17 @@ export async function generateMetadata(props: {
   });
 }
 
-export default async function CoursesPage(props: {
-  searchParams: Promise<{ page?: string; level?: string; track?: string }>;
-}) {
+export default async function CoursesPage(
+  props: LocalizedPageProps & {
+    searchParams: Promise<{ page?: string; level?: string; track?: string }>;
+  },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const searchParams = await props.searchParams;
-  const activeTrack = COURSE_TRACKS.find((track) => track.slug === searchParams.track);
+  const activeTrackName =
+    searchParams.track && COURSE_TRACK_SLUGS.includes(searchParams.track as never)
+      ? taxonomyLabel(t, searchParams.track, null, locale)
+      : null;
 
   const courses = await publicApi<{
     data: CourseSummary[];
@@ -66,7 +79,7 @@ export default async function CoursesPage(props: {
               itemListSchema(
                 courses.data.map((course) => ({
                   name: course.title,
-                  path: `/courses/${course.slug}`,
+                  path: localizePath(`/courses/${course.slug}`, locale),
                 })),
               ),
             ),
@@ -77,18 +90,17 @@ export default async function CoursesPage(props: {
       <Container className="py-10 sm:py-14">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'কোর্স', path: '/courses' },
+            { name: t.common.home, path: '/' },
+            { name: t.courses.heading, path: '/courses' },
           ]}
         />
 
         <header className="mt-6 max-w-3xl">
           <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
-            {activeTrack ? activeTrack.name : 'কোর্স'}
+            {activeTrackName ?? t.courses.heading}
           </h1>
           <p className="mt-3 text-muted">
-            প্রতিটি কোর্স একটি বাস্তব কাজের ক্রম ধরে সাজানো। কোনো কোর্স প্রকৃত লেসন যুক্ত
-            না হওয়া পর্যন্ত তালিকাভুক্ত করা হয় না।
+            {t.courses.intro}
           </p>
         </header>
 
@@ -105,15 +117,15 @@ export default async function CoursesPage(props: {
         ) : (
           <EmptyState
             className="mt-8"
-            title={activeTrack ? 'এই ট্র্যাকে এখনো কোর্স নেই' : 'কোর্স এখনো প্রকাশিত হয়নি'}
+            title={activeTrackName ? t.courses.emptyTrackTitle : t.courses.emptyTitle}
             description={
-              activeTrack
-                ? 'অন্য ট্র্যাক দেখুন, অথবা ব্লগে এই বিষয়ের লেখা পড়ুন।'
-                : 'কোনো কোর্স প্রকৃত লেসন যুক্ত না হওয়া পর্যন্ত এখানে দেখানো হয় না।'
+              activeTrackName
+                ? t.courses.emptyTrackDescription
+                : t.courses.emptyDescription
             }
             action={
-              <ButtonLink href={activeTrack ? '/courses' : '/blog'} variant="secondary">
-                {activeTrack ? 'সব কোর্স দেখুন' : 'ততক্ষণে ব্লগ পড়ুন'}
+              <ButtonLink href={activeTrackName ? '/courses' : '/blog'} variant="secondary">
+                {activeTrackName ? t.courses.seeAll : t.courses.readBlog}
               </ButtonLink>
             }
           />

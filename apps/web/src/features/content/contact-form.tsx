@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { ErrorSummary, Field, Input, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 export function ContactForm() {
+  const { t } = useLocale();
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -40,15 +42,15 @@ export function ContactForm() {
         setErrors(caught.fields);
         setMessage(caught.isValidation ? null : caught.message);
       } else {
-        setMessage('বার্তা পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।');
+        setMessage(t.contact.failed);
       }
     }
   }
 
   if (status === 'sent') {
     return (
-      <Callout tone="success" title="বার্তা পৌঁছেছে" role="status">
-        ধন্যবাদ। আপনার বার্তা গ্রহণ করা হয়েছে; উত্তর ইমেইলে পাঠানো হবে।
+      <Callout tone="success" title={t.contact.sentTitle} role="status">
+        {t.contact.sentBody}
       </Callout>
     );
   }
@@ -63,22 +65,22 @@ export function ContactForm() {
         </Callout>
       ) : null}
 
-      <Field label="আপনার নাম" required error={errors.name?.[0]}>
+      <Field label={t.contact.name} required error={errors.name?.[0]}>
         {(props) => <Input name="name" autoComplete="name" {...props} />}
       </Field>
 
-      <Field label="ইমেইল" required error={errors.email?.[0]}>
+      <Field label={t.contact.email} required error={errors.email?.[0]}>
         {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
       </Field>
 
-      <Field label="বিষয়" required error={errors.subject?.[0]}>
+      <Field label={t.contact.subject} required error={errors.subject?.[0]}>
         {(props) => <Input name="subject" {...props} />}
       </Field>
 
       <Field
-        label="বার্তা"
+        label={t.contact.message}
         required
-        hint="অর্ডার নম্বর বা AutoCAD ভার্সন উল্লেখ করলে উত্তর দ্রুত হয়।"
+        hint={t.contact.messageHint}
         error={errors.message?.[0]}
       >
         {(props) => <Textarea name="message" {...props} />}
@@ -91,7 +93,7 @@ export function ContactForm() {
       </div>
 
       <Button type="submit" size="lg" disabled={status === 'sending'}>
-        {status === 'sending' ? 'পাঠানো হচ্ছে…' : 'বার্তা পাঠান'}
+        {status === 'sending' ? t.contact.sending : t.contact.send}
       </Button>
     </form>
   );

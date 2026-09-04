@@ -30,7 +30,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="text-base font-bold">{settings?.name ?? brand.owner}</p>
-            <p className="mt-3 text-sm text-white/75">{brand.statement}</p>
+            <p className="mt-3 text-sm text-white/75">{t.brand.statement}</p>
             {settings?.legal_entity ? (
               <p className="mt-3 text-xs text-white/60">{settings.legal_entity}</p>
             ) : null}
@@ -85,8 +85,11 @@ export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
               ) : null}
               {!settings?.support_email && !settings?.phone ? (
                 <li className="text-white/60">
-                  <Link href="/contact" className="hover:text-white hover:underline">
-                    যোগাযোগ ফর্ম ব্যবহার করুন
+                  <Link
+                    href={localizePath('/contact', locale)}
+                    className="hover:text-white hover:underline"
+                  >
+                    {t.footer.useContactForm}
                   </Link>
                 </li>
               ) : null}
@@ -111,8 +114,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
           </nav>
 
           <p className="mt-4 text-xs text-white/55">
-            &copy; {year} {settings?.name ?? brand.owner}. সফটওয়্যার ও কনটেন্ট প্রকৌশল সহায়ক
-            উপকরণ; চূড়ান্ত যাচাই ও পেশাগত দায়িত্ব যোগ্য ব্যবহারকারীর।
+            &copy; {year} {settings?.name ?? brand.owner}. {t.footer.disclaimer}
           </p>
         </div>
       </Container>

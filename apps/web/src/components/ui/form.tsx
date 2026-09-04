@@ -4,6 +4,7 @@ import { useId } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Form primitives.
@@ -33,6 +34,7 @@ export function Field({
   }) => ReactNode;
   className?: string;
 }) {
+  const { t } = useLocale();
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -48,7 +50,7 @@ export function Field({
             *
           </span>
         ) : null}
-        {required ? <span className="sr-only"> (আবশ্যক)</span> : null}
+        {required ? <span className="sr-only"> {t.ui.required}</span> : null}
       </label>
 
       {children({
@@ -132,12 +134,13 @@ export function Checkbox({
  * is what makes a long form usable with a keyboard and a screen reader.
  */
 export function ErrorSummary({
-  title = 'ফর্মে কিছু সমস্যা আছে',
+  title,
   errors,
 }: {
   title?: string;
   errors: Record<string, string[] | string> | undefined;
 }) {
+  const { t } = useLocale();
   const entries = Object.entries(errors ?? {});
 
   if (entries.length === 0) {
@@ -150,7 +153,7 @@ export function ErrorSummary({
       tabIndex={-1}
       className="rounded-[--radius-card] border border-danger/30 bg-danger-soft p-4"
     >
-      <p className="font-semibold text-danger">{title}</p>
+      <p className="font-semibold text-danger">{title ?? t.ui.formHasErrors}</p>
       <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-ink">
         {entries.map(([field, message]) => (
           <li key={field}>{Array.isArray(message) ? message[0] : message}</li>

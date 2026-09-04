@@ -52,6 +52,7 @@ class CatalogSeeder extends Seeder
                 'name' => 'NB Engineering Tools v6.0',
                 'tagline' => 'Structural & Engineering Design Tools for AutoCAD',
                 'description_markdown' => $this->softwareDescription(),
+                'description_markdown_en' => $this->softwareDescriptionEn(),
                 'status' => ContentStatus::Published,
                 'feature_groups' => [
                     'Layout, Grid & Schedule',
@@ -99,7 +100,9 @@ class CatalogSeeder extends Seeder
                 'type' => ProductType::CreditRefill,
                 'name' => 'NB Credit refill',
                 'tagline' => 'NB Engineering Tools-এর token wallet রিফিল করুন।',
+                'tagline_en' => 'Refill the NB Engineering Tools token wallet.',
                 'description_markdown' => $this->refillDescription(),
+                'description_markdown_en' => $this->refillDescriptionEn(),
                 'status' => ContentStatus::Published,
                 'is_price_public' => false,
                 'published_at' => now(),
@@ -140,6 +143,34 @@ class CatalogSeeder extends Seeder
         ]);
     }
 
+    /**
+     * The English copy, translated from the Bengali above.
+     *
+     * The compatibility sentence is the one place where wording matters more
+     * than fluency: it says designed for, not tested on, in both languages,
+     * because that is the difference the owner's document draws.
+     */
+    private function softwareDescriptionEn(): string
+    {
+        return implode("\n", [
+            'NB Engineering Tools v6.0 is a structural and engineering design toolset built for AutoCAD.',
+            'It is a productivity aid — final checking and professional responsibility rest with the qualified user.',
+            '',
+            '## What it includes',
+            '',
+            '- 25 engineering/productivity modules plus 1 core/security module — 26 compiled VLX modules in all, arranged in seven feature groups',
+            '- An AutoCAD Ribbon tab and the classic pull-down menu — either way of working',
+            '- Machine activation, signed token refill and a protected token wallet',
+            '- Vendor-verified licence recovery',
+            '- Upgrade, repair, uninstall, rollback and log workflows in the installer',
+            '',
+            '## Compatibility',
+            '',
+            'According to the owner\'s published document, the current commercial build is prepared for '.config('nb.product.designed_for').', on Windows 10/11 64-bit.',
+            'Compatibility with any other AutoCAD version has to be confirmed separately — no version is called tested without evidence of a runtime test.',
+        ]);
+    }
+
     private function refillDescription(): string
     {
         return implode("\n", [
@@ -148,6 +179,17 @@ class CatalogSeeder extends Seeder
             'অর্ডার করার পরে আপনার account থেকে Machine ID সহ একটি refill request জমা দিন।',
             'Vendor প্রক্রিয়া সম্পন্ন হলে account-এ নিরাপদ response পাবেন।',
             'কোনো key বা token এই ওয়েবসাইটে সংরক্ষণ করা হয় না।',
+        ]);
+    }
+
+    private function refillDescriptionEn(): string
+    {
+        return implode("\n", [
+            'NB Credit is what refills the protected token wallet in NB Engineering Tools.',
+            '',
+            'After ordering, submit a refill request from your account with your Machine ID.',
+            'Once the vendor process is complete, a secure response appears in your account.',
+            'No key and no token is ever stored on this website.',
         ]);
     }
 }

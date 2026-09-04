@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ApiError, type Post, type PostSummary } from '@nuruzzaman/contracts';
 
 import { AuthorBio } from '@/features/content/author-bio';
 import { PostCard } from '@/features/content/post-card';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { LocaleLink } from '@/components/ui/locale-link';
 import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/container';
 import { CoverArt } from '@/components/ui/cover-art';
@@ -14,6 +14,8 @@ import { Prose } from '@/components/ui/prose';
 import { TableOfContents } from '@/components/ui/table-of-contents';
 import { publicApi, tryPublicApi } from '@/lib/api/server';
 import { date, isoDate, minutes } from '@/lib/format';
+import { taxonomyLabel } from '@/lib/i18n/labels';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { articleSchema, buildMetadata, jsonLd } from '@/lib/seo';
 
 async function loadPost(slug: string): Promise<Post> {
@@ -52,9 +54,15 @@ export async function generateMetadata(props: {
   });
 }
 
-export default async function BlogPostPage(props: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPage(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
   const post = await loadPost(slug);
+
+  const category = post.categories?.[0];
+  const categoryName = category ? taxonomyLabel(t, category.slug, category.name, locale) : null;
 
   const related = await tryPublicApi<{ data: PostSummary[] }>(
     `/posts/${encodeURIComponent(slug)}/related`,
@@ -84,51 +92,66 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
       <Container className="py-10 sm:py-14">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'ব্লগ', path: '/blog' },
-            { name: post.title, path: `/blog/${post.slug}` },
+            { name: t.common.home, path: '/' },
+            { name: t.nav.blog, path: '/blog' },
+            { name: post.title, path: `/blog/${post.slug}`, authored: true },
           ]}
         />
 
         <article className="mt-6">
           <header className="max-w-3xl">
-            {post.categories?.length ? (
+            {category ? (
               <p className="text-sm font-semibold text-teal">
-                <Link href={`/topics/${post.categories[0].slug}`} className="hover:underline">
-                  {post.categories[0].name}
-                </Link>
+                <LocaleLink href={`/topics/${category.slug}`} className="hover:underline">
+                  {categoryName}
+                </LocaleLink>
               </p>
             ) : null}
 
-            <h1 className="mt-2 text-[length:var(--step-h1)] leading-tight font-bold text-navy">
+            <h1
+              data-authored="true"
+              className="mt-2 text-[length:var(--step-h1)] leading-tight font-bold text-navy"
+            >
               {post.title}
             </h1>
 
-            {post.excerpt ? <p className="mt-4 text-lg text-muted">{post.excerpt}</p> : null}
+            {post.excerpt ? (
+              <p data-authored="true" className="mt-4 text-lg text-muted">
+                {post.excerpt}
+              </p>
+            ) : null}
 
             <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
               {post.author?.name ? (
                 <span className="font-medium text-navy">{post.author.name}</span>
               ) : null}
               {post.published_at ? (
-                <time dateTime={isoDate(post.published_at)}>প্রকাশ: {date(post.published_at)}</time>
+                <time dateTime={isoDate(post.published_at)}>
+                  {t.post.published}: {date(post.published_at, locale)}
+                </time>
               ) : null}
               {post.updated_at && post.updated_at !== post.published_at ? (
-                <time dateTime={isoDate(post.updated_at)}>হালনাগাদ: {date(post.updated_at)}</time>
+                <time dateTime={isoDate(post.updated_at)}>
+                  {t.post.updated}: {date(post.updated_at, locale)}
+                </time>
               ) : null}
-              {post.reading_minutes ? <span>{minutes(post.reading_minutes)} পড়া</span> : null}
+              {post.reading_minutes ? (
+                <span>
+                  {minutes(post.reading_minutes, locale)} {t.units.read}
+                </span>
+              ) : null}
             </p>
 
             {post.reviewer?.name ? (
               <p className="mt-2 text-sm text-success">
-                টেকনিক্যাল রিভিউ: {post.reviewer.name}
+                {t.ui.technicalReview}: {post.reviewer.name}
                 {post.reviewer.credentials ? ` ${post.reviewer.credentials}` : ''}
               </p>
             ) : (
               // Said plainly rather than left blank: a reader cannot tell an
               // unreviewed article from a reviewed one by looking at it.
               <p className="mt-2 text-sm font-medium text-warning">
-                টেকনিক্যাল রিভিউ এখনো বাকি — হিসাব নিজে যাচাই করে ব্যবহার করুন।
+                {t.post.reviewPending}
               </p>
             )}
           </header>
@@ -147,7 +170,7 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
             <CoverArt
               topic={post.categories?.[0]?.slug}
               seed={post.slug}
-              label={post.categories?.[0]?.name}
+              label={categoryName ?? undefined}
               className="mt-8 rounded-[--radius-card] border border-line"
             />
           )}
@@ -157,7 +180,7 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
               <Prose html={post.body_html} />
 
               {post.tags?.length ? (
-                <ul className="mt-10 flex flex-wrap gap-2">
+                <ul data-authored="true" className="mt-10 flex flex-wrap gap-2">
                   {post.tags.map((tag) => (
                     <li key={tag.slug}>
                       <span className="inline-flex rounded-full border border-line bg-white px-3 py-1 text-xs text-muted">
@@ -169,9 +192,10 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
               ) : null}
 
               <Callout tone="warning" className="mt-8">
-                এই লেখাটি শিক্ষামূলক। কোনো নির্দিষ্ট প্রকল্পে প্রয়োগের আগে সেই প্রকল্পের
-                জিওটেকনিক্যাল রিপোর্ট, লোড এবং প্রযোজ্য কোড অনুযায়ী স্বাধীনভাবে যাচাই করুন।
-                বিস্তারিত: <Link href="/engineering-disclaimer" className="underline">ইঞ্জিনিয়ারিং দাবিত্যাগ</Link>।
+                {t.post.educationalNotice} {t.post.moreDetail}:{' '}
+                <LocaleLink href="/engineering-disclaimer" className="underline">
+                  {t.pageTitle.disclaimer}
+                </LocaleLink>
               </Callout>
 
               <div className="mt-8">
@@ -188,7 +212,7 @@ export default async function BlogPostPage(props: { params: Promise<{ slug: stri
         {related && related.data.length > 0 ? (
           <section aria-labelledby="related-heading" className="mt-16">
             <h2 id="related-heading" className="text-[length:var(--step-h2)] font-bold text-navy">
-              আরও পড়ুন
+              {t.post.readMore}
             </h2>
             <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {related.data.map((item) => (

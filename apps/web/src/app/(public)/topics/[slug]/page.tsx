@@ -8,6 +8,8 @@ import { Container } from '@/components/ui/container';
 import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/states';
 import { publicApi } from '@/lib/api/server';
+import { taxonomyLabel } from '@/lib/i18n/labels';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata } from '@/lib/seo';
 
 async function loadCategory(slug: string): Promise<Category> {
@@ -27,23 +29,27 @@ async function loadCategory(slug: string): Promise<Category> {
   }
 }
 
-export async function generateMetadata(props: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+): Promise<Metadata> {
+  const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
   const category = await loadCategory(slug);
 
   return buildMetadata({
-    title: `${category.name} — বিষয়ভিত্তিক আর্টিকেল`,
+    title: `${taxonomyLabel(t, category.slug, category.name, locale)} — ${t.post.topicMetaSuffix}`,
     description: category.description,
     path: `/topics/${category.slug}`,
   });
 }
 
-export default async function TopicPage(props: {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
-}) {
+export default async function TopicPage(
+  props: LocalizedPageProps & {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ page?: string }>;
+  },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const [{ slug }, searchParams] = await Promise.all([props.params, props.searchParams]);
 
   const [category, posts] = await Promise.all([
@@ -54,18 +60,20 @@ export default async function TopicPage(props: {
     ),
   ]);
 
+  const name = taxonomyLabel(t, category.slug, category.name, locale);
+
   return (
     <Container className="py-10 sm:py-14">
       <Breadcrumbs
         trail={[
-          { name: 'হোম', path: '/' },
-          { name: 'ব্লগ', path: '/blog' },
-          { name: category.name, path: `/topics/${category.slug}` },
+          { name: t.common.home, path: '/' },
+          { name: t.nav.blog, path: '/blog' },
+          { name, path: `/topics/${category.slug}` },
         ]}
       />
 
       <header className="mt-6 max-w-3xl">
-        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{category.name}</h1>
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{name}</h1>
         {category.description ? <p className="mt-3 text-muted">{category.description}</p> : null}
       </header>
 
@@ -80,8 +88,8 @@ export default async function TopicPage(props: {
       ) : (
         <EmptyState
           className="mt-8"
-          title="এই বিষয়ে এখনো লেখা প্রকাশ হয়নি"
-          description="নতুন আর্টিকেল যুক্ত হলে এখানে দেখা যাবে।"
+          title={t.post.topicEmptyTitle}
+          description={t.post.topicEmptyDescription}
         />
       )}
 

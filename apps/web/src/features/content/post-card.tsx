@@ -1,12 +1,20 @@
+'use client';
+
 import Image from 'next/image';
-import Link from 'next/link';
 import type { PostSummary } from '@nuruzzaman/contracts';
 
 import { Card } from '@/components/ui/card';
 import { CoverArt } from '@/components/ui/cover-art';
+import { LocaleLink } from '@/components/ui/locale-link';
 import { date, isoDate, minutes } from '@/lib/format';
+import { taxonomyLabel } from '@/lib/i18n/labels';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 export function PostCard({ post, priority = false }: { post: PostSummary; priority?: boolean }) {
+  const { locale, t } = useLocale();
+  const category = post.categories?.[0];
+  const categoryName = category ? taxonomyLabel(t, category.slug, category.name, locale) : null;
+
   return (
     <Card
       as="article"
@@ -24,40 +32,41 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
           className="aspect-[16/9] w-full object-cover"
         />
       ) : (
-        <CoverArt
-          topic={post.categories?.[0]?.slug}
-          seed={post.slug}
-          label={post.categories?.[0]?.name}
-        />
+        <CoverArt topic={category?.slug} seed={post.slug} label={categoryName ?? undefined} />
       )}
 
       <div className="flex flex-1 flex-col p-5">
-        {post.categories?.length ? (
-          <p className="text-xs font-semibold text-teal">{post.categories[0].name}</p>
-        ) : null}
+        {categoryName ? <p className="text-xs font-semibold text-teal">{categoryName}</p> : null}
 
-        <h3 className="mt-1.5 text-lg leading-snug font-bold text-navy">
-          <Link href={`/blog/${post.slug}`} className="after:absolute after:inset-0 hover:text-blue">
+        <h3 data-authored="true" className="mt-1.5 text-lg leading-snug font-bold text-navy">
+          <LocaleLink
+            href={`/blog/${post.slug}`}
+            className="after:absolute after:inset-0 hover:text-blue"
+          >
             {post.title}
-          </Link>
+          </LocaleLink>
         </h3>
 
         {post.excerpt ? (
-          <p className="mt-2 line-clamp-3 text-sm text-muted">{post.excerpt}</p>
+          <p data-authored="true" className="mt-2 line-clamp-3 text-sm text-muted">
+            {post.excerpt}
+          </p>
         ) : null}
 
         <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-          {post.author?.name ? <span>{post.author.name}</span> : null}
+          {post.author?.name ? <span data-authored="true">{post.author.name}</span> : null}
           {post.published_at ? (
             <>
               <span aria-hidden="true">·</span>
-              <time dateTime={isoDate(post.published_at)}>{date(post.published_at)}</time>
+              <time dateTime={isoDate(post.published_at)}>{date(post.published_at, locale)}</time>
             </>
           ) : null}
           {post.reading_minutes ? (
             <>
               <span aria-hidden="true">·</span>
-              <span>{minutes(post.reading_minutes)} পড়া</span>
+              <span>
+                {minutes(post.reading_minutes, locale)} {t.units.read}
+              </span>
             </>
           ) : null}
         </p>

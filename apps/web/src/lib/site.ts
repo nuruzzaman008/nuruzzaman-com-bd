@@ -10,10 +10,30 @@ export type NavItem = {
    * do not translate.
    */
   labelKey?: keyof Dictionary['nav'];
+  /** Key into `Dictionary['pageTitle']`, for links named after a page. */
+  titleKey?: keyof Dictionary['pageTitle'];
   description?: string;
   /** Key into `Dictionary['navDescription']`, for the mobile menu blurb. */
   descriptionKey?: keyof Dictionary['navDescription'];
 };
+
+/**
+ * The label to show for a nav item, in the active language.
+ *
+ * Lives here rather than in the header so that server-rendered pages, which
+ * cannot call `useLocale()`, can label the same lists the same way.
+ */
+export function navItemLabel(item: NavItem, t: Dictionary): string {
+  if (item.labelKey) {
+    return t.nav[item.labelKey];
+  }
+
+  if (item.titleKey) {
+    return t.pageTitle[item.titleKey];
+  }
+
+  return item.label;
+}
 
 /** Primary navigation, in the order the information architecture defines. */
 export const primaryNav: NavItem[] = [
@@ -33,22 +53,30 @@ export const primaryNav: NavItem[] = [
 ];
 
 export const supportNav: NavItem[] = [
-  { href: '/support/installation', label: 'ইনস্টলেশন গাইড' },
-  { href: '/support/activation', label: 'অ্যাক্টিভেশন' },
-  { href: '/support/license-recovery', label: 'লাইসেন্স রিকভারি' },
-  { href: '/support/release-notes', label: 'রিলিজ নোট' },
-  { href: '/support/system-requirements', label: 'সিস্টেম রিকোয়ারমেন্ট' },
-  { href: '/faq', label: 'সাধারণ জিজ্ঞাসা' },
-  { href: '/contact', label: 'যোগাযোগ' },
+  { href: '/support/installation', label: 'ইনস্টলেশন গাইড', titleKey: 'supportInstallation' },
+  { href: '/support/activation', label: 'অ্যাক্টিভেশন', titleKey: 'supportActivation' },
+  {
+    href: '/support/license-recovery',
+    label: 'লাইসেন্স রিকভারি',
+    titleKey: 'supportLicenseRecovery',
+  },
+  { href: '/support/release-notes', label: 'রিলিজ নোট', titleKey: 'supportReleaseNotes' },
+  {
+    href: '/support/system-requirements',
+    label: 'সিস্টেম রিকোয়ারমেন্ট',
+    titleKey: 'supportSystemRequirements',
+  },
+  { href: '/faq', label: 'সাধারণ জিজ্ঞাসা', titleKey: 'faq' },
+  { href: '/contact', label: 'যোগাযোগ', titleKey: 'contact' },
 ];
 
 export const legalNav: NavItem[] = [
-  { href: '/privacy-policy', label: 'গোপনীয়তা নীতি' },
-  { href: '/terms', label: 'ব্যবহারের শর্তাবলি' },
-  { href: '/refund-policy', label: 'রিফান্ড নীতি' },
-  { href: '/software-eula', label: 'সফটওয়্যার EULA' },
-  { href: '/course-terms', label: 'কোর্স শর্তাবলি' },
-  { href: '/engineering-disclaimer', label: 'ইঞ্জিনিয়ারিং দাবিত্যাগ' },
+  { href: '/privacy-policy', label: 'গোপনীয়তা নীতি', titleKey: 'privacy' },
+  { href: '/terms', label: 'ব্যবহারের শর্তাবলি', titleKey: 'terms' },
+  { href: '/refund-policy', label: 'রিফান্ড নীতি', titleKey: 'refund' },
+  { href: '/software-eula', label: 'সফটওয়্যার EULA', titleKey: 'eula' },
+  { href: '/course-terms', label: 'কোর্স শর্তাবলি', titleKey: 'courseTerms' },
+  { href: '/engineering-disclaimer', label: 'ইঞ্জিনিয়ারিং দাবিত্যাগ', titleKey: 'disclaimer' },
 ];
 
 export const accountNav: NavItem[] = [

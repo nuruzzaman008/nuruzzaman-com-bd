@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { number } from '@/lib/format';
+import { localizeHref } from '@/components/ui/locale-link';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { useSession } from '@/lib/session/session-provider';
 
@@ -16,12 +17,12 @@ import { useSession } from '@/lib/session/session-provider';
  */
 export function HeaderActions() {
   const { user, cartCount: itemCount } = useSession();
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
 
   return (
     <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
       <Link
-        href="/search"
+        href={localizeHref('/search', locale)}
         className="inline-flex size-11 items-center justify-center rounded-lg text-navy hover:bg-blue-soft hover:text-blue"
       >
         <span className="sr-only">{t.actions.search}</span>

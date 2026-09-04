@@ -9,6 +9,8 @@ import { Container } from '@/components/ui/container';
 import { Prose } from '@/components/ui/prose';
 import { publicApi } from '@/lib/api/server';
 import { duration } from '@/lib/format';
+import { getDictionary } from '@/lib/i18n/dictionary';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata } from '@/lib/seo';
 
 /**
@@ -39,15 +41,18 @@ export async function generateMetadata(props: {
   const lesson = await loadPreview(slug, lessonSlug);
 
   return buildMetadata({
-    title: `${lesson.title} — ফ্রি প্রিভিউ`,
-    description: lesson.course.title ? `${lesson.course.title} কোর্সের ফ্রি প্রিভিউ লেসন।` : null,
+    title: `${lesson.title} — ${getDictionary('bn').course.previewMetaSuffix}`,
+    description: lesson.course.title
+      ? `${lesson.course.title}: ${getDictionary('bn').course.previewMetaDescription}`
+      : null,
     path: `/courses/${slug}/preview/${lessonSlug}`,
   });
 }
 
-export default async function PreviewLessonPage(props: {
-  params: Promise<{ slug: string; lessonSlug: string }>;
-}) {
+export default async function PreviewLessonPage(
+  props: LocalizedPageProps & { params: Promise<{ slug: string; lessonSlug: string }> },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const { slug, lessonSlug } = await props.params;
   const lesson = await loadPreview(slug, lessonSlug);
 
@@ -55,36 +60,42 @@ export default async function PreviewLessonPage(props: {
     <Container size="narrow" className="py-10 sm:py-14">
       <Breadcrumbs
         trail={[
-          { name: 'হোম', path: '/' },
-          { name: 'কোর্স', path: '/courses' },
-          { name: lesson.course.title ?? 'কোর্স', path: `/courses/${slug}` },
-          { name: lesson.title, path: `/courses/${slug}/preview/${lessonSlug}` },
+          { name: t.common.home, path: '/' },
+          { name: t.nav.courses, path: '/courses' },
+          {
+            name: lesson.course.title ?? t.nav.courses,
+            path: `/courses/${slug}`,
+            authored: true,
+          },
+          {
+            name: lesson.title,
+            path: `/courses/${slug}/preview/${lessonSlug}`,
+            authored: true,
+          },
         ]}
       />
 
       <header className="mt-6">
-        <p className="text-sm font-semibold text-teal">ফ্রি প্রিভিউ</p>
+        <p className="text-sm font-semibold text-teal">{t.course.freePreview}</p>
         <h1 className="mt-2 text-[length:var(--step-h1)] font-bold text-navy">{lesson.title}</h1>
         {lesson.duration_seconds ? (
-          <p className="mt-2 text-sm text-muted">{duration(lesson.duration_seconds)}</p>
+          <p className="mt-2 text-sm text-muted">{duration(lesson.duration_seconds, locale)}</p>
         ) : null}
       </header>
 
       {lesson.playback && !lesson.playback.available ? (
         <Callout tone="info" className="mt-6">
-          {lesson.playback.message ?? 'এই লেসনের ভিডিও এখনো যুক্ত করা হয়নি।'}
+          {lesson.playback.message ?? t.course.previewNoVideo}
         </Callout>
       ) : null}
 
       {lesson.body_html ? <Prose html={lesson.body_html} className="mt-8" /> : null}
 
       <Callout tone="warning" className="mt-10">
-        <p className="font-semibold">সম্পূর্ণ কোর্সে আরও কী আছে</p>
-        <p className="mt-1">
-          বাকি লেসন, অনুশীলন ফাইল, কুইজ ও সার্টিফিকেট পেতে কোর্সে ভর্তি হতে হবে।
-        </p>
+        <p className="font-semibold">{t.course.previewMoreHeading}</p>
+        <p className="mt-1">{t.course.previewMoreBody}</p>
         <div className="mt-4">
-          <ButtonLink href={`/courses/${slug}`}>কোর্সের বিস্তারিত দেখুন</ButtonLink>
+          <ButtonLink href={`/courses/${slug}`}>{t.course.previewSeeCourse}</ButtonLink>
         </div>
       </Callout>
     </Container>

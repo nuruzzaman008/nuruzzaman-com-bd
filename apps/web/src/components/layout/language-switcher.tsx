@@ -29,7 +29,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div data-language-switcher="true" className={cn('flex items-center gap-1', className)}>
       <span className="sr-only" id="language-switcher-label">
         {t.language.label}
       </span>

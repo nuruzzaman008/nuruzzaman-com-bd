@@ -11,7 +11,9 @@ import { Container, Section, SectionHeading } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/states';
 import { publicApi, tryPublicApi } from '@/lib/api/server';
 import { buildMetadata, jsonLd, organizationSchema, personSchema, websiteSchema } from '@/lib/seo';
-import { brand, supportNav } from '@/lib/site';
+import { localizePath } from '@/lib/i18n/locale';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
+import { brand, navItemLabel, supportNav } from '@/lib/site';
 
 export const metadata: Metadata = buildMetadata({
   title: `${brand.owner} — প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং শিক্ষা ও টুলস`,
@@ -29,7 +31,9 @@ const FEATURE_GROUPS = [
   'License & System',
 ];
 
-export default async function HomePage() {
+export default async function HomePage({ locale }: LocalizedPageProps) {
+  const { locale: active, t } = pageDictionary(locale);
+
   // Fetched in parallel so one slow query does not serialise the whole render.
   const [posts, courses, products, settings] = await Promise.all([
     publicApi<{ data: PostSummary[] }>('/posts', {
@@ -77,16 +81,16 @@ export default async function HomePage() {
               nuruzzaman.com.bd
             </p>
             <h1 className="mt-3 text-[length:var(--step-display)] leading-[1.15] font-bold text-white">
-              {brand.statement}
+              {t.brand.statement}
             </h1>
-            <p className="mt-5 text-lg text-white/80">{brand.heroSupport}</p>
+            <p className="mt-5 text-lg text-white/80">{t.brand.heroSupport}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/engineering-tools" size="lg" variant="accent">
-                NB Engineering Tools দেখুন
+                {t.home.heroCtaTools}
               </ButtonLink>
               <ButtonLink href="/blog" size="lg" variant="inverse">
-                আর্টিকেল পড়ুন
+                {t.home.heroCtaBlog}
               </ButtonLink>
             </div>
           </div>
@@ -99,8 +103,8 @@ export default async function HomePage() {
             <li className="flex items-start gap-3">
               <span aria-hidden="true" className="mt-1 size-2 shrink-0 rounded-full bg-teal" />
               <span>
-                <strong className="block font-semibold text-navy">ইঞ্জিনিয়ার-রিভিউ করা লেখা</strong>
-                <span className="text-muted">ইউনিট, অ্যাজাম্পশন ও কোড এডিশন উল্লেখ করে</span>
+                <strong className="block font-semibold text-navy">{t.home.trustReviewed}</strong>
+                <span className="text-muted">{t.home.trustReviewedDetail}</span>
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -112,7 +116,7 @@ export default async function HomePage() {
                 <span className="text-muted">
                   {/* Only claims a tested version once the owner has recorded one. */}
                   {site?.product?.tested_autocad_versions
-                    ? `পরীক্ষিত: ${site.product.tested_autocad_versions}`
+                    ? `${t.home.trustTested}: ${site.product.tested_autocad_versions}`
                     : 'Windows 10 / 11, 64-bit'}
                 </span>
               </span>
@@ -120,8 +124,8 @@ export default async function HomePage() {
             <li className="flex items-start gap-3">
               <span aria-hidden="true" className="mt-1 size-2 shrink-0 rounded-full bg-amber" />
               <span>
-                <strong className="block font-semibold text-navy">সুরক্ষিত ডাউনলোড</strong>
-                <span className="text-muted">SHA-256 চেকসাম ও অ্যাকাউন্ট-ভিত্তিক অ্যাক্সেস</span>
+                <strong className="block font-semibold text-navy">{t.home.trustDownload}</strong>
+                <span className="text-muted">{t.home.trustDownloadDetail}</span>
               </span>
             </li>
           </ul>
@@ -131,9 +135,9 @@ export default async function HomePage() {
       <Section tone="white">
         <Container>
           <SectionHeading
-            eyebrow="সর্বশেষ"
-            title="ব্লগ থেকে"
-            description="প্রতিটি লেখায় একটি বাস্তব উদাহরণ, ব্যবহৃত অ্যাজাম্পশন এবং সীমাবদ্ধতা স্পষ্ট করে লেখা থাকে।"
+            eyebrow={t.home.blogEyebrow}
+            title={t.home.blogTitle}
+            description={t.home.blogDescription}
           />
 
           {posts.data.length > 0 ? (
@@ -147,14 +151,14 @@ export default async function HomePage() {
           ) : (
             <EmptyState
               className="mt-8"
-              title="এখনো কোনো আর্টিকেল প্রকাশ হয়নি"
-              description="ইঞ্জিনিয়ার-রিভিউ শেষ হলে লেখা এখানে দেখা যাবে।"
+              title={t.home.blogEmptyTitle}
+              description={t.home.blogEmptyDescription}
             />
           )}
 
           <div className="mt-8">
             <ButtonLink href="/blog" variant="secondary">
-              সব আর্টিকেল
+              {t.home.blogAll}
             </ButtonLink>
           </div>
         </Container>
@@ -164,8 +168,8 @@ export default async function HomePage() {
         <Container>
           <SectionHeading
             eyebrow="NB Engineering Tools"
-            title="AutoCAD-এর জন্য স্ট্রাকচারাল ও ইঞ্জিনিয়ারিং টুলসেট"
-            description="২৬টি compiled VLX application, সাতটি feature group-এ সাজানো। Ribbon এবং classic pull-down menu — দুইভাবেই কাজ করে।"
+            title={t.home.toolsTitle}
+            description={t.home.toolsDescription}
           />
 
           <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -181,17 +185,14 @@ export default async function HomePage() {
 
           <Callout tone="warning" className="mt-6">
             <p>
-              <strong>সামঞ্জস্য:</strong> মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান
-              commercial build {site?.product?.designed_for ?? 'AutoCAD 2024'}, Windows
-              10/11 64-bit-এর জন্য প্রস্তুত।{' '}
+              <strong>{t.home.compatibilityLabel}</strong> {t.home.compatibilityBody}{' '}
+              {site?.product?.designed_for ?? 'AutoCAD 2024'}
+              {t.home.compatibilitySuffix}{' '}
               {site?.product?.tested_autocad_versions
-                ? `রানটাইম-টেস্ট করা: ${site.product.tested_autocad_versions}।`
-                : 'ভিন্ন ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে।'}
+                ? `${t.home.compatibilityTested}: ${site.product.tested_autocad_versions}.`
+                : t.home.compatibilityUntested}
             </p>
-            <p className="mt-2">
-              সফটওয়্যারটি একটি productivity aid। চূড়ান্ত যাচাই ও পেশাগত দায়িত্ব যোগ্য
-              ব্যবহারকারীর।
-            </p>
+            <p className="mt-2">{t.home.productivityAid}</p>
           </Callout>
 
           {products && products.data.length > 0 ? (
@@ -205,9 +206,9 @@ export default async function HomePage() {
           ) : null}
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <ButtonLink href="/engineering-tools">টুলস সম্পর্কে বিস্তারিত</ButtonLink>
+            <ButtonLink href="/engineering-tools">{t.home.toolsCta}</ButtonLink>
             <ButtonLink href="/shop" variant="secondary">
-              সব প্রোডাক্ট
+              {t.home.productsAll}
             </ButtonLink>
           </div>
         </Container>
@@ -216,9 +217,9 @@ export default async function HomePage() {
       <Section tone="white">
         <Container>
           <SectionHeading
-            eyebrow="কোর্স"
-            title="বাংলায় প্র্যাকটিক্যাল কোর্স"
-            description="হিসাব থেকে ড্রয়িং পর্যন্ত — প্রতিটি ধাপে ইউনিট, অ্যাজাম্পশন ও যাচাইয়ের পদ্ধতি সহ।"
+            eyebrow={t.home.coursesEyebrow}
+            title={t.home.coursesTitle}
+            description={t.home.coursesDescription}
           />
 
           {courses && courses.data.length > 0 ? (
@@ -232,11 +233,11 @@ export default async function HomePage() {
           ) : (
             <EmptyState
               className="mt-8"
-              title="কোর্স এখনো প্রকাশিত হয়নি"
-              description="প্রথম কোর্সগুলো তৈরি হচ্ছে। প্রকৃত লেসন যুক্ত না হওয়া পর্যন্ত কোনো কোর্স তালিকাভুক্ত করা হয় না।"
+              title={t.home.coursesEmptyTitle}
+              description={t.home.coursesEmptyDescription}
               action={
                 <ButtonLink href="/blog" variant="secondary">
-                  ততক্ষণে ব্লগ পড়ুন
+                  {t.home.coursesEmptyCta}
                 </ButtonLink>
               }
             />
@@ -248,19 +249,19 @@ export default async function HomePage() {
         <Container>
           <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
             <SectionHeading
-              eyebrow="সহায়তা"
-              title="ইনস্টলেশন থেকে অ্যাক্টিভেশন — ধাপে ধাপে"
-              description="সবচেয়ে বেশি দরকার হয় এমন সহায়তা পাতাগুলো এক জায়গায়।"
+              eyebrow={t.home.supportEyebrow}
+              title={t.home.supportTitle}
+              description={t.home.supportDescription}
             />
 
             <ul className="grid gap-3 sm:grid-cols-2">
               {supportNav.map((item) => (
                 <li key={item.href}>
                   <Link
-                    href={item.href}
+                    href={localizePath(item.href, active)}
                     className="flex min-h-11 items-center rounded-[--radius-card] border border-blue/20 bg-white px-4 py-3 text-sm font-semibold text-navy hover:border-blue hover:text-blue"
                   >
-                    {item.label}
+                    {navItemLabel(item, t)}
                   </Link>
                 </li>
               ))}

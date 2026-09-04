@@ -1,41 +1,52 @@
-import Link from 'next/link';
+'use client';
 
+import { LocaleLink } from '@/components/ui/locale-link';
 import { cn } from '@/lib/cn';
+import { taxonomyLabel } from '@/lib/i18n/labels';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
- * The catalogue's subject tracks. Mirrors App\Support\CourseTracks on the API
- * side; the slugs are the contract between the two and also key the generated
- * cover artwork.
+ * The catalogue's subject tracks. Mirrors CourseTracks on the API side; the
+ * slugs are the contract between the two and also key the generated cover
+ * artwork. The display names live in the dictionary, so the filter reads in
+ * whichever language the visitor is browsing in.
  */
-export const COURSE_TRACKS: { slug: string; name: string }[] = [
-  { slug: 'foundation-geotechnical', name: 'ফাউন্ডেশন ও জিওটেকনিক্যাল' },
-  { slug: 'rcc-design-detailing', name: 'RCC ডিজাইন ও ডিটেইলিং' },
-  { slug: 'structural-engineering', name: 'স্ট্রাকচারাল অ্যানালাইসিস' },
-  { slug: 'steel-design', name: 'স্টিল স্ট্রাকচার ডিজাইন' },
-  { slug: 'autocad-productivity', name: 'AutoCAD ও ড্রাফটিং' },
-  { slug: 'engineering-software', name: 'ইঞ্জিনিয়ারিং সফটওয়্যার' },
-  { slug: 'bnbc-code-application', name: 'BNBC ও কোড প্রয়োগ' },
-  { slug: 'construction-quality', name: 'নির্মাণ মান ও সাইট প্র্যাকটিস' },
-  { slug: 'quantity-estimation', name: 'কোয়ান্টিটি ও এস্টিমেট' },
-  { slug: 'mouza-drawing-workflow', name: 'মৌজা ম্যাপ ও ল্যান্ড ড্রয়িং' },
-];
+export const COURSE_TRACK_SLUGS = [
+  'foundation-geotechnical',
+  'rcc-design-detailing',
+  'structural-engineering',
+  'steel-design',
+  'autocad-productivity',
+  'engineering-software',
+  'bnbc-code-application',
+  'construction-quality',
+  'quantity-estimation',
+  'mouza-drawing-workflow',
+] as const;
 
 /**
- * Track filter rendered as links rather than a client-side control, so it works
- * without JavaScript and each filtered view has its own shareable URL.
+ * Track filter rendered as links rather than a client-side control, so each
+ * filtered view has its own shareable URL.
  */
 export function TrackFilter({ active }: { active?: string }) {
-  const options = [{ slug: '', name: 'সব ট্র্যাক' }, ...COURSE_TRACKS];
+  const { locale, t } = useLocale();
+  const options = [
+    { slug: '', name: t.taxonomy.trackFilter },
+    ...COURSE_TRACK_SLUGS.map((slug) => ({
+      slug,
+      name: taxonomyLabel(t, slug, null, locale),
+    })),
+  ];
 
   return (
-    <nav aria-label="বিষয় অনুযায়ী ফিল্টার" className="mt-6">
+    <nav aria-label={t.taxonomy.filterLabel} className="mt-6">
       <ul className="flex flex-wrap gap-2">
         {options.map((option) => {
           const isActive = (active ?? '') === option.slug;
 
           return (
             <li key={option.slug || 'all'}>
-              <Link
+              <LocaleLink
                 href={option.slug ? `/courses?track=${option.slug}` : '/courses'}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
@@ -46,7 +57,7 @@ export function TrackFilter({ active }: { active?: string }) {
                 )}
               >
                 {option.name}
-              </Link>
+              </LocaleLink>
             </li>
           );
         })}

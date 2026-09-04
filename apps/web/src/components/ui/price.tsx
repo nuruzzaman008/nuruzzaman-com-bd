@@ -1,6 +1,9 @@
+'use client';
+
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/cn';
 import { price as formatPrice } from '@/lib/format';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 export type PriceValue = {
   currency: string;
@@ -16,7 +19,7 @@ export type PriceValue = {
 export function PriceTag({
   value,
   size = 'md',
-  unavailableLabel = 'দাম জানতে যোগাযোগ করুন',
+  unavailableLabel,
   className,
 }: {
   value: PriceValue;
@@ -24,16 +27,20 @@ export function PriceTag({
   unavailableLabel?: string;
   className?: string;
 }) {
+  const { locale, t } = useLocale();
+
   if (!value) {
     return (
-      <span className={cn('text-sm font-medium text-muted', className)}>{unavailableLabel}</span>
+      <span className={cn('text-sm font-medium text-muted', className)}>
+        {unavailableLabel ?? t.ui.priceOnRequest}
+      </span>
     );
   }
 
-  const current = formatPrice(value.amount_minor, value.currency);
+  const current = formatPrice(value.amount_minor, value.currency, locale);
   const compare =
     value.compare_at_minor && value.compare_at_minor > value.amount_minor
-      ? formatPrice(value.compare_at_minor, value.currency)
+      ? formatPrice(value.compare_at_minor, value.currency, locale)
       : null;
 
   return (
@@ -51,7 +58,7 @@ export function PriceTag({
       {compare ? (
         <>
           <span className="text-sm text-muted line-through">{compare}</span>
-          <Badge tone="warning">ছাড়</Badge>
+          <Badge tone="warning">{t.ui.discount}</Badge>
         </>
       ) : null}
     </span>

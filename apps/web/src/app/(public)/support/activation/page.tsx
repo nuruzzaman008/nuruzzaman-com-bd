@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { CmsPage, cmsPageMetadata } from '@/features/content/cms-page';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 const SLUG = 'support-activation';
 const PATH = '/support/activation';
@@ -9,15 +10,18 @@ export function generateMetadata(): Promise<Metadata> {
   return cmsPageMetadata(SLUG, PATH);
 }
 
-export default function Page() {
+export default function Page({ locale }: LocalizedPageProps) {
+  const { t } = pageDictionary(locale);
+
   return (
     <CmsPage
       slug={SLUG}
+      locale={locale}
       showToc={true}
       trail={[
-        { name: 'হোম', path: '/' },
-        { name: 'সাপোর্ট', path: '/support' },
-        { name: 'অ্যাক্টিভেশন', path: '/support/activation' },
+        { name: t.common.home, path: '/' },
+        { name: t.pageTitle.support, path: '/support' },
+        { name: t.pageTitle.supportActivation, path: PATH },
       ]}
     />
   );

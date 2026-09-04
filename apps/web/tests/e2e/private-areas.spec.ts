@@ -34,7 +34,10 @@ test.describe('private areas', () => {
 
     // Whatever the API answers, the visitor stays on the sign-in page and the
     // failure is announced rather than silently swallowed.
+    //
+    // Scoped to the form: Next's own route announcer is also role=alert, and an
+    // unscoped query matches both once a client navigation has happened.
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.locator('form').getByRole('alert')).toBeVisible();
   });
 });

@@ -323,7 +323,9 @@ components:
 
     Product:
       type: object
-      required: [slug, type, name, tagline, description_html, feature_groups, specs, published_at]
+      required:
+        [slug, type, name, tagline, description_html, copy_translated, feature_groups, specs,
+         published_at]
       properties:
         id:
           type: integer
@@ -333,6 +335,11 @@ components:
         name: { type: string }
         tagline: { type: [string, 'null'] }
         description_html: { type: string }
+        copy_translated:
+          type: boolean
+          description: >-
+            False when locale=en was asked for but no English copy exists, so the
+            Bengali text is what is being returned.
         cover_url: { type: [string, 'null'] }
         cover_alt: { type: [string, 'null'] }
         feature_groups:
@@ -1308,6 +1315,11 @@ paths:
       summary: Get product
       parameters:
         - { name: slug, in: path, required: true, schema: { type: string } }
+        - name: locale
+          in: query
+          required: false
+          description: Language of the product prose. Defaults to Bengali.
+          schema: { type: string, enum: [bn, en] }
       responses:
         '200':
           description: OK

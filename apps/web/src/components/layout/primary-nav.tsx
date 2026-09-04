@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { localizePath } from '@/lib/i18n/locale';
-import { primaryNav, type NavItem } from '@/lib/site';
+import { navItemLabel, primaryNav, type NavItem } from '@/lib/site';
 
 /**
  * The desktop primary navigation.
@@ -15,7 +15,7 @@ import { primaryNav, type NavItem } from '@/lib/site';
  * re-render on client navigation.
  */
 export function navLabel(item: NavItem, t: ReturnType<typeof useLocale>['t']): string {
-  return item.labelKey ? t.nav[item.labelKey] : item.label;
+  return navItemLabel(item, t);
 }
 
 /** The mobile menu's one-line blurb, translated where a key exists. */

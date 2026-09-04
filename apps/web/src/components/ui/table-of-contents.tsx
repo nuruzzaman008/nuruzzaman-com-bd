@@ -1,4 +1,7 @@
+'use client';
+
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 export type TocEntry = { level: number; text: string; id: string };
 
@@ -9,6 +12,8 @@ export function TableOfContents({
   entries: TocEntry[];
   className?: string;
 }) {
+  const { t } = useLocale();
+
   if (entries.length < 2) {
     return null;
   }
@@ -16,7 +21,7 @@ export function TableOfContents({
   return (
     <nav aria-labelledby="toc-heading" className={cn('text-sm', className)}>
       <h2 id="toc-heading" className="font-semibold text-navy">
-        এই লেখায় যা আছে
+        {t.ui.tableOfContents}
       </h2>
       <ol className="mt-3 space-y-2 border-s border-line ps-4">
         {entries.map((entry) => (

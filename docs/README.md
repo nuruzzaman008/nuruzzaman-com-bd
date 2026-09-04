@@ -7,6 +7,7 @@
 | [API_BN.md](API_BN.md) | অথেনটিকেশন, এরর ফরম্যাট, রেট লিমিট, idempotency, endpoint সারফেস |
 | [COMMERCE_PAYMENT_BN.md](COMMERCE_PAYMENT_BN.md) | অর্ডার স্টেট মেশিন, দাম নির্ধারণ, SSLCOMMERZ প্রবাহ, রিফান্ড |
 | [LMS_BN.md](LMS_BN.md) | কোর্স কাঠামো, অ্যাক্সেস নিয়ম, অগ্রগতি, কুইজ, সার্টিফিকেট |
+| [BILINGUAL_BN.md](BILINGUAL_BN.md) | বাংলা ও ইংরেজি সাইট, কোনটা অনুবাদ হয় কোনটা হয় না, /en রুট তৈরি |
 | [SEO_SPEC_BN.md](SEO_SPEC_BN.md) | ইনডেক্স নীতি, structured data, পারফরম্যান্স বাজেট |
 | [PRODUCT_FILE_SECURITY_BN.md](PRODUCT_FILE_SECURITY_BN.md) | ইনস্টলার কোথায় থাকে, ডাউনলোড নিয়ন্ত্রণ, চেকসাম |
 | [LICENSE_SERVICE_PHASE2_BN.md](LICENSE_SERVICE_PHASE2_BN.md) | আলাদা লাইসেন্স সার্ভিসের নকশা (পরিকল্পনা) |

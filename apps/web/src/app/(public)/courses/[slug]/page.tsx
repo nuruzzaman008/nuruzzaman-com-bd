@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ApiError, type Course } from '@nuruzzaman/contracts';
 
@@ -10,10 +9,12 @@ import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Container } from '@/components/ui/container';
+import { LocaleLink } from '@/components/ui/locale-link';
 import { PriceTag } from '@/components/ui/price';
 import { Prose } from '@/components/ui/prose';
 import { publicApi } from '@/lib/api/server';
-import { date, duration, number } from '@/lib/format';
+import { counted, date, duration, number } from '@/lib/format';
+import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata, courseSchema, jsonLd } from '@/lib/seo';
 
 async function loadCourse(slug: string): Promise<Course> {
@@ -55,7 +56,7 @@ function FactList({ title, items }: { title: string; items: string[] }) {
   return (
     <section>
       <h2 className="text-[length:var(--step-h3)] font-bold text-navy">{title}</h2>
-      <ul className="mt-3 space-y-2 text-sm">
+      <ul data-authored="true" className="mt-3 space-y-2 text-sm">
         {items.map((item) => (
           <li key={item} className="flex gap-2">
             <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-teal" />
@@ -67,7 +68,10 @@ function FactList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-export default async function CoursePage(props: { params: Promise<{ slug: string }> }) {
+export default async function CoursePage(
+  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+) {
+  const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
   const course = await loadCourse(slug);
 
@@ -98,9 +102,9 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
       <Container className="py-10 sm:py-14">
         <Breadcrumbs
           trail={[
-            { name: 'হোম', path: '/' },
-            { name: 'কোর্স', path: '/courses' },
-            { name: course.title, path: `/courses/${course.slug}` },
+            { name: t.common.home, path: '/' },
+            { name: t.nav.courses, path: '/courses' },
+            { name: course.title, path: `/courses/${course.slug}`, authored: true },
           ]}
         />
 
@@ -109,23 +113,36 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
             <header>
               <div className="flex flex-wrap gap-2">
                 <Badge tone="teal">{course.language}</Badge>
-                {course.issues_certificate ? <Badge tone="info">সার্টিফিকেট</Badge> : null}
-                {course.sequential ? <Badge>ধারাবাহিক</Badge> : null}
+                {course.issues_certificate ? (
+                  <Badge tone="info">{t.ui.certificate}</Badge>
+                ) : null}
+                {course.sequential ? <Badge>{t.course.sequential}</Badge> : null}
               </div>
 
-              <h1 className="mt-3 text-[length:var(--step-h1)] leading-tight font-bold text-navy">
+              <h1
+                data-authored="true"
+                className="mt-3 text-[length:var(--step-h1)] leading-tight font-bold text-navy"
+              >
                 {course.title}
               </h1>
 
-              {course.subtitle ? <p className="mt-4 text-lg text-muted">{course.subtitle}</p> : null}
+              {course.subtitle ? (
+                <p data-authored="true" className="mt-4 text-lg text-muted">
+                  {course.subtitle}
+                </p>
+              ) : null}
 
               <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-                {course.lesson_count ? <span>{number(course.lesson_count)} টি লেসন</span> : null}
+                {course.lesson_count ? (
+                  <span>{counted(course.lesson_count, 'lesson', locale)}</span>
+                ) : null}
                 {course.estimated_minutes ? (
-                  <span>{duration(course.estimated_minutes * 60)}</span>
+                  <span>{duration(course.estimated_minutes * 60, locale)}</span>
                 ) : null}
                 {course.last_reviewed_at ? (
-                  <span>সর্বশেষ পর্যালোচনা: {date(course.last_reviewed_at)}</span>
+                  <span>
+                    {t.course.lastReviewed}: {date(course.last_reviewed_at, locale)}
+                  </span>
                 ) : null}
               </p>
             </header>
@@ -147,21 +164,26 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
             ) : null}
 
             <div className="mt-10 grid gap-8 sm:grid-cols-2">
-              <FactList title="কী শিখবেন" items={course.outcomes ?? []} />
-              <FactList title="কাদের জন্য" items={course.audience ?? []} />
-              <FactList title="পূর্বশর্ত" items={course.prerequisites ?? []} />
-              <FactList title="প্রয়োজনীয় সফটওয়্যার" items={course.required_software ?? []} />
+              <FactList title={t.course.outcomes} items={course.outcomes ?? []} />
+              <FactList title={t.course.audience} items={course.audience ?? []} />
+              <FactList title={t.course.prerequisites} items={course.prerequisites ?? []} />
+              <FactList
+                title={t.course.requiredSoftware}
+                items={course.required_software ?? []}
+              />
             </div>
 
             {course.sections?.length ? (
               <section className="mt-12">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">কারিকুলাম</h2>
-                <ol className="mt-5 space-y-4">
+                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+                  {t.course.curriculum}
+                </h2>
+                <ol data-authored="true" className="mt-5 space-y-4">
                   {course.sections.map((section, index) => (
                     <li key={section.id}>
                       <Card className="p-5">
                         <h3 className="font-bold text-navy">
-                          <span className="font-latin text-muted">{number(index + 1)}.</span>{' '}
+                          <span className="font-latin text-muted">{number(index + 1, locale)}.</span>{' '}
                           {section.title}
                         </h3>
                         {section.summary ? (
@@ -177,18 +199,18 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
                               >
                                 <span>{lesson.title}</span>
                                 <span className="flex items-center gap-2 text-muted">
-                                  {lesson.duration_seconds ? duration(lesson.duration_seconds) : null}
+                                  {lesson.duration_seconds
+                                    ? duration(lesson.duration_seconds, locale)
+                                    : null}
                                   {lesson.is_free_preview ? (
-                                    <Badge tone="success">ফ্রি প্রিভিউ</Badge>
+                                    <Badge tone="success">{t.course.freePreview}</Badge>
                                   ) : null}
                                 </span>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <p className="mt-3 text-sm text-muted">
-                            এই মডিউলের লেসন এখনো যুক্ত করা হয়নি।
-                          </p>
+                          <p className="mt-3 text-sm text-muted">{t.course.noLessons}</p>
                         )}
                       </Card>
                     </li>
@@ -200,22 +222,21 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
             {course.reviews?.length ? (
               <section className="mt-12">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  শিক্ষার্থীদের রিভিউ
+                  {t.course.reviewsHeading}
                 </h2>
-                <p className="mt-1 text-sm text-muted">
-                  শুধু যাচাইকৃত এনরোলমেন্ট থেকে দেওয়া রিভিউ প্রকাশ করা হয়।
-                </p>
-                <ul className="mt-5 space-y-4">
+                <p className="mt-1 text-sm text-muted">{t.course.reviewsNote}</p>
+                <ul data-authored="true" className="mt-5 space-y-4">
                   {course.reviews.map((review) => (
                     <li key={review.id}>
                       <Card className="p-5">
                         <p className="text-sm font-semibold text-navy">
-                          {review.title ?? 'রিভিউ'}{' '}
+                          {review.title ?? t.course.reviewFallbackTitle}{' '}
                           <span className="font-latin text-muted">({review.rating}/5)</span>
                         </p>
                         {review.body ? <p className="mt-2 text-sm">{review.body}</p> : null}
                         <p className="mt-3 text-xs text-muted">
-                          {review.author_name ?? 'শিক্ষার্থী'} · যাচাইকৃত এনরোলমেন্ট
+                          {review.author_name ?? t.course.reviewFallbackAuthor} ·{' '}
+                          {t.course.verifiedEnrollment}
                         </p>
                       </Card>
                     </li>
@@ -232,12 +253,11 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
               <div className="mt-5 space-y-3">
                 {purchasable ? (
                   <ButtonLink href={`/shop?variant=${purchasable.id}`} className="w-full">
-                    কোর্সে ভর্তি হন
+                    {t.course.enroll}
                   </ButtonLink>
                 ) : (
                   <Callout tone="info">
-                    এই কোর্সের এনরোলমেন্ট এখনো খোলা হয়নি। দাম ও ভর্তির তারিখ প্রকাশিত হলে
-                    এখানে দেখা যাবে।
+                    {t.course.enrollClosed}
                   </Callout>
                 )}
 
@@ -247,45 +267,51 @@ export default async function CoursePage(props: { params: Promise<{ slug: string
                     variant="secondary"
                     className="w-full"
                   >
-                    ফ্রি প্রিভিউ দেখুন
+                    {t.course.watchPreview}
                   </ButtonLink>
                 ) : null}
               </div>
 
               <dl className="mt-6 space-y-3 border-t border-line pt-5 text-sm">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted">অ্যাক্সেস</dt>
+                  <dt className="text-muted">{t.course.access}</dt>
                   <dd className="text-end font-medium text-navy">
                     {course.access_duration_days
-                      ? `${number(course.access_duration_days)} দিন`
-                      : 'মেয়াদ প্রকাশিত হয়নি'}
+                      ? `${number(course.access_duration_days, locale)} ${t.course.days}`
+                      : t.course.accessUnpublished}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted">সার্টিফিকেট</dt>
+                  <dt className="text-muted">{t.ui.certificate}</dt>
                   <dd className="text-end font-medium text-navy">
-                    {course.issues_certificate ? 'কোর্স সম্পূর্ণ করলে' : 'নেই'}
+                    {course.issues_certificate
+                      ? t.course.certificateOnCompletion
+                      : t.course.certificateNone}
                   </dd>
                 </div>
                 {course.support_policy ? (
                   <div>
-                    <dt className="text-muted">সাপোর্ট</dt>
-                    <dd className="mt-1 text-navy">{course.support_policy}</dd>
+                    <dt className="text-muted">{t.course.support}</dt>
+                    <dd data-authored="true" className="mt-1 text-navy">
+                      {course.support_policy}
+                    </dd>
                   </div>
                 ) : null}
                 {course.refund_policy ? (
                   <div>
-                    <dt className="text-muted">রিফান্ড</dt>
-                    <dd className="mt-1 text-navy">{course.refund_policy}</dd>
+                    <dt className="text-muted">{t.course.refund}</dt>
+                    <dd data-authored="true" className="mt-1 text-navy">
+                      {course.refund_policy}
+                    </dd>
                   </div>
                 ) : null}
               </dl>
 
               <p className="mt-5 text-xs text-muted">
-                সার্টিফিকেট কেবল কোর্স সম্পন্ন হওয়ার প্রমাণ; এটি কোনো পেশাগত লাইসেন্স নয়।{' '}
-                <Link href="/course-terms" className="underline">
-                  কোর্স শর্তাবলি
-                </Link>
+                {t.course.certificateNote}{' '}
+                <LocaleLink href="/course-terms" className="underline">
+                  {t.pageTitle.courseTerms}
+                </LocaleLink>
               </p>
             </Card>
           </aside>

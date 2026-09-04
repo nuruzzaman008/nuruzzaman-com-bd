@@ -10,14 +10,20 @@
  * shipped software exactly; changing it is a deliberate edit tied to a release,
  * not routine content editing.
  */
-export type ProductModule = { name: string; purpose: string; group: string };
+export type ProductModule = {
+  name: string;
+  purpose: string;
+  group: string;
+  /** English wording, where the Bengali one uses a Bengali conjunction. */
+  purposeEn?: string;
+};
 
 export const PRODUCT_MODULES: ProductModule[] = [
-  { name: 'NBFooting', group: 'Footing & Foundation', purpose: 'Isolated footing design, reinforcement, plan, section এবং estimate workflow' },
-  { name: 'NBCombinedFooting', group: 'Footing & Foundation', purpose: 'Combined footing design ও drawing' },
-  { name: 'NBPileCap', group: 'Footing & Foundation', purpose: 'Pile cap plan, section, code/design checks এবং reinforcement' },
+  { name: 'NBFooting', group: 'Footing & Foundation', purpose: 'Isolated footing design, reinforcement, plan, section এবং estimate workflow', purposeEn: 'Isolated footing design, reinforcement, plan, section and estimate workflow' },
+  { name: 'NBCombinedFooting', group: 'Footing & Foundation', purpose: 'Combined footing design ও drawing', purposeEn: 'Combined footing design and drawing' },
+  { name: 'NBPileCap', group: 'Footing & Foundation', purpose: 'Pile cap plan, section, code/design checks এবং reinforcement', purposeEn: 'Pile cap plan, section, code/design checks and reinforcement' },
   { name: 'NBPileCenter', group: 'Footing & Foundation', purpose: 'Pile center/layout related workflow' },
-  { name: 'NBLoadPile', group: 'Footing & Foundation', purpose: 'Load ও pile-foundation related layout/drawing' },
+  { name: 'NBLoadPile', group: 'Footing & Foundation', purpose: 'Load ও pile-foundation related layout/drawing', purposeEn: 'Load and pile-foundation related layout/drawing' },
   { name: 'NBFootingLoadArea', group: 'Footing & Foundation', purpose: 'Footing/column load-area related workflow' },
   { name: 'NBFootingExcel', group: 'Footing & Foundation', purpose: 'Footing information/estimate export workflow' },
 
@@ -38,13 +44,13 @@ export const PRODUCT_MODULES: ProductModule[] = [
   { name: 'NBNameText', group: 'Layout, Grid & Schedule', purpose: 'Footing/column naming and text automation' },
   { name: 'NBQuickBlock', group: 'Layout, Grid & Schedule', purpose: 'Quick AutoCAD block productivity tool' },
 
-  { name: 'NBRM', group: 'Dimension Utilities', purpose: 'Room name ও architectural feet-inch room measurement' },
+  { name: 'NBRM', group: 'Dimension Utilities', purpose: 'Room name ও architectural feet-inch room measurement', purposeEn: 'Room name and architectural feet-inch room measurement' },
   { name: 'NBDFM', group: 'Dimension Utilities', purpose: 'Dimension/drafting utility' },
   { name: 'NBDITM', group: 'Dimension Utilities', purpose: 'Engineering dimension/conversion utility' },
 
   { name: 'NBMouza', group: 'Mouza & OCR', purpose: 'Mouza drawing/OCR related engineering drafting workflow' },
 
-  { name: 'NBCore', group: 'License & System', purpose: 'Security, initialization ও compiled-runtime support module' },
+  { name: 'NBCore', group: 'License & System', purpose: 'Security, initialization ও compiled-runtime support module', purposeEn: 'Security, initialization and compiled-runtime support module' },
 ];
 
 /** 25 engineering/productivity modules plus one core/security module. */

@@ -9,9 +9,22 @@ use Illuminate\Database\Seeder;
 
 class PageSeeder extends Seeder
 {
+    /**
+     * Bengali pages first, then their English counterparts.
+     *
+     * English documents carry the same slug plus `-en`, which is what the front
+     * end looks for on an /en URL. Only the pages that have been translated are
+     * in the English bundle; the rest fall back to Bengali with a visible notice
+     * rather than being machine translated.
+     */
     public function run(): void
     {
-        foreach (ContentBundle::load('seed-pages-bn.md') as $document) {
+        $documents = [
+            ...ContentBundle::load('seed-pages-bn.md'),
+            ...ContentBundle::load('seed-pages-en.md'),
+        ];
+
+        foreach ($documents as $document) {
             $meta = $document['meta'];
             $requiresLegalReview = ContentBundle::bool($meta, 'requires_legal_review');
 
