@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Account;
 use App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Api\V1\Commerce;
 use App\Http\Controllers\Api\V1\Learn;
+use App\Http\Controllers\Api\V1\PublicApi;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,6 +17,15 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::patch('me', [Account\ProfileController::class, 'update']);
     Route::post('me/password', [Auth\PasswordController::class, 'update']);
     Route::post('me/confirm-password', [Auth\PasswordController::class, 'confirm']);
+    /*
+     * Commenting on an article. Reading the comments is public - see
+     * routes/api.php - but writing one needs a session: an anonymous box on a
+     * site giving engineering advice is a spam magnet. Rate limited like every
+     * other public form.
+     */
+    Route::post('posts/{slug}/comments', [PublicApi\PostCommentController::class, 'store'])
+        ->middleware('throttle:public-forms');
+
     Route::get('me/sessions', [Auth\SessionDeviceController::class, 'index']);
     Route::delete('me/sessions/{id}', [Auth\SessionDeviceController::class, 'destroy']);
 

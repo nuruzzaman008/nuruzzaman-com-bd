@@ -716,6 +716,12 @@ const bn = {
       rejected: 'প্রত্যাখ্যাত',
       cancelled: 'বাতিল',
     },
+    comment: {
+      pending: 'অপেক্ষমাণ',
+      approved: 'অনুমোদিত',
+      rejected: 'বাতিল',
+      spam: 'স্প্যাম',
+    },
     content: {
       draft: 'খসড়া',
       in_review: 'রিভিউয়ে',
@@ -723,6 +729,29 @@ const bn = {
       published: 'প্রকাশিত',
       archived: 'সংরক্ষিত',
     },
+  },
+
+  /** Reader comments and star ratings at the foot of an article. */
+  comments: {
+    heading: 'পাঠকের মন্তব্য',
+    empty: 'এই লেখায় এখনো কোনো মন্তব্য নেই। প্রথমটি আপনিই লিখতে পারেন।',
+    formHeading: 'মন্তব্য লিখুন',
+    bodyLabel: 'আপনার মন্তব্য',
+    bodyPlaceholder: 'কোন অংশটি কাজে লেগেছে, বা কোথায় আরও ব্যাখ্যা দরকার?',
+    ratingLabel: 'রেটিং',
+    ratingOptional: '(ঐচ্ছিক)',
+    starCount: '{count} তারা',
+    clearRating: 'রেটিং সরান',
+    outOfFive: '৫-এর মধ্যে {value}',
+    fromCount: '{count} জনের রেটিং',
+    send: 'মন্তব্য পাঠান',
+    sending: 'পাঠানো হচ্ছে…',
+    held: 'ধন্যবাদ। মন্তব্যটি জমা হয়েছে; পর্যালোচনার পরে পাতায় দেখা যাবে।',
+    moderationNote:
+      'প্রতিটি মন্তব্য প্রকাশের আগে পড়ে দেখা হয়, তাই সঙ্গে সঙ্গে পাতায় দেখা যাবে না।',
+    signInPrompt: 'মন্তব্য করতে সাইন ইন করুন। এতে স্প্যাম ঠেকানো সহজ হয়।',
+    alreadyCommented: 'এই লেখায় আপনি ইতিমধ্যে একটি মন্তব্য করেছেন।',
+    failed: 'মন্তব্য পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
   },
 
   /*
@@ -750,6 +779,7 @@ const bn = {
       posts: 'আর্টিকেল',
       pages: 'পেজ',
       media: 'মিডিয়া',
+      comments: 'মন্তব্য',
       redirects: 'রিডাইরেক্ট',
       products: 'প্রোডাক্ট',
       orders: 'অর্ডার',
@@ -834,6 +864,26 @@ const bn = {
       lessons: 'লেসন',
       analysis: 'বিশ্লেষণ',
       draft: 'খসড়া',
+    },
+
+    /** The comment moderation queue. */
+    commentQueue: {
+      title: 'পাঠকের মন্তব্য',
+      caption: 'মন্তব্যের তালিকা',
+      empty: 'এই তালিকায় কোনো মন্তব্য নেই।',
+      pendingNotice:
+        'অনুমোদন না দেওয়া পর্যন্ত কোনো মন্তব্য পাতায়, গণনায় বা structured data-তে দেখা যায় না।',
+      author: 'লেখক',
+      comment: 'মন্তব্য',
+      article: 'আর্টিকেল',
+      rating: 'রেটিং',
+      noRating: 'রেটিং দেননি',
+      approve: 'অনুমোদন',
+      reject: 'বাতিল',
+      spam: 'স্প্যাম',
+      working: 'প্রক্রিয়া চলছে…',
+      failed: 'কাজটি সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।',
+      filterLabel: 'অবস্থা অনুযায়ী দেখুন',
     },
 
     tickets: {
@@ -1008,7 +1058,9 @@ const bn = {
       fail: 'সমস্যা',
       summary: '{passed} ঠিক · {warned} বিবেচনা · {failed} সমস্যা',
       noKeyword:
-        'ফোকাস কিওয়ার্ড দিলে কিওয়ার্ড-ভিত্তিক চেকগুলোও চালু হবে। এখন শুধু দৈর্ঘ্য ও গঠনের চেক দেখানো হচ্ছে।',
+        'স্কোর ফোকাস কিওয়ার্ডের ওপর ভিত্তি করে হিসাব হয়, তাই কিওয়ার্ড না দেওয়া পর্যন্ত স্কোর দেখানো হচ্ছে না। কিওয়ার্ড দিলে কিওয়ার্ড-ভিত্তিক চেকগুলো ও স্কোর — দুটোই চালু হবে। এখন শুধু দৈর্ঘ্য ও গঠনের চেক দেখানো হচ্ছে।',
+      scoreLocked: 'স্কোর নেই',
+      scoreLockedHint: 'ফোকাস কিওয়ার্ড দিলে স্কোর দেখা যাবে।',
       disclaimer:
         'এগুলো পরিচ্ছন্নতার চেক — কোনো র‍্যাঙ্কিংয়ের প্রতিশ্রুতি নয়। সব সবুজ হলেই লেখা ভালো হয়ে যায় না, আর কিছু হলুদ থাকলেও সমস্যা নেই।',
     },
@@ -1773,6 +1825,12 @@ const en: Dictionary = {
       rejected: 'Rejected',
       cancelled: 'Cancelled',
     },
+    comment: {
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      spam: 'Spam',
+    },
     content: {
       draft: 'Draft',
       in_review: 'In review',
@@ -1780,6 +1838,28 @@ const en: Dictionary = {
       published: 'Published',
       archived: 'Archived',
     },
+  },
+
+  comments: {
+    heading: 'Reader comments',
+    empty: 'No comments on this article yet. Yours can be the first.',
+    formHeading: 'Leave a comment',
+    bodyLabel: 'Your comment',
+    bodyPlaceholder: 'What was useful, or where would more explanation help?',
+    ratingLabel: 'Rating',
+    ratingOptional: '(optional)',
+    starCount: '{count} star(s)',
+    clearRating: 'Clear rating',
+    outOfFive: '{value} out of 5',
+    fromCount: '{count} rating(s)',
+    send: 'Post comment',
+    sending: 'Sending\u2026',
+    held: 'Thank you. Your comment has been received and will appear once it has been read.',
+    moderationNote:
+      'Every comment is read before it is published, so it will not appear on the page straight away.',
+    signInPrompt: 'Sign in to comment. It keeps the spam out.',
+    alreadyCommented: 'You have already commented on this article.',
+    failed: 'The comment could not be sent. Please try again in a little while.',
   },
 
   admin: {
@@ -1800,6 +1880,7 @@ const en: Dictionary = {
       posts: 'Articles',
       pages: 'Pages',
       media: 'Media',
+      comments: 'Comments',
       redirects: 'Redirects',
       products: 'Products',
       orders: 'Orders',
@@ -1884,6 +1965,25 @@ const en: Dictionary = {
       lessons: 'Lessons',
       analysis: 'Analysis',
       draft: 'Draft',
+    },
+
+    commentQueue: {
+      title: 'Reader comments',
+      caption: 'List of comments',
+      empty: 'No comments in this list.',
+      pendingNotice:
+        'Until it is approved, a comment appears nowhere - not on the page, not in the count, not in the structured data.',
+      author: 'Author',
+      comment: 'Comment',
+      article: 'Article',
+      rating: 'Rating',
+      noRating: 'Not rated',
+      approve: 'Approve',
+      reject: 'Reject',
+      spam: 'Spam',
+      working: 'Working…',
+      failed: 'That could not be done. Please try again.',
+      filterLabel: 'Filter by status',
     },
 
     tickets: {
@@ -2064,7 +2164,9 @@ const en: Dictionary = {
       fail: 'Problem',
       summary: '{passed} fine · {warned} worth a look · {failed} problem(s)',
       noKeyword:
-        'Setting a focus keyword turns on the keyword checks too. For now only the length and structure checks are shown.',
+        'The score is calculated against the focus keyword, so no score is shown until one is set. Setting a keyword turns on both the keyword checks and the score. For now only the length and structure checks are shown.',
+      scoreLocked: 'No score',
+      scoreLockedHint: 'Set a focus keyword to see the score.',
       disclaimer:
         'These are tidiness checks, not a ranking promise. All green does not make the writing good, and a few amber ones are not a problem.',
     },

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ApiError, type Post, type PostSummary } from '@nuruzzaman/contracts';
+import { ApiError, type Post, type PostComment, type PostSummary } from '@nuruzzaman/contracts';
 
 import { AuthorBio } from '@/features/content/author-bio';
+import { Comments } from '@/features/content/comments';
 import { PostCard } from '@/features/content/post-card';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { LocaleLink } from '@/components/ui/locale-link';
@@ -72,6 +73,15 @@ export default async function BlogPostPage(
     { query: { locale }, tags: ['posts', `posts:${locale}`] },
   );
 
+  // Fetched on the server so the comments are in the HTML a crawler reads,
+  // not behind a fetch it never makes. Approved rows only - that is all the
+  // endpoint will return.
+  const comments = await tryPublicApi<{ data: PostComment[] }>(
+    `/posts/${encodeURIComponent(slug)}/comments`,
+    { tags: ['posts', `post:${slug}`, `post:${slug}:comments`] },
+  );
+  const thread = comments?.data ?? [];
+
   return (
     <>
       <script
@@ -87,6 +97,8 @@ export default async function BlogPostPage(
               updated_at: post.updated_at,
               author: post.author,
               reviewer: post.reviewer,
+              locale,
+              comments: thread,
             }),
           ),
         }}
@@ -217,6 +229,8 @@ export default async function BlogPostPage(
             </aside>
           </div>
         </article>
+
+        <Comments slug={post.slug} comments={thread} rating={post.rating ?? null} />
 
         {related && related.data.length > 0 ? (
           <section aria-labelledby="related-heading" className="mt-16">

@@ -10,7 +10,13 @@ import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
  * here, in both languages, and anything unmapped falls back to the raw value
  * rather than to an empty badge.
  */
-export type StatusGroup = 'order' | 'enrollment' | 'ticket' | 'activation' | 'content';
+export type StatusGroup =
+  | 'order'
+  | 'enrollment'
+  | 'ticket'
+  | 'activation'
+  | 'comment'
+  | 'content';
 
 /**
  * Looks a status up, falling back to the raw value so nothing renders blank.

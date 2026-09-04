@@ -131,6 +131,9 @@ Route::middleware([
     Route::get('course-questions', [Admin\QuestionModerationController::class, 'index']);
     Route::post('course-questions/{question:id}/moderate', [Admin\QuestionModerationController::class, 'moderate']);
 
+    Route::get('comments', [Admin\CommentModerationController::class, 'index']);
+    Route::post('comments/{comment:id}/moderate', [Admin\CommentModerationController::class, 'moderate']);
+
     Route::get('course-reviews', [Admin\ReviewModerationController::class, 'index']);
     Route::post('course-reviews/{review:id}/moderate', [Admin\ReviewModerationController::class, 'moderate']);
 

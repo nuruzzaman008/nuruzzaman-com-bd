@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CommentStatus;
 use App\Enums\ContentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -58,6 +59,23 @@ class Post extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(PostComment::class);
+    }
+
+    /**
+     * The only comments a reader ever sees or is counted among.
+     *
+     * A separate relation rather than a scope at the call site: an average
+     * that quietly included pending or spam rows would be wrong in a way
+     * nobody would notice until it was on the page.
+     */
+    public function approvedComments(): HasMany
+    {
+        return $this->comments()->where('status', CommentStatus::Approved->value);
     }
 
     public function revisions(): HasMany

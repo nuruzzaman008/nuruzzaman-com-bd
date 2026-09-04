@@ -22,6 +22,7 @@ class RoleSeeder extends Seeder
             'pages.publish' => 'Publish pages and record legal review',
             'media.manage' => 'Upload and edit media',
             'redirects.manage' => 'Manage 301 redirects',
+            'comments.moderate' => 'Approve, reject or mark reader comments as spam',
         ],
         'commerce' => [
             'products.view' => 'See the catalogue',
@@ -56,6 +57,7 @@ class RoleSeeder extends Seeder
         'editor' => [
             'posts.view', 'posts.create', 'posts.update', 'posts.publish', 'posts.delete',
             'pages.view', 'pages.manage', 'media.manage', 'redirects.manage',
+            'comments.moderate',
             'courses.view', 'products.view',
         ],
         'instructor' => [

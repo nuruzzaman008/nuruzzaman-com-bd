@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { absoluteUrl, publicEnv } from '@/lib/env';
+import type { Locale } from '@/lib/i18n/locale';
 import { brand } from '@/lib/site';
 
 type SeoInput = {
@@ -188,7 +189,21 @@ export function articleSchema(post: {
   updated_at?: string | null;
   author?: { name?: string; credentials?: string | null } | null;
   reviewer?: { name?: string } | null;
+  locale?: Locale;
+  comments?: {
+    author_name: string;
+    body: string;
+    rating?: number | null;
+    created_at?: string | null;
+  }[];
 }) {
+  // Approved comments only ever reach this function, so the count below is the
+  // same number the page prints. Ratings are shown to readers but deliberately
+  // not folded into an aggregateRating: Google does not support review
+  // snippets on an Article, and a rating claimed in markup that the search
+  // result cannot honestly show is the sort of thing that gets a site
+  // penalised rather than promoted.
+  const comments = post.comments ?? [];
   return {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -205,7 +220,23 @@ export function articleSchema(post: {
       ? { reviewedBy: { '@type': 'Person', name: post.reviewer.name } }
       : {}),
     publisher: { '@type': 'Organization', name: brand.owner, url: publicEnv.siteUrl },
-    inLanguage: 'bn-BD',
+    ...(comments.length > 0
+      ? {
+          commentCount: comments.length,
+          comment: comments.map((entry) => ({
+            '@type': 'Comment',
+            author: { '@type': 'Person', name: entry.author_name },
+            text: entry.body,
+            ...(entry.created_at ? { dateCreated: entry.created_at } : {}),
+          })),
+          interactionStatistic: {
+            '@type': 'InteractionCounter',
+            interactionType: 'https://schema.org/CommentAction',
+            userInteractionCount: comments.length,
+          },
+        }
+      : {}),
+    inLanguage: post.locale === 'en' ? 'en' : 'bn-BD',
   };
 }
 

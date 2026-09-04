@@ -188,6 +188,9 @@ export type SearchResults = Json<paths['/search']['get']['responses']['200']>['d
 
 export type PostSummary = Json<paths['/posts']['get']['responses']['200']>['data'][number];
 export type Post = Json<paths['/posts/{slug}']['get']['responses']['200']>['data'];
+export type PostComment = Json<
+  paths['/posts/{slug}/comments']['get']['responses']['200']
+>['data'][number];
 export type Page = Json<paths['/pages/{slug}']['get']['responses']['200']>['data'];
 export type Category = Json<paths['/categories']['get']['responses']['200']>['data'][number];
 export type Author = Json<paths['/authors/{slug}']['get']['responses']['200']>['data'];

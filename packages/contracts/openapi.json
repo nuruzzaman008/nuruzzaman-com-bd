@@ -526,6 +526,138 @@
         }
       }
     },
+    "/posts/{slug}/comments": {
+      "get": {
+        "tags": [
+          "Content"
+        ],
+        "operationId": "listPostComments",
+        "summary": "List approved comments on an article",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PostComment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Content"
+        ],
+        "operationId": "createPostComment",
+        "summary": "Comment on an article",
+        "description": "Needs a session. What is written is held as `pending` and appears nowhere - not on the page, not in the count, not in the structured data - until a moderator approves it. One comment per reader per article.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "body"
+                ],
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 2000
+                  },
+                  "rating": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "website": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Honeypot. Hidden from people; a filled one is dropped."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Held for moderation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PostComment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/pages/{slug}": {
       "get": {
         "tags": [
@@ -11178,6 +11310,33 @@
                 "type": "boolean",
                 "description": "False when locale=en was asked for. Titles and summaries have an English form; article bodies do not, because they carry load figures, bar spacings and code clauses."
               },
+              "comment_count": {
+                "type": "integer",
+                "description": "Approved comments only."
+              },
+              "rating": {
+                "description": "Averaged over approved comments that carry a rating. Null until at least one exists, so a page can never show a score nobody gave.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "average",
+                      "count"
+                    ],
+                    "properties": {
+                      "average": {
+                        "type": "number"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ]
+              },
               "status": {
                 "type": "string",
                 "enum": [
@@ -11537,6 +11696,65 @@
           },
           "seo": {
             "$ref": "#/components/schemas/Seo"
+          }
+        }
+      },
+      "PostComment": {
+        "type": "object",
+        "required": [
+          "id",
+          "author_name",
+          "body",
+          "rating",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "author_name": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "rating": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Null when the reader commented without scoring the article."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "spam"
+            ],
+            "description": "Returned to moderators only; a reader only ever receives approved rows."
+          },
+          "post": {
+            "description": "Returned to moderators only, so the queue can say which article.",
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
           }
         }
       },

@@ -109,6 +109,7 @@ export const dashboardNav: {
       { href: '/dashboard/posts', key: 'posts' },
       { href: '/dashboard/pages', key: 'pages' },
       { href: '/dashboard/media', key: 'media' },
+      { href: '/dashboard/comments', key: 'comments' },
       { href: '/dashboard/redirects', key: 'redirects' },
     ],
   },

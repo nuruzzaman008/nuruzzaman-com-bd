@@ -14,8 +14,14 @@ import { useLocale } from '@/lib/i18n/locale-provider';
  * of truth that can disagree. An `input` listener on the form is enough, and it
  * keeps working if a field is added later.
  *
- * The score is shown, but the list matters more — a number invites chasing 100,
- * which is not the goal. Warnings are suggestions and say so.
+ * The list matters more than the score — a number invites chasing 100, which is
+ * not the goal. Warnings are suggestions and say so.
+ *
+ * No focus keyword, no score. The score is an average over the checks, and the
+ * keyword checks are the ones that measure whether the page is about anything
+ * in particular; without them the remaining length-and-structure checks can put
+ * a comfortable 73 on a page with no subject at all. A missing number is
+ * honest; that one is not.
  */
 
 const STATUS_DOTS: Record<CheckStatus, string> = {
@@ -98,6 +104,7 @@ export function SeoAnalysisPanel({
 
   const tone =
     analysis.score >= 80 ? 'text-success' : analysis.score >= 50 ? 'text-warning' : 'text-danger';
+  const scored = !analysis.keywordMissing;
 
   return (
     <section
@@ -114,7 +121,16 @@ export function SeoAnalysisPanel({
               .replace('{failed}', String(analysis.failed))}
           </p>
         </div>
-        <p className={cn('font-latin text-3xl font-bold', tone)}>{analysis.score}</p>
+        {scored ? (
+          <p className={cn('font-latin text-3xl font-bold', tone)}>{analysis.score}</p>
+        ) : (
+          <p className="max-w-[11rem] text-end text-xs font-semibold text-muted">
+            {t.admin.seoPanel.scoreLocked}
+            <span className="mt-0.5 block font-normal">
+              {t.admin.seoPanel.scoreLockedHint}
+            </span>
+          </p>
+        )}
       </header>
 
       {analysis.keywordMissing ? (

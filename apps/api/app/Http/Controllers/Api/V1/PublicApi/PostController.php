@@ -56,6 +56,13 @@ class PostController extends Controller
             ->published()
             ->where('slug', $slug)
             ->with(['author.photo', 'reviewer', 'cover', 'categories', 'tags', 'seo.ogImage'])
+            ->withCount('approvedComments')
+            // Averaged over approved comments that actually carry a rating:
+            // a comment without one must not drag the average toward zero.
+            ->withAvg(['approvedComments as rating_average' => fn ($query) => $query
+                ->whereNotNull('rating')], 'rating')
+            ->withCount(['approvedComments as rated_count' => fn ($query) => $query
+                ->whereNotNull('rating')])
             ->firstOrFail();
 
         return new PostResource($post);

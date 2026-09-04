@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CommentStatus;
 use App\Enums\ContentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\ProductType;
@@ -11,6 +12,8 @@ use App\Models\CourseQuestion;
 use App\Models\CourseReview;
 use App\Models\CourseWishlist;
 use App\Models\Order;
+use App\Models\Post;
+use App\Models\PostComment;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -76,6 +79,7 @@ class DemoSeeder extends Seeder
         $order = $this->purchase($customer, $course);
         $this->study($customer, $course);
         $this->support($customer, $order);
+        $this->comments($customer);
 
         $this->command?->info('Demo customer ready: '.self::CUSTOMER_EMAIL);
     }
@@ -313,5 +317,67 @@ class DemoSeeder extends Seeder
                 'is_internal' => false,
             ],
         );
+    }
+
+    /**
+     * Reader comments on the two most recent articles.
+     *
+     * One approved and one still pending on the first article, so both the
+     * public page and the moderation queue have something real to show. The
+     * pending one is deliberately left pending: it proves that an unapproved
+     * comment appears nowhere - not in the list, not in the count, not in the
+     * structured data.
+     *
+     * Written by the demo customer, because the endpoint only accepts a
+     * signed-in reader; there is no anonymous path to fake here.
+     */
+    private function comments(User $customer): void
+    {
+        $posts = Post::query()->published()->latest('published_at')->take(2)->get();
+
+        if ($posts->isEmpty()) {
+            return;
+        }
+
+        $rows = [
+            [
+                'post' => $posts->first(),
+                'body' => 'লোড কম্বিনেশনের অংশটা খুব পরিষ্কার হয়েছে। সাইটে গিয়ে একবারেই মিলিয়ে নিতে পেরেছি।',
+                'rating' => 5,
+                'status' => CommentStatus::Approved,
+            ],
+            [
+                'post' => $posts->first(),
+                'body' => 'ছবিগুলোর নিচে ইউনিট লেখা থাকলে আরও সুবিধা হতো। বাকিটা কাজে লেগেছে।',
+                'rating' => 4,
+                'status' => CommentStatus::Pending,
+            ],
+        ];
+
+        if ($posts->count() > 1) {
+            $rows[] = [
+                'post' => $posts->last(),
+                'body' => 'ধাপে ধাপে দেখানোর জন্য ধন্যবাদ। একটি প্রশ্ন ছিল - কভার নিয়ে পরের লেখায় আলোচনা হবে কি?',
+                'rating' => null,
+                'status' => CommentStatus::Approved,
+            ];
+        }
+
+        foreach ($rows as $row) {
+            PostComment::query()->firstOrCreate(
+                [
+                    'post_id' => $row['post']->getKey(),
+                    'user_id' => $customer->getKey(),
+                    'body' => $row['body'],
+                ],
+                [
+                    'author_name' => $customer->name,
+                    'rating' => $row['rating'],
+                    'status' => $row['status'],
+                    'approved_at' => $row['status'] === CommentStatus::Approved ? now() : null,
+                    'ip_hash' => hash('sha256', 'demo-seeder'),
+                ],
+            );
+        }
     }
 }

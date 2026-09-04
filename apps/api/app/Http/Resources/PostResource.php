@@ -49,6 +49,22 @@ class PostResource extends JsonResource
             'reviewer' => new AuthorResource($this->whenLoaded('reviewer')),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
+            /*
+             * Reader feedback, counted from APPROVED comments only.
+             *
+             * `rating` is null until there is at least one real rating, so the
+             * page can never show an average that nobody gave - the same rule
+             * the course pages already follow.
+             */
+            'comment_count' => $this->whenCounted('approvedComments'),
+            'rating' => $this->when(
+                $this->rated_count > 0,
+                fn () => [
+                    'average' => round((float) $this->rating_average, 2),
+                    'count' => (int) $this->rated_count,
+                ],
+                null,
+            ),
             'seo' => new SeoResource($this->whenLoaded('seo')),
         ];
     }

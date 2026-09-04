@@ -31,6 +31,7 @@ Route::prefix('v1')->group(function () {
         Route::get('posts', [PublicApi\PostController::class, 'index']);
         Route::get('posts/{slug}', [PublicApi\PostController::class, 'show']);
         Route::get('posts/{slug}/related', [PublicApi\PostController::class, 'related']);
+        Route::get('posts/{slug}/comments', [PublicApi\PostCommentController::class, 'index']);
 
         Route::get('categories', [PublicApi\TaxonomyController::class, 'categories']);
         Route::get('categories/{slug}', [PublicApi\TaxonomyController::class, 'category']);
