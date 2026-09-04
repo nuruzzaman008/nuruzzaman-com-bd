@@ -1,0 +1,78 @@
+# Deployment settings for one cPanel account.
+#
+# Copy this to ~/.nb-deploy.conf on the SERVER and fill in the real paths:
+#
+#   cp infra/cpanel/deploy.conf.example ~/.nb-deploy.conf
+#   nano ~/.nb-deploy.conf
+#   chmod 600 ~/.nb-deploy.conf
+#
+# It stays outside the repository on purpose. These values differ per account,
+# and a path or a URL that is right for one server is wrong for the next; kept
+# in Git, the wrong one eventually gets deployed. Nothing secret belongs here
+# either - database and gateway credentials live in the Laravel .env.
+#
+# Every path below is an example of the SHAPE, not a value to use as is. Replace
+# them with what this account actually has.
+
+# ---------------------------------------------------------------------------
+# Where each application lives
+# ---------------------------------------------------------------------------
+
+# Laravel. The domain or subdomain serving the API must have its document root
+# set to $NB_API_ROOT/public - never to $NB_API_ROOT itself, which would put
+# .env inside the web root.
+NB_API_ROOT="$HOME/api.nuruzzaman.com.bd"
+
+# The Next.js application root, as registered in cPanel's "Setup Node.js App".
+# Not a document root: Passenger serves this application, and the folder should
+# sit outside public_html.
+NB_WEB_ROOT="$HOME/nuruzzaman-web"
+
+# ---------------------------------------------------------------------------
+# Build-time URLs
+#
+# Both are read when the front end is BUILT, not when it starts. Changing either
+# one means deploying again, not restarting the app.
+# ---------------------------------------------------------------------------
+
+# The public address of the site. Goes into canonical URLs, the sitemap, hreflang
+# and the JSON-LD, so it has to be the address visitors actually use, with https.
+NB_PUBLIC_SITE_URL="https://nuruzzaman.com.bd"
+
+# Where the Next.js server reaches the Laravel API from inside the account.
+# Include /api/v1. Prefer a loopback address if the API is on the same machine:
+# it keeps server-side rendering off the public network and out of the TLS
+# handshake on every request.
+NB_INTERNAL_API_URL="https://api.nuruzzaman.com.bd/api/v1"
+
+# ---------------------------------------------------------------------------
+# Toolchain
+#
+# Leave these unset to let the deployment find them. Set one when the account has
+# several versions installed and the wrong one is being picked - the deployment
+# prints which it chose every time it runs.
+# ---------------------------------------------------------------------------
+
+# NB_PHP_BIN="/opt/cpanel/ea-php84/root/usr/bin/php"
+# NB_COMPOSER="/opt/cpanel/ea-php84/root/usr/bin/php $HOME/composer.phar"
+# NB_NODE_BIN="$HOME/nodevenv/nuruzzaman-web/22/bin/node"
+# NB_NPM_BIN="$HOME/nodevenv/nuruzzaman-web/22/bin/npm"
+
+# ---------------------------------------------------------------------------
+# What to do on a deployment
+#
+# All on by default. Turn one off to deploy half the stack - for example
+# NB_DEPLOY_WEB=0 to push an API-only fix without a front-end rebuild.
+# ---------------------------------------------------------------------------
+
+# NB_DEPLOY_API=1
+# NB_DEPLOY_WEB=1
+
+# Build the front end on the server. Set to 0 if the account cannot spare the
+# memory for `next build`; then build locally, upload apps/web/.next, and the
+# deployment will copy what it finds.
+# NB_BUILD_WEB=1
+
+# Run migrations. Set to 0 when a release needs them run by hand at a chosen
+# moment - a large table rewrite during business hours, say.
+# NB_RUN_MIGRATIONS=1
