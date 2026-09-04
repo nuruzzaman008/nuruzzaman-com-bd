@@ -94,7 +94,10 @@ class BlogSeeder extends Seeder
 
             $post->seo()->updateOrCreate([], [
                 'meta_title' => $meta['meta_title'] ?? $meta['title'],
+                'meta_title_en' => $meta['meta_title_en'] ?? $meta['title_en'] ?? null,
                 'meta_description' => $meta['meta_description'] ?? Str::limit($post->excerpt, 155),
+                'meta_description_en' => $meta['meta_description_en']
+                    ?? ($post->excerpt_en ? Str::limit($post->excerpt_en, 155) : null),
             ]);
         }
     }
