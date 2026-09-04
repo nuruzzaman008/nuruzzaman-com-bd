@@ -59,16 +59,23 @@ export default async function AccountCoursesPage() {
                       <h2 className="font-bold text-navy" data-authored="true">
                         {enrollment.course.title}
                       </h2>
+                      {/* Joined rather than concatenated: a course with no
+                          lesson count and an expiry date used to render a
+                          separator with nothing in front of it. */}
                       <p className="mt-1 text-sm text-muted">
-                        {enrollment.course.lesson_count
-                          ? counted(enrollment.course.lesson_count, 'lesson', locale)
-                          : null}
-                        {enrollment.expires_at
-                          ? ` · ${t.customer.courses.expiresOn.replace(
-                              '{date}',
-                              date(enrollment.expires_at, locale) ?? '',
-                            )}`
-                          : null}
+                        {[
+                          enrollment.course.lesson_count
+                            ? counted(enrollment.course.lesson_count, 'lesson', locale)
+                            : null,
+                          enrollment.expires_at
+                            ? t.customer.courses.expiresOn.replace(
+                                '{date}',
+                                date(enrollment.expires_at, locale) ?? '',
+                              )
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                     </div>
                     <Badge tone={STATUS_TONES[enrollment.status] ?? 'info'}>

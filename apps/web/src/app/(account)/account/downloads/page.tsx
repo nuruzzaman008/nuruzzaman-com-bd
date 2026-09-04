@@ -49,10 +49,17 @@ export default async function AccountDownloadsPage() {
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <h2 className="font-bold text-navy">{asset?.name ?? t.customer.downloads.file}</h2>
+                      {/* Joined rather than concatenated: an asset with no
+                          version but a known size rendered a separator with
+                          nothing in front of it. */}
                       <p className="font-latin mt-1 text-sm text-muted">
-                        {asset?.version ? `v${asset.version}` : null}
-                        {asset?.size_bytes ? ` · ${fileSize(asset.size_bytes)}` : null}
-                        {asset?.released_at ? ` · ${date(asset.released_at, locale)}` : null}
+                        {[
+                          asset?.version ? `v${asset.version}` : null,
+                          asset?.size_bytes ? fileSize(asset.size_bytes) : null,
+                          asset?.released_at ? date(asset.released_at, locale) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </p>
                     </div>
 
