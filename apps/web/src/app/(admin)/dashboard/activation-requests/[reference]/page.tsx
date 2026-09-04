@@ -110,7 +110,7 @@ export default async function DashboardActivationRequestPage(props: {
                       {event.from ? `${event.from} - ${event.to}` : event.to}
                     </span>
                     {event.note ? <span className="block text-muted">{event.note}</span> : null}
-                    <span className="block text-xs text-muted">{dateTime(event.at)}</span>
+                    <span className="block text-xs text-muted">{dateTime(event.at, locale)}</span>
                   </li>
                 ))}
               </ol>

@@ -38,7 +38,7 @@ export function HeaderActions() {
       >
         <span className="sr-only">
           {t.actions.cart}
-          {itemCount ? ` (${number(itemCount)})` : ''}
+          {itemCount ? ` (${number(itemCount, locale)})` : ''}
         </span>
         <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 5h2l2 10h9l2-7H7" strokeLinecap="round" strokeLinejoin="round" />

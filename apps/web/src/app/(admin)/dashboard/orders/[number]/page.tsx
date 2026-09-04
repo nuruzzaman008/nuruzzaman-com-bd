@@ -84,7 +84,7 @@ export default async function DashboardOrderPage(props: {
                 key: 'total',
                 header: t.admin.orders.total,
                 align: 'end',
-                render: (item) => price(item.line_total_minor, order.currency),
+                render: (item) => price(item.line_total_minor, order.currency, locale),
               },
             ]}
           />
@@ -99,7 +99,7 @@ export default async function DashboardOrderPage(props: {
                       {event.from ? `${event.from} - ${event.to}` : event.to}
                     </span>
                     {event.reason ? <span className="block text-muted">{event.reason}</span> : null}
-                    <span className="block text-xs text-muted">{dateTime(event.at)}</span>
+                    <span className="block text-xs text-muted">{dateTime(event.at, locale)}</span>
                   </li>
                 ))}
               </ol>

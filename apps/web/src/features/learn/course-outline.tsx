@@ -100,7 +100,7 @@ export function CourseOutlineNav({
                         ) : null}
                         {lesson.duration_seconds ? (
                           <span className="block text-xs font-normal text-muted">
-                            {duration(lesson.duration_seconds)}
+                            {duration(lesson.duration_seconds, locale)}
                           </span>
                         ) : null}
                       </span>
