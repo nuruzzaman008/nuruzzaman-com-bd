@@ -50,10 +50,11 @@ class SearchController extends Controller
         $products = Product::query()->published()
             ->where(fn ($query) => $query
                 ->where('name', 'like', $term)
+                ->orWhere('name_en', 'like', $term)
                 ->orWhere('tagline', 'like', $term)
                 ->orWhere('tagline_en', 'like', $term))
             ->limit(5)
-            ->get(['slug', 'name', 'tagline', 'tagline_en']);
+            ->get(['slug', 'name', 'name_en', 'tagline', 'tagline_en']);
 
         return response()->json([
             'data' => [
@@ -70,7 +71,7 @@ class SearchController extends Controller
                 ]),
                 'products' => $products->map(fn ($product) => [
                     'slug' => $product->slug,
-                    'title' => $product->name,
+                    'title' => RequestLocale::pick($request, $product->name, $product->name_en),
                     'excerpt' => RequestLocale::pick($request, $product->tagline, $product->tagline_en),
                 ]),
             ],

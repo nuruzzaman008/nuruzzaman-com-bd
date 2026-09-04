@@ -118,7 +118,9 @@ class DemoSeeder extends Seeder
             [
                 'type' => ProductType::Course,
                 'name' => $course->title,
+                'name_en' => $course->title_en,
                 'tagline' => $course->subtitle,
+                'tagline_en' => $course->subtitle_en,
                 'status' => ContentStatus::Published,
                 'is_price_public' => true,
                 'published_at' => now(),

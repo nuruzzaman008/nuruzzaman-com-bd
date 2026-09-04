@@ -23,15 +23,15 @@ export default async function ShopPage(
     searchParams: Promise<{ page?: string; type?: string }>;
   },
 ) {
-  const { t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary(props.locale);
   const searchParams = await props.searchParams;
 
   const products = await publicApi<{
     data: ProductSummary[];
     meta?: { current_page?: number; last_page?: number };
   }>('/products', {
-    query: { page: searchParams.page, type: searchParams.type, per_page: 24 },
-    tags: ['products'],
+    query: { page: searchParams.page, type: searchParams.type, per_page: 24, locale },
+    tags: ['products', `products:${locale}`],
   });
 
   return (

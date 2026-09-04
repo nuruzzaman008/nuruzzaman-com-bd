@@ -581,6 +581,9 @@
         "summary": "List products",
         "parameters": [
           {
+            "$ref": "#/components/parameters/Locale"
+          },
+          {
             "name": "type",
             "in": "query",
             "schema": {

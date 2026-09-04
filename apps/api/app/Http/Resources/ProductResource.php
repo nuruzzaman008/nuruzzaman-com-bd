@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Support\Markdown;
+use App\Support\RequestLocale;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,7 +33,7 @@ class ProductResource extends JsonResource
             ),
             'slug' => $this->slug,
             'type' => $this->type->value,
-            'name' => $this->name,
+            'name' => RequestLocale::pick($request, $this->name, $this->name_en),
             'tagline' => $english ? ($this->tagline_en ?? $this->tagline) : $this->tagline,
             'description_html' => Markdown::toHtml(
                 $hasEnglish ? $this->description_markdown_en : $this->description_markdown,
