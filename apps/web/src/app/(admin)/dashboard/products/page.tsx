@@ -7,35 +7,41 @@ import { DataTable } from '@/components/ui/data-table';
 import { PriceTag } from '@/components/ui/price';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('প্রোডাক্ট');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.products);
+}
 
 export default async function DashboardProductsPage() {
+  const { t } = await adminDictionary();
   const products = await sessionApi<{ data: Product[] }>('/admin/products');
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">প্রোডাক্ট</h1>
-      <p className="mt-2 text-muted">
-        দাম প্রকাশ না করা পর্যন্ত ভ্যারিয়েন্টটি বিক্রয়যোগ্য নয় এবং সাইটে
-        &ldquo;দাম জানতে যোগাযোগ করুন&rdquo; দেখায়।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.admin.nav.products}
+      </h1>
+      <p className="mt-2 text-muted">{t.admin.products.priceRule}</p>
 
       <div className="mt-6">
         <DataTable
-          caption="প্রোডাক্টের তালিকা"
+          caption={t.admin.products.caption}
           rows={products.data}
           getRowKey={(product) => product.slug}
-          empty={<EmptyState title="কোনো প্রোডাক্ট নেই" />}
+          empty={<EmptyState title={t.admin.products.empty} />}
           columns={[
             {
               key: 'name',
-              header: 'প্রোডাক্ট',
+              header: t.admin.products.product,
               render: (product) => (
                 <span>
                   <Link
                     href={`/shop/${product.slug}`}
+                    data-authored="true"
                     className="block font-medium text-blue hover:underline"
                   >
                     {product.name}
@@ -53,18 +59,18 @@ export default async function DashboardProductsPage() {
                     href={`/dashboard/products/${product.id}/seo`}
                     className="text-blue hover:underline"
                   >
-                    বিশ্লেষণ
+                    {t.admin.products.analysis}
                   </Link>
                 ) : null,
             },
             {
               key: 'type',
-              header: 'ধরন',
+              header: t.admin.common.type,
               render: (product) => <Badge tone="info">{product.type}</Badge>,
             },
             {
               key: 'variants',
-              header: 'ভ্যারিয়েন্ট',
+              header: t.admin.products.variants,
               render: (product) => (
                 <ul className="space-y-1">
                   {(product.variants ?? []).map((variant) => (
@@ -73,7 +79,7 @@ export default async function DashboardProductsPage() {
                       <PriceTag
                         value={variant.price ?? null}
                         size="sm"
-                        unavailableLabel="দাম প্রকাশ করা হয়নি"
+                        unavailableLabel={t.admin.products.noPrice}
                       />
                     </li>
                   ))}

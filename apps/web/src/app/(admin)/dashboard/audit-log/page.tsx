@@ -5,13 +5,19 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { dateTime } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('অডিট লগ');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.auditLog);
+}
 
 export default async function DashboardAuditLogPage(props: {
   searchParams: Promise<{ action?: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const logs = await sessionApi<{ data: AuditLogEntry[] }>('/admin/audit-logs', {
@@ -20,33 +26,33 @@ export default async function DashboardAuditLogPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">অডিট লগ</h1>
-      <p className="mt-2 text-muted">
-        পাসওয়ার্ড, টোকেন এবং সম্পূর্ণ Machine ID লগে লেখার আগেই মুছে ফেলা হয়।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.admin.nav.auditLog}
+      </h1>
+      <p className="mt-2 text-muted">{t.admin.auditLog.privacyNote}</p>
 
       <div className="mt-6">
         <DataTable
-          caption="অডিট লগ"
+          caption={t.admin.auditLog.caption}
           rows={logs.data}
           getRowKey={(entry) => String(entry.id)}
-          empty={<EmptyState title="কোনো রেকর্ড নেই" />}
+          empty={<EmptyState title={t.admin.auditLog.empty} />}
           columns={[
             {
               key: 'action',
-              header: 'ঘটনা',
+              header: t.admin.auditLog.event,
               render: (entry) => (
                 <span className="font-latin font-medium text-navy">{entry.action}</span>
               ),
             },
             {
               key: 'actor',
-              header: 'কে',
-              render: (entry) => entry.actor?.name ?? 'সিস্টেম',
+              header: t.admin.auditLog.actor,
+              render: (entry) => entry.actor?.name ?? t.admin.auditLog.system,
             },
             {
               key: 'subject',
-              header: 'বিষয়',
+              header: t.admin.auditLog.subject,
               render: (entry) => (
                 <span className="font-latin text-xs text-muted">
                   {entry.subject_type
@@ -55,7 +61,11 @@ export default async function DashboardAuditLogPage(props: {
                 </span>
               ),
             },
-            { key: 'at', header: 'কখন', render: (entry) => dateTime(entry.at) ?? '—' },
+            {
+              key: 'at',
+              header: t.admin.auditLog.when,
+              render: (entry) => dateTime(entry.at, locale) ?? '—',
+            },
           ]}
         />
       </div>

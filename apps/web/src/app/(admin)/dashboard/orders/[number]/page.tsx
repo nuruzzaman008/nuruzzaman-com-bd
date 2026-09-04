@@ -9,14 +9,20 @@ import { Card } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { sessionApi } from '@/lib/api/server';
 import { dateTime, price } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
-import { ORDER_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('অর্ডারের বিস্তারিত');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.orderDetail.title);
+}
 
 export default async function DashboardOrderPage(props: {
   params: Promise<{ number: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const { number } = await props.params;
 
   let order: Order;
@@ -38,8 +44,8 @@ export default async function DashboardOrderPage(props: {
     <div>
       <Breadcrumbs
         trail={[
-          { name: 'ড্যাশবোর্ড', path: '/dashboard' },
-          { name: 'অর্ডার', path: '/dashboard/orders' },
+          { name: t.admin.nav.dashboard, path: '/dashboard' },
+          { name: t.admin.nav.orders, path: '/dashboard/orders' },
           { name: order.number, path: `/dashboard/orders/${order.number}` },
         ]}
       />
@@ -48,19 +54,19 @@ export default async function DashboardOrderPage(props: {
         <h1 className="font-latin text-[length:var(--step-h1)] font-bold text-navy">
           {order.number}
         </h1>
-        <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{label(ORDER_STATUS_LABELS, order.status)}</Badge>
+        <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{statusLabel('order', order.status, locale)}</Badge>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           <DataTable
-            caption="অর্ডারের আইটেম"
+            caption={t.admin.orderDetail.itemsCaption}
             rows={order.items ?? []}
             getRowKey={(item) => item.sku}
             columns={[
               {
                 key: 'name',
-                header: 'আইটেম',
+                header: t.admin.orderDetail.item,
                 render: (item) => (
                   <span>
                     <span className="block font-medium text-navy">{item.product_name}</span>
@@ -68,10 +74,15 @@ export default async function DashboardOrderPage(props: {
                   </span>
                 ),
               },
-              { key: 'qty', header: 'পরিমাণ', align: 'end', render: (item) => item.quantity },
+              {
+                key: 'qty',
+                header: t.admin.orderDetail.quantity,
+                align: 'end',
+                render: (item) => item.quantity,
+              },
               {
                 key: 'total',
-                header: 'মোট',
+                header: t.admin.orders.total,
                 align: 'end',
                 render: (item) => price(item.line_total_minor, order.currency),
               },
@@ -80,7 +91,7 @@ export default async function DashboardOrderPage(props: {
 
           {order.timeline?.length ? (
             <Card className="p-5">
-              <h2 className="font-bold text-navy">অবস্থার ইতিহাস</h2>
+              <h2 className="font-bold text-navy">{t.admin.orderDetail.statusHistory}</h2>
               <ol className="mt-3 space-y-3 text-sm">
                 {order.timeline.map((event, index) => (
                   <li key={`${event.to}-${index}`}>

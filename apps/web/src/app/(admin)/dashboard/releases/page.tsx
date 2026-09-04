@@ -7,49 +7,55 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, fileSize } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('রিলিজ ও ডাউনলোড');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.releases);
+}
 
 export default async function DashboardReleasesPage() {
+  const { locale, t } = await adminDictionary();
   const releases = await sessionApi<{ data: DownloadAsset[] }>('/admin/download-assets');
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">রিলিজ ও ডাউনলোড</h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.admin.nav.releases}
+      </h1>
 
       <Callout tone="warning" className="mt-4 max-w-3xl">
-        ইনস্টলার সবসময় প্রাইভেট ডিস্কে থাকে, কখনো Next.js-এর{' '}
-        <span className="font-latin">/public</span> ফোল্ডারে বা পাবলিক বাকেটে নয়। চেকসাম
-        আপলোড করা বাইট থেকে সার্ভারেই হিসাব করা হয়। ফাইল আপলোড না করা পর্যন্ত রিলিজ
-        উপলব্ধ করা যায় না।
+        {t.admin.releases.storageNote}
       </Callout>
 
       <div className="mt-6">
         <DataTable
-          caption="রিলিজের তালিকা"
+          caption={t.admin.releases.caption}
           rows={releases.data}
           getRowKey={(release) => release.slug}
-          empty={<EmptyState title="কোনো রিলিজ নেই" />}
+          empty={<EmptyState title={t.admin.releases.empty} />}
           columns={[
             {
               key: 'name',
-              header: 'রিলিজ',
+              header: t.admin.releases.release,
               render: (release) => (
                 <span>
                   <span className="block font-medium text-navy">{release.name}</span>
                   <span className="font-latin block text-xs text-muted">
-                    {release.version ? `v${release.version}` : 'ভার্সন নেই'} · /{release.slug}
+                    {release.version ? `v${release.version}` : t.admin.releases.noVersion} ·{' '}
+                    /{release.slug}
                   </span>
                 </span>
               ),
             },
             {
               key: 'file',
-              header: 'ফাইল',
+              header: t.admin.releases.file,
               render: (release) => (
                 <span className="font-latin text-xs">
-                  {fileSize(release.size_bytes) ?? 'আপলোড হয়নি'}
+                  {fileSize(release.size_bytes) ?? t.admin.releases.notUploaded}
                 </span>
               ),
             },
@@ -60,13 +66,13 @@ export default async function DashboardReleasesPage() {
                 <span className="font-latin text-xs break-all text-muted">
                   {release.checksum_sha256
                     ? `${release.checksum_sha256.slice(0, 16)}...`
-                    : 'হিসাব করা হয়নি'}
+                    : t.admin.releases.notComputed}
                 </span>
               ),
             },
             {
               key: 'signing',
-              header: 'সাইনিং',
+              header: t.admin.releases.signing,
               render: (release) => (
                 <Badge tone={release.code_signing_status.startsWith('signed') ? 'success' : 'warning'}>
                   {release.code_signing_status}
@@ -75,18 +81,18 @@ export default async function DashboardReleasesPage() {
             },
             {
               key: 'available',
-              header: 'অবস্থা',
+              header: t.admin.common.status,
               render: (release) =>
                 release.is_available ? (
-                  <Badge tone="success">উপলব্ধ</Badge>
+                  <Badge tone="success">{t.admin.releases.available}</Badge>
                 ) : (
-                  <Badge tone="neutral">প্রকাশিত নয়</Badge>
+                  <Badge tone="neutral">{t.admin.releases.notPublished}</Badge>
                 ),
             },
             {
               key: 'released',
-              header: 'প্রকাশ',
-              render: (release) => date(release.released_at) ?? '—',
+              header: t.admin.common.published,
+              render: (release) => date(release.released_at, locale) ?? '—',
             },
           ]}
         />

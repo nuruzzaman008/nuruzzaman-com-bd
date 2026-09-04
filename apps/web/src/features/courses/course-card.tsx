@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { CoverArt } from '@/components/ui/cover-art';
 import { LocaleLink } from '@/components/ui/locale-link';
+import { PriceTag } from '@/components/ui/price';
 import { counted, duration } from '@/lib/format';
 import { levelLabel, taxonomyLabel } from '@/lib/i18n/labels';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -72,6 +73,13 @@ export function CourseCard({ course }: { course: CourseSummary }) {
             </>
           ) : null}
         </p>
+
+        <div className="mt-auto pt-4">
+          {/* Null renders as a contact-for-pricing line, never as zero. When
+              the owner has set a previous price, PriceTag shows it struck
+              through beside the one being charged. */}
+          <PriceTag value={course.from_price ?? null} size="sm" />
+        </div>
       </div>
     </Card>
   );

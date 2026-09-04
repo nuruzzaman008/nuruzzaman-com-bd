@@ -6,14 +6,20 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
-import { TICKET_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('সাপোর্ট টিকিট');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.tickets.title);
+}
 
 export default async function DashboardSupportTicketsPage(props: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const tickets = await sessionApi<{ data: SupportTicket[] }>('/admin/support-tickets', {
@@ -22,37 +28,47 @@ export default async function DashboardSupportTicketsPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">সাপোর্ট টিকিট</h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.admin.tickets.title}
+      </h1>
 
       <div className="mt-6">
         <DataTable
-          caption="সাপোর্ট টিকিটের তালিকা"
+          caption={t.admin.tickets.caption}
           rows={tickets.data}
           getRowKey={(ticket) => ticket.reference}
-          empty={<EmptyState title="কোনো টিকিট নেই" />}
+          empty={<EmptyState title={t.admin.tickets.empty} />}
           columns={[
             {
               key: 'reference',
-              header: 'রেফারেন্স',
+              header: t.admin.tickets.reference,
               render: (ticket) => (
                 <span className="font-latin font-semibold text-navy">{ticket.reference}</span>
               ),
             },
-            { key: 'subject', header: 'বিষয়', render: (ticket) => ticket.subject },
-            { key: 'category', header: 'ক্যাটাগরি', render: (ticket) => ticket.category },
+            {
+              key: 'subject',
+              header: t.admin.tickets.subject,
+              render: (ticket) => <span data-authored="true">{ticket.subject}</span>,
+            },
+            {
+              key: 'category',
+              header: t.admin.tickets.category,
+              render: (ticket) => ticket.category,
+            },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.admin.common.status,
               render: (ticket) => (
                 <Badge tone={ticket.status === 'resolved' ? 'success' : 'info'}>
-                  {label(TICKET_STATUS_LABELS, ticket.status)}
+                  {statusLabel('ticket', ticket.status, locale)}
                 </Badge>
               ),
             },
             {
               key: 'created',
-              header: 'খোলা হয়েছে',
-              render: (ticket) => date(ticket.created_at) ?? '—',
+              header: t.admin.tickets.opened,
+              render: (ticket) => date(ticket.created_at, locale) ?? '—',
             },
           ]}
         />

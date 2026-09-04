@@ -9,6 +9,8 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Checkbox, Field, Select, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import type { Dictionary } from '@/lib/i18n/dictionary';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Support-side review of a Phase 1 activation request.
@@ -17,30 +19,34 @@ import { ApiError, api } from '@/lib/api/browser';
  * a token, key or recovery blob: the offline vendor process issues those, and
  * this website is deliberately not able to store them.
  */
-const NEXT_STATES: Record<string, { value: string; label: string }[]> = {
+type Transition = keyof Dictionary['admin']['activationReview'];
+
+/** Which transitions each status allows. The API enforces the same rules. */
+const NEXT_STATES: Record<string, { value: string; label: Transition }[]> = {
   submitted: [
-    { value: 'under_review', label: 'রিভিউ শুরু করুন' },
-    { value: 'needs_info', label: 'আরও তথ্য দরকার' },
-    { value: 'rejected', label: 'বাতিল করুন' },
+    { value: 'under_review', label: 'startReview' },
+    { value: 'needs_info', label: 'needsInfo' },
+    { value: 'rejected', label: 'reject' },
   ],
   under_review: [
-    { value: 'approved', label: 'অনুমোদন করুন' },
-    { value: 'needs_info', label: 'আরও তথ্য দরকার' },
-    { value: 'rejected', label: 'বাতিল করুন' },
+    { value: 'approved', label: 'approve' },
+    { value: 'needs_info', label: 'needsInfo' },
+    { value: 'rejected', label: 'reject' },
   ],
   needs_info: [
-    { value: 'under_review', label: 'রিভিউতে ফেরত' },
-    { value: 'rejected', label: 'বাতিল করুন' },
+    { value: 'under_review', label: 'backToReview' },
+    { value: 'rejected', label: 'reject' },
   ],
   approved: [
-    { value: 'completed', label: 'সম্পন্ন হিসেবে চিহ্নিত করুন' },
-    { value: 'rejected', label: 'বাতিল করুন' },
+    { value: 'completed', label: 'markComplete' },
+    { value: 'rejected', label: 'reject' },
   ],
   completed: [],
   rejected: [],
 };
 
 export function ActivationReview({ request }: { request: ActivationRequest }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -51,7 +57,7 @@ export function ActivationReview({ request }: { request: ActivationRequest }) {
   if (options.length === 0) {
     return (
       <Callout tone="info">
-        এই রিকোয়েস্টটি চূড়ান্ত অবস্থায় আছে; আর কোনো পরিবর্তন করা যাবে না।
+        {t.admin.activationReview.finalState}
       </Callout>
     );
   }
@@ -76,11 +82,13 @@ export function ActivationReview({ request }: { request: ActivationRequest }) {
       });
 
       setTone('success');
-      setMessage('রিকোয়েস্ট হালনাগাদ করা হয়েছে।');
+      setMessage(t.admin.activationReview.updated);
       router.refresh();
     } catch (caught) {
       setTone('danger');
-      setMessage(caught instanceof ApiError ? caught.message : 'হালনাগাদ করা যায়নি।');
+      setMessage(
+        caught instanceof ApiError ? caught.message : t.admin.activationReview.failed,
+      );
     } finally {
       setBusy(false);
     }
@@ -88,7 +96,7 @@ export function ActivationReview({ request }: { request: ActivationRequest }) {
 
   return (
     <Card className="p-5">
-      <h2 className="font-bold text-navy">রিভিউ</h2>
+      <h2 className="font-bold text-navy">{t.admin.activationReview.heading}</h2>
 
       {message ? (
         <Callout tone={tone} className="mt-3" role={tone === 'danger' ? 'alert' : 'status'}>
@@ -97,37 +105,44 @@ export function ActivationReview({ request }: { request: ActivationRequest }) {
       ) : null}
 
       <form onSubmit={onSubmit} className="mt-4 space-y-4">
-        <Field label="নতুন অবস্থা" required>
+        <Field label={t.admin.activationReview.newStatus} required>
           {(props) => (
             <Select name="status" {...props}>
               {options.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t.admin.activationReview[option.label]}
                 </option>
               ))}
             </Select>
           )}
         </Field>
 
-        <Field label="অভ্যন্তরীণ নোট" hint="শুধু স্টাফ দেখতে পাবে">
+        <Field
+          label={t.admin.activationReview.internalNote}
+          hint={t.admin.activationReview.internalHint}
+        >
           {(props) => <Textarea name="internal_note" {...props} />}
         </Field>
 
         <Field
-          label="গ্রাহকের জন্য রেসপন্স"
-          hint="কখনো token, key বা recovery ফাইল এখানে লিখবেন না।"
+          label={t.admin.activationReview.customerResponse}
+          hint={t.admin.activationReview.customerHint}
         >
           {(props) => <Textarea name="vendor_response" {...props} />}
         </Field>
 
-        <Field label="ইতিহাসে নোট">
+        <Field label={t.admin.activationReview.historyNote}>
           {(props) => <Textarea name="note" {...props} />}
         </Field>
 
-        <Checkbox name="notify" defaultChecked label="গ্রাহককে ইমেইলে জানান" />
+        <Checkbox
+          name="notify"
+          defaultChecked
+          label={t.admin.activationReview.notifyCustomer}
+        />
 
         <Button type="submit" disabled={busy}>
-          {busy ? 'সংরক্ষণ হচ্ছে…' : 'হালনাগাদ করুন'}
+          {busy ? t.admin.common.saving : t.admin.activationReview.update}
         </Button>
       </form>
     </Card>

@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, number } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
-import { ENROLLMENT_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('আমার কোর্স');
 
@@ -58,7 +58,7 @@ export default async function AccountCoursesPage() {
                       </p>
                     </div>
                     <Badge tone={STATUS_TONES[enrollment.status] ?? 'info'}>
-                      {label(ENROLLMENT_STATUS_LABELS, enrollment.status)}
+                      {statusLabel('enrollment', enrollment.status)}
                     </Badge>
                   </div>
 

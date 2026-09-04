@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
-import { TICKET_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('সাপোর্ট টিকিট');
 
@@ -48,7 +48,7 @@ export default async function AccountSupportPage() {
               header: 'অবস্থা',
               render: (ticket) => (
                 <Badge tone={ticket.status === 'resolved' ? 'success' : 'info'}>
-                  {label(TICKET_STATUS_LABELS, ticket.status)}
+                  {statusLabel('ticket', ticket.status)}
                 </Badge>
               ),
             },

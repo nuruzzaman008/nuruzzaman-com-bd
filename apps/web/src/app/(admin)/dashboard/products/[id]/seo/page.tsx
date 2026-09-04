@@ -5,11 +5,17 @@ import { ApiError, type Product } from '@nuruzzaman/contracts';
 import { SeoEditor } from '@/features/dashboard/seo-editor';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { sessionApi } from '@/lib/api/server';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('প্রোডাক্টের SEO');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.productSeo);
+}
 
 export default async function ProductSeoPage(props: { params: Promise<{ id: string }> }) {
+  const { t } = await adminDictionary();
   const { id } = await props.params;
 
   let product: Product;
@@ -31,8 +37,8 @@ export default async function ProductSeoPage(props: { params: Promise<{ id: stri
     <div>
       <Breadcrumbs
         trail={[
-          { name: 'ড্যাশবোর্ড', path: '/dashboard' },
-          { name: 'প্রোডাক্ট', path: '/dashboard/products' },
+          { name: t.admin.nav.dashboard, path: '/dashboard' },
+          { name: t.admin.nav.products, path: '/dashboard/products' },
           { name: product.name, path: `/dashboard/products/${id}/seo` },
         ]}
       />

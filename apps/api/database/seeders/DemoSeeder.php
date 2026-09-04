@@ -138,9 +138,19 @@ class DemoSeeder extends Seeder
             ],
         );
 
+        /*
+         * `compare_at_minor` is what an offer looks like: the page shows this
+         * figure struck through beside the one actually charged.
+         *
+         * Both numbers here are walkthrough placeholders, which is why this
+         * whole seeder refuses to run outside local and testing. A real
+         * previous price is the owner's to enter in the admin, and it has to
+         * be one the course was genuinely sold at - a struck-through figure
+         * that was never charged is an invented discount.
+         */
         Price::query()->updateOrCreate(
             ['product_variant_id' => $variant->getKey(), 'currency' => 'BDT'],
-            ['amount_minor' => 250000, 'is_active' => true],
+            ['amount_minor' => 250000, 'compare_at_minor' => 400000, 'is_active' => true],
         );
 
         // No price row is created for the NB Engineering Tools licence. The owner

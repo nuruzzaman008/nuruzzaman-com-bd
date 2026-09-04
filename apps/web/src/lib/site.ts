@@ -88,45 +88,55 @@ export const accountNav: NavItem[] = [
   { href: '/account/support', label: 'সাপোর্ট টিকিট' },
 ];
 
-export const dashboardNav: { heading: string; items: NavItem[] }[] = [
+/** An admin nav item. Its label is always a dictionary key. */
+export type DashboardNavItem = { href: string; key: keyof Dictionary['admin']['nav'] };
+
+export function dashboardNavLabel(item: DashboardNavItem, t: Dictionary): string {
+  return t.admin.nav[item.key];
+}
+
+export const dashboardNav: {
+  headingKey: keyof Dictionary['admin']['group'];
+  items: DashboardNavItem[];
+}[] = [
   {
-    heading: 'ওভারভিউ',
-    items: [{ href: '/dashboard', label: 'ড্যাশবোর্ড' }],
+    headingKey: 'overview',
+    items: [{ href: '/dashboard', key: 'dashboard' }],
   },
   {
-    heading: 'কনটেন্ট',
+    headingKey: 'content',
     items: [
-      { href: '/dashboard/posts', label: 'আর্টিকেল' },
-      { href: '/dashboard/pages', label: 'পেজ' },
-      { href: '/dashboard/media', label: 'মিডিয়া' },
-      { href: '/dashboard/redirects', label: 'রিডাইরেক্ট' },
+      { href: '/dashboard/posts', key: 'posts' },
+      { href: '/dashboard/pages', key: 'pages' },
+      { href: '/dashboard/media', key: 'media' },
+      { href: '/dashboard/redirects', key: 'redirects' },
     ],
   },
   {
-    heading: 'কমার্স',
+    headingKey: 'commerce',
     items: [
-      { href: '/dashboard/products', label: 'প্রোডাক্ট' },
-      { href: '/dashboard/orders', label: 'অর্ডার' },
-      { href: '/dashboard/releases', label: 'রিলিজ ও ডাউনলোড' },
+      { href: '/dashboard/products', key: 'products' },
+      { href: '/dashboard/orders', key: 'orders' },
+      { href: '/dashboard/releases', key: 'releases' },
     ],
   },
   {
-    heading: 'শিক্ষা',
-    items: [{ href: '/dashboard/courses', label: 'কোর্স' }],
+    headingKey: 'learning',
+    items: [{ href: '/dashboard/courses', key: 'courses' }],
   },
   {
-    heading: 'সাপোর্ট',
+    headingKey: 'support',
     items: [
-      { href: '/dashboard/activation-requests', label: 'অ্যাক্টিভেশন' },
-      { href: '/dashboard/support-tickets', label: 'টিকিট' },
+      { href: '/dashboard/activation-requests', key: 'activationRequests' },
+      { href: '/dashboard/support-tickets', key: 'tickets' },
     ],
   },
   {
-    heading: 'প্ল্যাটফর্ম',
+    headingKey: 'platform',
     items: [
-      { href: '/dashboard/users', label: 'ব্যবহারকারী' },
-      { href: '/dashboard/settings', label: 'সেটিংস' },
-      { href: '/dashboard/audit-log', label: 'অডিট লগ' },
+      { href: '/dashboard/users', key: 'users' },
+      { href: '/dashboard/settings', key: 'settings' },
+      { href: '/dashboard/audit-log', key: 'auditLog' },
     ],
   },
 ];

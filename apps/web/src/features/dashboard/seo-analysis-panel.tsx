@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { analyzeSeo, type CheckStatus, type SeoInput } from '@/lib/seo-analysis/analyze';
 import { cn } from '@/lib/cn';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Item-wise SEO analysis, live as the author types.
@@ -17,10 +18,10 @@ import { cn } from '@/lib/cn';
  * which is not the goal. Warnings are suggestions and say so.
  */
 
-const STATUS_STYLES: Record<CheckStatus, { dot: string; label: string }> = {
-  pass: { dot: 'bg-success', label: 'ঠিক আছে' },
-  warn: { dot: 'bg-warning', label: 'বিবেচনা করুন' },
-  fail: { dot: 'bg-danger', label: 'সমস্যা' },
+const STATUS_DOTS: Record<CheckStatus, string> = {
+  pass: 'bg-success',
+  warn: 'bg-warning',
+  fail: 'bg-danger',
 };
 
 /** Reads a named field out of the editor form. */
@@ -61,6 +62,7 @@ export function SeoAnalysisPanel({
     excerpt?: string;
   };
 }) {
+  const { t } = useLocale();
   const [values, setValues] = useState<SeoInput | null>(null);
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export function SeoAnalysisPanel({
     return () => form.removeEventListener('input', read);
   }, [formId, kind, fields]);
 
-  const analysis = useMemo(() => (values ? analyzeSeo(values) : null), [values]);
+  const analysis = useMemo(() => (values ? analyzeSeo(values, t) : null), [values, t]);
 
   if (!analysis) {
     return null;
@@ -99,14 +101,17 @@ export function SeoAnalysisPanel({
 
   return (
     <section
-      aria-label="SEO বিশ্লেষণ"
+      aria-label={t.admin.seoPanel.title}
       className="rounded-[--radius-card] border border-line bg-white"
     >
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
         <div>
-          <h2 className="font-bold text-navy">SEO বিশ্লেষণ</h2>
+          <h2 className="font-bold text-navy">{t.admin.seoPanel.title}</h2>
           <p className="mt-0.5 text-xs text-muted">
-            {analysis.passed} ঠিক · {analysis.warned} বিবেচনা · {analysis.failed} সমস্যা
+            {t.admin.seoPanel.summary
+              .replace('{passed}', String(analysis.passed))
+              .replace('{warned}', String(analysis.warned))
+              .replace('{failed}', String(analysis.failed))}
           </p>
         </div>
         <p className={cn('font-latin text-3xl font-bold', tone)}>{analysis.score}</p>
@@ -114,8 +119,7 @@ export function SeoAnalysisPanel({
 
       {analysis.keywordMissing ? (
         <p className="border-b border-line bg-amber-soft px-5 py-3 text-sm text-navy">
-          ফোকাস কিওয়ার্ড দিলে কিওয়ার্ড-ভিত্তিক চেকগুলোও চালু হবে। এখন শুধু দৈর্ঘ্য ও
-          গঠনের চেক দেখানো হচ্ছে।
+          {t.admin.seoPanel.noKeyword}
         </p>
       ) : null}
 
@@ -134,11 +138,13 @@ export function SeoAnalysisPanel({
                       aria-hidden="true"
                       className={cn(
                         'mt-1.5 size-2.5 shrink-0 rounded-full',
-                        STATUS_STYLES[check.status].dot,
+                        STATUS_DOTS[check.status],
                       )}
                     />
                     <span className="min-w-0">
-                      <span className="sr-only">{STATUS_STYLES[check.status].label}: </span>
+                      <span className="sr-only">
+                        {t.admin.seoPanel[check.status]}:{' '}
+                      </span>
                       <span className="text-sm text-navy">{check.message}</span>
                       {check.hint ? (
                         <span className="mt-0.5 block text-xs text-muted">{check.hint}</span>
@@ -152,8 +158,7 @@ export function SeoAnalysisPanel({
       </div>
 
       <p className="border-t border-line px-5 py-3 text-xs text-muted">
-        এগুলো পরিচ্ছন্নতার চেক — কোনো র‍্যাঙ্কিংয়ের প্রতিশ্রুতি নয়। সব সবুজ হলেই লেখা
-        ভালো হয়ে যায় না, আর কিছু হলুদ থাকলেও সমস্যা নেই।
+        {t.admin.seoPanel.disclaimer}
       </p>
     </section>
   );

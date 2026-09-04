@@ -9,6 +9,7 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Field, Input, Select, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 import { price } from '@/lib/format';
 
 /**
@@ -19,6 +20,7 @@ import { price } from '@/lib/format';
  * approved separately, so no single click moves money.
  */
 export function OrderActions({ order }: { order: Order }) {
+  const { locale, t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -37,7 +39,9 @@ export function OrderActions({ order }: { order: Order }) {
       router.refresh();
     } catch (caught) {
       setTone('danger');
-      setMessage(caught instanceof ApiError ? caught.message : 'অনুরোধটি সম্পন্ন হয়নি।');
+      setMessage(
+        caught instanceof ApiError ? caught.message : t.admin.orderActions.failed,
+      );
     } finally {
       setBusy(false);
     }
@@ -52,7 +56,7 @@ export function OrderActions({ order }: { order: Order }) {
       ) : null}
 
       <Card className="p-5">
-        <h2 className="font-bold text-navy">অবস্থা পরিবর্তন</h2>
+        <h2 className="font-bold text-navy">{t.admin.orderActions.changeStatus}</h2>
         <form
           className="mt-3 space-y-4"
           onSubmit={(event) => {
@@ -65,11 +69,11 @@ export function OrderActions({ order }: { order: Order }) {
                   method: 'POST',
                   body: { status: form.get('status'), reason: form.get('reason') },
                 }),
-              'অবস্থা পরিবর্তন করা হয়েছে।',
+              t.admin.orderActions.statusChanged,
             );
           }}
         >
-          <Field label="নতুন অবস্থা" required>
+          <Field label={t.admin.orderActions.newStatus} required>
             {(props) => (
               <Select name="status" {...props}>
                 <option value="paid">paid</option>
@@ -80,21 +84,28 @@ export function OrderActions({ order }: { order: Order }) {
             )}
           </Field>
 
-          <Field label="কারণ" required hint="অডিট লগে সংরক্ষিত হবে">
+          <Field
+            label={t.admin.orderActions.reason}
+            required
+            hint={t.admin.orderActions.reasonHint}
+          >
             {(props) => <Input name="reason" {...props} />}
           </Field>
 
           <Button type="submit" variant="secondary" disabled={busy}>
-            পরিবর্তন করুন
+            {t.admin.orderActions.change}
           </Button>
         </form>
       </Card>
 
       {remaining > 0 ? (
         <Card className="p-5">
-          <h2 className="font-bold text-navy">রিফান্ড অনুরোধ</h2>
+          <h2 className="font-bold text-navy">{t.admin.orderActions.refundRequest}</h2>
           <p className="mt-1 text-sm text-muted">
-            সর্বোচ্চ {price(remaining, order.currency)} ফেরত দেওয়া যাবে। অনুমোদন আলাদা ধাপ।
+            {t.admin.orderActions.refundCeiling.replace(
+              '{amount}',
+              price(remaining, order.currency, locale) ?? '',
+            )}
           </p>
 
           <form
@@ -113,11 +124,15 @@ export function OrderActions({ order }: { order: Order }) {
                       revoke_entitlements: form.get('revoke_entitlements') === 'yes',
                     },
                   }),
-                'রিফান্ড অনুরোধ তৈরি হয়েছে; অনুমোদনের অপেক্ষায়।',
+                t.admin.orderActions.refundCreated,
               );
             }}
           >
-            <Field label="পরিমাণ (minor unit)" required hint="১০০ = ১ টাকা">
+            <Field
+              label={t.admin.orderActions.amountLabel}
+              required
+              hint={t.admin.orderActions.amountHint}
+            >
               {(props) => (
                 <Input
                   name="amount_minor"
@@ -131,21 +146,21 @@ export function OrderActions({ order }: { order: Order }) {
               )}
             </Field>
 
-            <Field label="কারণ" required>
+            <Field label={t.admin.orderActions.reason} required>
               {(props) => <Textarea name="reason" {...props} />}
             </Field>
 
-            <Field label="অ্যাক্সেস প্রত্যাহার করবেন?" required>
+            <Field label={t.admin.orderActions.revokeLabel} required>
               {(props) => (
                 <Select name="revoke_entitlements" defaultValue="yes" {...props}>
-                  <option value="yes">হ্যাঁ, ডাউনলোড ও কোর্স প্রত্যাহার করুন</option>
-                  <option value="no">না, অ্যাক্সেস রেখে দিন</option>
+                  <option value="yes">{t.admin.orderActions.revokeYes}</option>
+                  <option value="no">{t.admin.orderActions.revokeNo}</option>
                 </Select>
               )}
             </Field>
 
             <Button type="submit" variant="danger" disabled={busy}>
-              রিফান্ড অনুরোধ করুন
+              {t.admin.orderActions.requestRefund}
             </Button>
           </form>
         </Card>

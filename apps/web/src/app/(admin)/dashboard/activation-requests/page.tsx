@@ -7,16 +7,22 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
-import { ACTIVATION_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('অ্যাক্টিভেশন রিকোয়েস্ট');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.activations.title);
+}
 
 const STATUSES = ['submitted', 'under_review', 'needs_info', 'approved', 'completed', 'rejected'];
 
 export default async function DashboardActivationRequestsPage(props: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const requests = await sessionApi<{ data: ActivationRequest[] }>('/admin/activation-requests', {
@@ -25,39 +31,39 @@ export default async function DashboardActivationRequestsPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">অ্যাক্টিভেশন রিকোয়েস্ট</h1>
-      <p className="mt-2 text-muted">
-        Machine ID সবসময় মাস্ক করা অবস্থায় দেখানো হয়; সম্পূর্ণ মান সার্ভারে এনক্রিপ্ট করা থাকে।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+        {t.admin.activations.title}
+      </h1>
+      <p className="mt-2 text-muted">{t.admin.activations.maskNote}</p>
 
-      <nav aria-label="অবস্থা অনুযায়ী ছাঁকুন" className="mt-5 flex flex-wrap gap-2">
+      <nav aria-label={t.admin.filterByStatus} className="mt-5 flex flex-wrap gap-2">
         <Link
           href="/dashboard/activation-requests"
           className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
         >
-          সব
+          {t.admin.common.all}
         </Link>
         {STATUSES.map((status) => (
           <Link
             key={status}
             href={`/dashboard/activation-requests?status=${status}`}
-            className="font-latin inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
+            className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
           >
-            {status}
+            {statusLabel('activation', status, locale)}
           </Link>
         ))}
       </nav>
 
       <div className="mt-6">
         <DataTable
-          caption="অ্যাক্টিভেশন রিকোয়েস্টের তালিকা"
+          caption={t.admin.activations.caption}
           rows={requests.data}
           getRowKey={(request) => request.reference}
-          empty={<EmptyState title="কোনো রিকোয়েস্ট নেই" />}
+          empty={<EmptyState title={t.admin.activations.empty} />}
           columns={[
             {
               key: 'reference',
-              header: 'রেফারেন্স',
+              header: t.admin.activations.reference,
               render: (request) => (
                 <Link
                   href={`/dashboard/activation-requests/${request.reference}`}
@@ -74,17 +80,25 @@ export default async function DashboardActivationRequestsPage(props: {
                 <span className="font-latin text-muted">{request.machine_id_masked}</span>
               ),
             },
-            { key: 'type', header: 'ধরন', render: (request) => request.request_type },
+            {
+              key: 'type',
+              header: t.admin.common.type,
+              render: (request) => request.request_type,
+            },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.admin.common.status,
               render: (request) => (
                 <Badge tone={request.status === 'completed' ? 'success' : 'info'}>
-                  {label(ACTIVATION_STATUS_LABELS, request.status)}
+                  {statusLabel('activation', request.status, locale)}
                 </Badge>
               ),
             },
-            { key: 'created', header: 'জমা', render: (request) => date(request.created_at) ?? '—' },
+            {
+              key: 'created',
+              header: t.admin.activations.submitted,
+              render: (request) => date(request.created_at, locale) ?? '—',
+            },
           ]}
         />
       </div>

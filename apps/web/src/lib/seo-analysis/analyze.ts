@@ -15,7 +15,13 @@
  *
  * Bengali is counted correctly: word and character counts use grapheme-aware
  * splitting rather than assuming one byte per letter.
+ *
+ * The findings themselves come from the dictionary, so the panel reads in
+ * whichever language the editor chose. The thresholds do not: 25-65 characters
+ * is what a search result truncates at, in either language.
  */
+
+import type { Dictionary } from '@/lib/i18n/dictionary';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail';
 
@@ -154,12 +160,6 @@ function paragraphs(content: string): string[] {
     .filter((block) => block.length > 0);
 }
 
-const KIND_NOUN: Record<SeoInput['kind'], string> = {
-  post: 'আর্টিকেল',
-  course: 'কোর্স',
-  product: 'প্রোডাক্ট',
-};
-
 /** Minimum body length worth publishing, per kind. */
 const MIN_WORDS: Record<SeoInput['kind'], number> = {
   post: 600,
@@ -167,7 +167,8 @@ const MIN_WORDS: Record<SeoInput['kind'], number> = {
   product: 200,
 };
 
-export function analyzeSeo(input: SeoInput): SeoAnalysis {
+export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
+  const say = t.seoCheck;
   const keyword = input.focusKeyword.trim();
   const hasKeyword = keyword.length > 0;
   const effectiveTitle = (input.metaTitle || input.title).trim();
@@ -177,7 +178,7 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
   const alts = extractImageAlts(input.content);
   const links = extractLinks(input.content);
   const blocks = paragraphs(input.content);
-  const noun = KIND_NOUN[input.kind];
+  const noun = say.kind[input.kind];
 
   const basic: SeoCheck[] = [];
   const additional: SeoCheck[] = [];
@@ -191,27 +192,27 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'keyword-in-title',
       status: contains(effectiveTitle, keyword) ? 'pass' : 'fail',
       message: contains(effectiveTitle, keyword)
-        ? 'ফোকাস কিওয়ার্ড SEO টাইটেলে আছে।'
-        : 'ফোকাস কিওয়ার্ড SEO টাইটেলে নেই।',
-      hint: 'সার্চ ফলাফলে টাইটেলই সবচেয়ে বড় সংকেত।',
+        ? say.keywordInTitleYes
+        : say.keywordInTitleNo,
+      hint: say.keywordInTitleHint,
     });
 
     basic.push({
       id: 'keyword-in-description',
       status: contains(input.metaDescription, keyword) ? 'pass' : 'fail',
       message: contains(input.metaDescription, keyword)
-        ? 'ফোকাস কিওয়ার্ড মেটা ডেসক্রিপশনে আছে।'
-        : 'ফোকাস কিওয়ার্ড মেটা ডেসক্রিপশনে নেই।',
-      hint: 'সার্চ ফলাফলে কিওয়ার্ড মোটা অক্ষরে দেখায়, তাতে ক্লিক বাড়ে।',
+        ? say.keywordInDescriptionYes
+        : say.keywordInDescriptionNo,
+      hint: say.keywordInDescriptionHint,
     });
 
     basic.push({
       id: 'keyword-in-slug',
       status: contains(input.slug.replace(/-/g, ' '), keyword) ? 'pass' : 'warn',
       message: contains(input.slug.replace(/-/g, ' '), keyword)
-        ? 'ফোকাস কিওয়ার্ড URL-এ আছে।'
-        : 'ফোকাস কিওয়ার্ড URL-এ নেই।',
-      hint: 'প্রকাশের পর slug বদলালে পুরোনো লিংক ভাঙে — এটি প্রকাশের আগেই ঠিক করুন।',
+        ? say.keywordInSlugYes
+        : say.keywordInSlugNo,
+      hint: say.keywordInSlugHint,
     });
 
     const opening = blocks.slice(0, Math.max(1, Math.ceil(blocks.length * 0.1))).join(' ');
@@ -219,9 +220,9 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'keyword-in-opening',
       status: contains(opening, keyword) ? 'pass' : 'warn',
       message: contains(opening, keyword)
-        ? 'লেখার প্রথম ১০%-এ ফোকাস কিওয়ার্ড আছে।'
-        : 'লেখার প্রথম ১০%-এ ফোকাস কিওয়ার্ড নেই।',
-      hint: 'পাঠক ও ক্রলার দুজনেই শুরুতেই বোঝে লেখাটি কী নিয়ে।',
+        ? say.keywordInOpeningYes
+        : say.keywordInOpeningNo,
+      hint: say.keywordInOpeningHint,
     });
 
     const occurrences = countOccurrences(input.content, keyword);
@@ -229,16 +230,19 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'keyword-in-content',
       status: occurrences > 0 ? 'pass' : 'fail',
       message: occurrences > 0
-        ? `মূল লেখায় ফোকাস কিওয়ার্ড ${occurrences} বার আছে।`
-        : 'মূল লেখায় ফোকাস কিওয়ার্ড নেই।',
+        ? say.keywordInContentYes.replace('{count}', String(occurrences))
+        : say.keywordInContentNo,
     });
   }
 
   basic.push({
     id: 'content-length',
     status: words >= MIN_WORDS[input.kind] ? 'pass' : words >= MIN_WORDS[input.kind] / 2 ? 'warn' : 'fail',
-    message: `${noun}ের দৈর্ঘ্য ${words} শব্দ (লক্ষ্য ${MIN_WORDS[input.kind]}+)।`,
-    hint: 'শব্দসংখ্যা নিজে কোনো র‍্যাঙ্কিং ফ্যাক্টর নয়; খুব ছোট লেখা সাধারণত প্রশ্নের উত্তর দেয় না।',
+    message: say.contentLength
+      .replace('{noun}', noun)
+      .replace('{words}', String(words))
+      .replace('{target}', String(MIN_WORDS[input.kind])),
+    hint: say.contentLengthHint,
   });
 
   /* ---------------------------------------------------------- additional */
@@ -249,8 +253,8 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'keyword-in-heading',
       status: inHeading ? 'pass' : 'warn',
       message: inHeading
-        ? 'কোনো সাবহেডিংয়ে ফোকাস কিওয়ার্ড আছে।'
-        : 'কোনো সাবহেডিংয়ে ফোকাস কিওয়ার্ড নেই।',
+        ? say.keywordInHeadingYes
+        : say.keywordInHeadingNo,
     });
 
     if (alts.length > 0) {
@@ -259,9 +263,9 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
         id: 'keyword-in-alt',
         status: inAlt ? 'pass' : 'warn',
         message: inAlt
-          ? 'কোনো ছবির alt টেক্সটে ফোকাস কিওয়ার্ড আছে।'
-          : 'কোনো ছবির alt টেক্সটে ফোকাস কিওয়ার্ড নেই।',
-        hint: 'alt টেক্সট প্রথমত স্ক্রিন রিডারের জন্য — ছবিতে যা আছে তাই লিখুন, কিওয়ার্ড জোর করে নয়।',
+          ? say.keywordInAltYes
+          : say.keywordInAltNo,
+        hint: say.keywordInAltHint,
       });
     }
 
@@ -271,10 +275,8 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
     additional.push({
       id: 'keyword-density',
       status: density === 0 ? 'fail' : density > 3 ? 'warn' : 'pass',
-      message: `কিওয়ার্ড ডেনসিটি ${density.toFixed(2)}%।`,
-      hint: density > 3
-        ? 'অস্বাভাবিক বেশি — পাঠকের কাছে জোর করে বসানো মনে হতে পারে।'
-        : 'নির্দিষ্ট কোনো আদর্শ মান নেই; স্বাভাবিক ভাষাই যথেষ্ট।',
+      message: say.density.replace('{value}', density.toFixed(2)),
+      hint: density > 3 ? say.densityHigh : say.densityNormal,
     });
   }
 
@@ -282,25 +284,28 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
   additional.push({
     id: 'slug-length',
     status: slugLength > 0 && slugLength <= 75 ? 'pass' : slugLength === 0 ? 'fail' : 'warn',
-    message: slugLength === 0 ? 'URL slug দেওয়া হয়নি।' : `URL ${slugLength} অক্ষর দীর্ঘ।`,
+    message:
+      slugLength === 0
+        ? say.slugMissing
+        : say.slugLength.replace('{count}', String(slugLength)),
   });
 
   additional.push({
     id: 'internal-links',
     status: links.internal > 0 ? 'pass' : 'warn',
     message: links.internal > 0
-      ? `সাইটের ভেতরে ${links.internal}টি লিংক আছে।`
-      : 'সাইটের ভেতরের কোনো লিংক নেই।',
-    hint: 'সম্পর্কিত লেখায় লিংক দিলে পাঠক ও ক্রলার দুজনেরই পথ তৈরি হয়।',
+      ? say.internalLinksYes.replace('{count}', String(links.internal))
+      : say.internalLinksNo,
+    hint: say.internalLinksHint,
   });
 
   additional.push({
     id: 'external-links',
     status: links.external > 0 ? 'pass' : 'warn',
     message: links.external > 0
-      ? `বাইরের ${links.external}টি রেফারেন্স লিংক আছে।`
-      : 'বাইরের কোনো রেফারেন্স লিংক নেই।',
-    hint: 'কোড, স্ট্যান্ডার্ড বা উৎসের লিংক দাবিগুলো যাচাইযোগ্য করে।',
+      ? say.externalLinksYes.replace('{count}', String(links.external))
+      : say.externalLinksNo,
+    hint: say.externalLinksHint,
   });
 
   /* ------------------------------------------------------ title readability */
@@ -310,9 +315,9 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
     id: 'title-length',
     status: titleLength >= 25 && titleLength <= 65 ? 'pass' : titleLength === 0 ? 'fail' : 'warn',
     message: titleLength === 0
-      ? 'SEO টাইটেল দেওয়া হয়নি।'
-      : `SEO টাইটেল ${titleLength} অক্ষর (২৫–৬৫ ভালো)।`,
-    hint: 'বেশি লম্বা হলে সার্চ ফলাফলে কেটে যায়।',
+      ? say.titleMissing
+      : say.titleLength.replace('{count}', String(titleLength)),
+    hint: say.titleLengthHint,
   });
 
   if (hasKeyword) {
@@ -321,9 +326,9 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'keyword-at-start',
       status: startsWith ? 'pass' : 'warn',
       message: startsWith
-        ? 'টাইটেল ফোকাস কিওয়ার্ড দিয়ে শুরু হয়েছে।'
-        : 'টাইটেল ফোকাস কিওয়ার্ড দিয়ে শুরু হয়নি।',
-      hint: 'শুরুতে থাকলে চোখে আগে পড়ে; বাক্য অস্বাভাবিক হলে এটি উপেক্ষা করাই ভালো।',
+        ? say.titleStartsYes
+        : say.titleStartsNo,
+      hint: say.titleStartsHint,
     });
   }
 
@@ -337,17 +342,17 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
           ? 'fail'
           : 'warn',
     message: descriptionLength === 0
-      ? 'মেটা ডেসক্রিপশন দেওয়া হয়নি।'
-      : `মেটা ডেসক্রিপশন ${descriptionLength} অক্ষর (১১০–১৬০ ভালো)।`,
+      ? say.descriptionMissing
+      : say.descriptionLength.replace('{count}', String(descriptionLength)),
   });
 
   title.push({
     id: 'has-number',
     status: /[0-9০-৯]/.test(effectiveTitle) ? 'pass' : 'warn',
     message: /[0-9০-৯]/.test(effectiveTitle)
-      ? 'টাইটেলে সংখ্যা আছে।'
-      : 'টাইটেলে কোনো সংখ্যা নেই।',
-    hint: 'ঐচ্ছিক — সংখ্যা থাকলে তালিকা বা ধাপভিত্তিক লেখায় ক্লিক বাড়ে, সব লেখায় নয়।',
+      ? say.titleHasNumber
+      : say.titleNoNumber,
+    hint: say.titleNumberHint,
   });
 
   /* ---------------------------------------------------- content readability */
@@ -356,9 +361,9 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
     id: 'has-subheadings',
     status: headings.length >= 2 ? 'pass' : headings.length === 1 ? 'warn' : 'fail',
     message: headings.length === 0
-      ? 'কোনো সাবহেডিং নেই।'
-      : `${headings.length}টি সাবহেডিং আছে।`,
-    hint: 'সাবহেডিং ছাড়া লম্বা লেখা স্ক্যান করা যায় না।',
+      ? say.noHeadings
+      : say.headingCount.replace('{count}', String(headings.length)),
+    hint: say.headingHint,
   });
 
   const longBlocks = blocks.filter((block) => countWords(block) > 150).length;
@@ -366,17 +371,17 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
     id: 'paragraph-length',
     status: longBlocks === 0 ? 'pass' : 'warn',
     message: longBlocks === 0
-      ? 'অনুচ্ছেদগুলো ছোট ও পাঠযোগ্য।'
-      : `${longBlocks}টি অনুচ্ছেদ ১৫০ শব্দের বেশি।`,
+      ? say.paragraphsShort
+      : say.paragraphsLong.replace('{count}', String(longBlocks)),
   });
 
   readability.push({
     id: 'has-media',
     status: alts.length > 0 ? 'pass' : 'warn',
     message: alts.length > 0
-      ? `${alts.length}টি ছবি আছে।`
-      : 'কোনো ছবি বা ডায়াগ্রাম নেই।',
-    hint: 'হিসাব বা ধাপভিত্তিক লেখায় একটি চিত্র অনেক ব্যাখ্যা বাঁচায়।',
+      ? say.imagesYes.replace('{count}', String(alts.length))
+      : say.imagesNo,
+    hint: say.imagesHint,
   });
 
   const missingAlt = alts.filter((alt) => alt.trim().length === 0).length;
@@ -385,9 +390,9 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'alt-text-present',
       status: missingAlt === 0 ? 'pass' : 'fail',
       message: missingAlt === 0
-        ? 'প্রতিটি ছবির alt টেক্সট আছে।'
-        : `${missingAlt}টি ছবির alt টেক্সট নেই।`,
-      hint: 'alt টেক্সট ছাড়া ছবি স্ক্রিন রিডারে অদৃশ্য — এটি অ্যাক্সেসিবিলিটির শর্ত, শুধু SEO নয়।',
+        ? say.altAllPresent
+        : say.altMissing.replace('{count}', String(missingAlt)),
+      hint: say.altHint,
     });
   }
 
@@ -397,17 +402,17 @@ export function analyzeSeo(input: SeoInput): SeoAnalysis {
       id: 'has-excerpt',
       status: excerptLength > 0 ? 'pass' : 'warn',
       message: excerptLength > 0
-        ? `সারসংক্ষেপ ${excerptLength} অক্ষর।`
-        : 'সারসংক্ষেপ দেওয়া হয়নি।',
-      hint: 'তালিকা ও কার্ডে এটিই দেখানো হয়; না থাকলে লেখার শুরুটা কেটে দেখানো হয়।',
+        ? say.excerptLength.replace('{count}', String(excerptLength))
+        : say.excerptMissing,
+      hint: say.excerptHint,
     });
   }
 
   const groups: SeoGroup[] = [
-    { id: 'basic', heading: 'মৌলিক SEO', checks: basic },
-    { id: 'additional', heading: 'অতিরিক্ত', checks: additional },
-    { id: 'title', heading: 'টাইটেল ও ডেসক্রিপশন', checks: title },
-    { id: 'readability', heading: 'পাঠযোগ্যতা', checks: readability },
+    { id: 'basic', heading: say.groups.basic, checks: basic },
+    { id: 'additional', heading: say.groups.additional, checks: additional },
+    { id: 'title', heading: say.groups.title, checks: title },
+    { id: 'readability', heading: say.groups.readability, checks: readability },
   ];
 
   const all = groups.flatMap((group) => group.checks);

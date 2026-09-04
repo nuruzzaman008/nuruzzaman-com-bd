@@ -11741,6 +11741,17 @@
           "issues_certificate": {
             "type": "boolean"
           },
+          "from_price": {
+            "description": "The lowest published price, or null when the owner has not set one - in which case the card says so in words rather than showing a figure.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "published_at": {
             "type": [
               "string",

@@ -5,11 +5,17 @@ import { ApiError, type Course } from '@nuruzzaman/contracts';
 import { SeoEditor } from '@/features/dashboard/seo-editor';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { sessionApi } from '@/lib/api/server';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('কোর্সের SEO');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.courseSeo);
+}
 
 export default async function CourseSeoPage(props: { params: Promise<{ id: string }> }) {
+  const { t } = await adminDictionary();
   const { id } = await props.params;
 
   let course: Course;
@@ -31,8 +37,8 @@ export default async function CourseSeoPage(props: { params: Promise<{ id: strin
     <div>
       <Breadcrumbs
         trail={[
-          { name: 'ড্যাশবোর্ড', path: '/dashboard' },
-          { name: 'কোর্স', path: '/dashboard/courses' },
+          { name: t.admin.nav.dashboard, path: '/dashboard' },
+          { name: t.admin.nav.courses, path: '/dashboard/courses' },
           { name: course.title, path: `/dashboard/courses/${id}/seo` },
         ]}
       />

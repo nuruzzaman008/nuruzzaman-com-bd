@@ -6,22 +6,26 @@ import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { fileSize } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('মিডিয়া');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.media);
+}
 
 export default async function DashboardMediaPage() {
+  const { t } = await adminDictionary();
   const media = await sessionApi<{ data: MediaItem[] }>('/admin/media');
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">মিডিয়া</h1>
-      <p className="mt-2 text-muted">
-        প্রতিটি ছবির জন্য alt টেক্সট লিখুন। alt ছাড়া ছবি প্রকাশ করলে অ্যাক্সেসিবিলিটি ভাঙে।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.media}</h1>
+      <p className="mt-2 text-muted">{t.admin.media.altAdvice}</p>
 
       {media.data.length === 0 ? (
-        <EmptyState className="mt-6" title="কোনো মিডিয়া আপলোড করা হয়নি" />
+        <EmptyState className="mt-6" title={t.admin.media.empty} />
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {media.data.map((item) => (
@@ -51,7 +55,7 @@ export default async function DashboardMediaPage() {
                     {item.alt_text ? (
                       <span className="text-muted">Alt: {item.alt_text}</span>
                     ) : (
-                      <span className="font-medium text-danger">Alt টেক্সট নেই</span>
+                      <span className="font-medium text-danger">{t.admin.media.noAlt}</span>
                     )}
                   </p>
                 </div>

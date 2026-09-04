@@ -5,13 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('ব্যবহারকারী');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.users);
+}
 
 export default async function DashboardUsersPage(props: {
   searchParams: Promise<{ q?: string; role?: string }>;
 }) {
+  const { t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const users = await sessionApi<{ data: User[] }>('/admin/users', {
@@ -20,41 +26,38 @@ export default async function DashboardUsersPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">ব্যবহারকারী</h1>
-      <p className="mt-2 text-muted">
-        রোল পরিবর্তন শুধু super admin করতে পারেন এবং নিজের অ্যাকাউন্টে নয়। পরিবর্তনের আগে
-        পাসওয়ার্ড নিশ্চিতকরণ লাগে।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.users}</h1>
+      <p className="mt-2 text-muted">{t.admin.users.roleRule}</p>
 
       <form method="get" role="search" className="mt-5 flex max-w-md gap-2">
         <label htmlFor="user-search" className="sr-only">
-          নাম বা ইমেইল দিয়ে খুঁজুন
+          {t.admin.users.searchLabel}
         </label>
         <input
           id="user-search"
           name="q"
           defaultValue={searchParams.q ?? ''}
-          placeholder="নাম বা ইমেইল"
+          placeholder={t.admin.users.searchPlaceholder}
           className="h-11 w-full rounded-lg border border-line px-3 text-sm"
         />
         <button
           type="submit"
           className="inline-flex h-11 items-center rounded-lg bg-blue px-4 text-sm font-semibold text-white hover:bg-navy"
         >
-          খুঁজুন
+          {t.admin.common.search}
         </button>
       </form>
 
       <div className="mt-6">
         <DataTable
-          caption="ব্যবহারকারীর তালিকা"
+          caption={t.admin.users.caption}
           rows={users.data}
           getRowKey={(user) => String(user.id)}
-          empty={<EmptyState title="কোনো ব্যবহারকারী পাওয়া যায়নি" />}
+          empty={<EmptyState title={t.admin.users.empty} />}
           columns={[
             {
               key: 'name',
-              header: 'নাম',
+              header: t.admin.common.name,
               render: (user) => (
                 <span>
                   <span className="block font-medium text-navy">{user.name}</span>
@@ -64,7 +67,7 @@ export default async function DashboardUsersPage(props: {
             },
             {
               key: 'roles',
-              header: 'রোল',
+              header: t.admin.common.role,
               render: (user) => (
                 <span className="flex flex-wrap gap-1">
                   {user.roles.map((role) => (
@@ -77,19 +80,19 @@ export default async function DashboardUsersPage(props: {
             },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.admin.common.status,
               render: (user) => (
                 <Badge tone={user.status === 'active' ? 'success' : 'danger'}>{user.status}</Badge>
               ),
             },
             {
               key: 'verified',
-              header: 'ইমেইল',
+              header: t.admin.common.email,
               render: (user) =>
                 user.email_verified ? (
-                  <Badge tone="success">যাচাই হয়েছে</Badge>
+                  <Badge tone="success">{t.admin.users.verified}</Badge>
                 ) : (
-                  <Badge tone="warning">যাচাই হয়নি</Badge>
+                  <Badge tone="warning">{t.admin.users.unverified}</Badge>
                 ),
             },
           ]}

@@ -7,9 +7,15 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
+import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('আর্টিকেল');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.posts);
+}
 
 const STATUSES = ['draft', 'in_review', 'scheduled', 'published', 'archived'] as const;
 
@@ -24,6 +30,7 @@ const TONES: Record<string, 'neutral' | 'info' | 'success' | 'warning'> = {
 export default async function DashboardPostsPage(props: {
   searchParams: Promise<{ status?: string; q?: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const posts = await sessionApi<{ data: Post[] }>('/admin/posts', {
@@ -33,40 +40,41 @@ export default async function DashboardPostsPage(props: {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">আর্টিকেল</h1>
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.posts}</h1>
       </div>
 
-      <nav aria-label="অবস্থা অনুযায়ী ছাঁকুন" className="mt-5 flex flex-wrap gap-2">
+      <nav aria-label={t.admin.filterByStatus} className="mt-5 flex flex-wrap gap-2">
         <Link
           href="/dashboard/posts"
           className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
         >
-          সব
+          {t.admin.common.all}
         </Link>
         {STATUSES.map((status) => (
           <Link
             key={status}
             href={`/dashboard/posts?status=${status}`}
-            className="font-latin inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
+            className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
           >
-            {status}
+            {statusLabel('content', status, locale)}
           </Link>
         ))}
       </nav>
 
       <div className="mt-6">
         <DataTable
-          caption="আর্টিকেলের তালিকা"
+          caption={t.admin.posts.caption}
           rows={posts.data}
           getRowKey={(post) => post.slug}
-          empty={<EmptyState title="কোনো আর্টিকেল নেই" />}
+          empty={<EmptyState title={t.admin.posts.empty} />}
           columns={[
             {
               key: 'title',
-              header: 'শিরোনাম',
+              header: t.admin.common.title,
               render: (post) => (
                 <Link
                   href={`/dashboard/posts/${post.id}`}
+                  data-authored="true"
                   className="font-semibold text-blue hover:underline"
                 >
                   {post.title}
@@ -78,24 +86,26 @@ export default async function DashboardPostsPage(props: {
             },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.admin.common.status,
               render: (post) => (
-                <Badge tone={TONES[post.status] ?? 'neutral'}>{post.status}</Badge>
+                <Badge tone={TONES[post.status] ?? 'neutral'}>
+                  {statusLabel('content', post.status, locale)}
+                </Badge>
               ),
             },
             {
               key: 'published',
-              header: 'প্রকাশ',
-              render: (post) => date(post.published_at) ?? 'অপ্রকাশিত',
+              header: t.admin.common.published,
+              render: (post) => date(post.published_at, locale) ?? t.admin.posts.unpublished,
             },
             {
               key: 'reviewed',
-              header: 'রিভিউ',
+              header: t.admin.posts.review,
               render: (post) =>
                 post.reviewed_at ? (
-                  <Badge tone="success">রিভিউ হয়েছে</Badge>
+                  <Badge tone="success">{t.admin.posts.reviewed}</Badge>
                 ) : (
-                  <Badge tone="warning">রিভিউ বাকি</Badge>
+                  <Badge tone="warning">{t.admin.posts.awaitingReview}</Badge>
                 ),
             },
           ]}

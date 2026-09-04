@@ -4,17 +4,30 @@ import { usePathname } from 'next/navigation';
 import { createContext, useContext, useEffect, useMemo } from 'react';
 
 import { getDictionary, type Dictionary } from './dictionary';
-import { DEFAULT_LOCALE, LOCALE_HTML_LANG, localeFromPath, type Locale } from './locale';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_HTML_LANG,
+  isPrivatePath,
+  localeFromPath,
+  type Locale,
+} from './locale';
 
 /**
  * Locale context for client components.
  *
- * The locale is derived from `usePathname()` rather than passed in as a prop.
+ * TWO RULES, because there are two applications here.
+ *
+ * On the public site the locale comes from `usePathname()` rather than a prop.
  * That matters: the App Router root layout is a persistent shell and does not
  * re-render on client-side navigation, so a locale computed there would be
  * correct exactly once — on the first server render — and stale from the next
  * link click onward. `usePathname()` is reactive, so the header, footer and
  * every other consumer follow the URL.
+ *
+ * Inside the signed-in applications there is no language in the URL, because
+ * they are not indexed and a second set of URLs for them would buy nothing.
+ * There the language is a preference the layout reads from a cookie and passes
+ * down, so an editor's choice sticks from one screen to the next.
  */
 
 type LocaleContextValue = { locale: Locale; t: Dictionary };
@@ -24,14 +37,24 @@ const LocaleContext = createContext<LocaleContextValue>({
   t: getDictionary(DEFAULT_LOCALE),
 });
 
-export function LocaleProvider({ children }: { children: React.ReactNode }) {
+export function LocaleProvider({
+  children,
+  /** Set by the signed-in layouts, which read the preference server-side. */
+  locale: override,
+}: {
+  children: React.ReactNode;
+  locale?: Locale;
+}) {
   const pathname = usePathname() || '/';
-  const locale = localeFromPath(pathname);
+
+  // The override only applies where it makes sense. A stale cookie must never
+  // decide the language of a public page, whose URL is the whole point.
+  const locale = override && isPrivatePath(pathname) ? override : localeFromPath(pathname);
 
   const value = useMemo(() => ({ locale, t: getDictionary(locale) }), [locale]);
 
   /*
-    Keep <html lang> in step with the URL.
+    Keep <html lang> in step.
 
     The root layout renders the right `lang` for the first request, which is
     what a crawler and the first paint see. But that element lives in the

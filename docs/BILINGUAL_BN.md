@@ -87,7 +87,29 @@ API-র `body_translated: false` থেকে।
 API-তে `GET /products/{slug}?locale=en` দিলে ইংরেজি লেখা আসে, আর
 `copy_translated: false` এলে পাতা নিজেই নোটিশ দেখায়।
 
-## ৬. `/en` রুট তৈরি
+## ৬. অ্যাডমিন প্যানেলের ভাষা
+
+অ্যাডমিন প্যানেলের ভাষা **URL নয়, একটি preference** — কারণ প্যানেল index হয় না,
+কেউ নির্দিষ্ট ভাষার লিংক শেয়ার করে না, আর সম্পাদক চান তাঁর পছন্দ এক স্ক্রিন থেকে
+আরেক স্ক্রিনে থাকুক।
+
+- **ডিফল্ট: English**
+- সাইডবারে বাংলা / English সুইচ
+- `nb_admin_locale` কুকিতে সংরক্ষিত (এক বছর), তাই সার্ভার কম্পোনেন্টও রেন্ডারের
+  আগেই ভাষা জানে — localStorage দিয়ে সেটি সম্ভব হতো না
+- পাবলিক সাইট এতে বদলায় না: `LocaleProvider` এই override শুধু private path-এ
+  মানে, তাই পুরোনো কুকি কখনো কোনো পাবলিক পাতার ভাষা ঠিক করতে পারে না
+
+কোড: `lib/i18n/admin-locale.ts`, `lib/i18n/admin-page.ts`,
+`components/layout/admin-language-switcher.tsx`।
+
+পরীক্ষা: `node apps/web/tools/admin-smoke.mjs` — ১৪টি স্ক্রিন ঘুরে দেখে ইংরেজি
+ডিফল্ট কি না, সুইচ কাজ করে কি না, আর পছন্দ পরের স্ক্রিনে ও reload-এ থাকে কি না।
+
+> অ্যাডমিনে **সংরক্ষিত কনটেন্ট** (আর্টিকেলের শিরোনাম, সেটিংসের JSON, টিকিটের বিষয়)
+> যে ভাষায় লেখা সেই ভাষাতেই দেখানো হয় — সম্পাদককে আসল মানটাই দেখতে হবে।
+
+## ৭. `/en` রুট তৈরি
 
 `/en`-এর প্রতিটি রুট **একই পেজ কম্পোনেন্টকেই** `locale="en"` দিয়ে render করে —
 দুটি আলাদা কপি রাখা হয় না।
@@ -98,7 +120,7 @@ python apps/web/scripts/generate-en-routes.py
 
 `app/(public)/`-এ নতুন পাতা যোগ করলে এটি আবার চালান।
 
-## ৭. পরীক্ষা
+## ৮. পরীক্ষা
 
 ```bash
 # প্রতিটি ইংরেজি পাতা ঘুরে দেখে বাংলা ইন্টারফেস-লেখা বাকি আছে কি না
@@ -108,7 +130,7 @@ node apps/web/tools/check-english.mjs http://localhost:3200
 স্বয়ংক্রিয় টেস্ট: `apps/web/tests/e2e/bilingual.spec.ts` এবং
 `apps/web/tests/unit/i18n-labels.test.ts`।
 
-## ৮. SEO
+## ৯. SEO
 
 - প্রতিটি পাতার নিজস্ব canonical (ইংরেজি পাতা বাংলাটির duplicate নয়)
 - দুই দিকেই `hreflang` alternate (`bn-BD` ও `en`)

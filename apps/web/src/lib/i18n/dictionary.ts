@@ -577,6 +577,484 @@ const bn = {
       'সফটওয়্যার ও কনটেন্ট প্রকৌশল সহায়ক উপকরণ; চূড়ান্ত যাচাই ও পেশাগত দায়িত্ব যোগ্য ব্যবহারকারীর।',
   },
 
+  /*
+    The on-page SEO checks shown in the editor.
+
+    Written as findings rather than commands, and deliberately plain: these
+    catch a missing description or a keyword absent from the title. They are not
+    a ranking prediction, and the panel says so.
+  */
+  seoCheck: {
+    kind: { post: 'আর্টিকেল', course: 'কোর্স', product: 'প্রোডাক্ট' },
+
+    groups: {
+      basic: 'মৌলিক SEO',
+      additional: 'অতিরিক্ত',
+      title: 'টাইটেল ও ডেসক্রিপশন',
+      readability: 'পাঠযোগ্যতা',
+    },
+
+    keywordInTitleYes: 'ফোকাস কিওয়ার্ড SEO টাইটেলে আছে।',
+    keywordInTitleNo: 'ফোকাস কিওয়ার্ড SEO টাইটেলে নেই।',
+    keywordInTitleHint: 'সার্চ ফলাফলে টাইটেলই সবচেয়ে বড় সংকেত।',
+
+    keywordInDescriptionYes: 'ফোকাস কিওয়ার্ড মেটা ডেসক্রিপশনে আছে।',
+    keywordInDescriptionNo: 'ফোকাস কিওয়ার্ড মেটা ডেসক্রিপশনে নেই।',
+    keywordInDescriptionHint: 'সার্চ ফলাফলে কিওয়ার্ড মোটা অক্ষরে দেখায়, তাতে ক্লিক বাড়ে।',
+
+    keywordInSlugYes: 'ফোকাস কিওয়ার্ড URL-এ আছে।',
+    keywordInSlugNo: 'ফোকাস কিওয়ার্ড URL-এ নেই।',
+    keywordInSlugHint: 'প্রকাশের পর slug বদলালে পুরোনো লিংক ভাঙে — এটি প্রকাশের আগেই ঠিক করুন।',
+
+    keywordInOpeningYes: 'লেখার প্রথম ১০%-এ ফোকাস কিওয়ার্ড আছে।',
+    keywordInOpeningNo: 'লেখার প্রথম ১০%-এ ফোকাস কিওয়ার্ড নেই।',
+    keywordInOpeningHint: 'পাঠক ও ক্রলার দুজনেই শুরুতেই বোঝে লেখাটি কী নিয়ে।',
+
+    keywordInContentYes: 'মূল লেখায় ফোকাস কিওয়ার্ড {count} বার আছে।',
+    keywordInContentNo: 'মূল লেখায় ফোকাস কিওয়ার্ড নেই।',
+
+    contentLength: '{noun}ের দৈর্ঘ্য {words} শব্দ (লক্ষ্য {target}+)।',
+    contentLengthHint:
+      'শব্দসংখ্যা নিজে কোনো র‍্যাঙ্কিং ফ্যাক্টর নয়; খুব ছোট লেখা সাধারণত প্রশ্নের উত্তর দেয় না।',
+
+    keywordInHeadingYes: 'কোনো সাবহেডিংয়ে ফোকাস কিওয়ার্ড আছে।',
+    keywordInHeadingNo: 'কোনো সাবহেডিংয়ে ফোকাস কিওয়ার্ড নেই।',
+
+    keywordInAltYes: 'কোনো ছবির alt টেক্সটে ফোকাস কিওয়ার্ড আছে।',
+    keywordInAltNo: 'কোনো ছবির alt টেক্সটে ফোকাস কিওয়ার্ড নেই।',
+    keywordInAltHint:
+      'alt টেক্সট প্রথমত স্ক্রিন রিডারের জন্য — ছবিতে যা আছে তাই লিখুন, কিওয়ার্ড জোর করে নয়।',
+
+    density: 'কিওয়ার্ড ডেনসিটি {value}%।',
+    densityHigh: 'অস্বাভাবিক বেশি — পাঠকের কাছে জোর করে বসানো মনে হতে পারে।',
+    densityNormal: 'নির্দিষ্ট কোনো আদর্শ মান নেই; স্বাভাবিক ভাষাই যথেষ্ট।',
+
+    slugMissing: 'URL slug দেওয়া হয়নি।',
+    slugLength: 'URL {count} অক্ষর দীর্ঘ।',
+
+    internalLinksYes: 'সাইটের ভেতরে {count}টি লিংক আছে।',
+    internalLinksNo: 'সাইটের ভেতরের কোনো লিংক নেই।',
+    internalLinksHint: 'সম্পর্কিত লেখায় লিংক দিলে পাঠক ও ক্রলার দুজনেরই পথ তৈরি হয়।',
+
+    externalLinksYes: 'বাইরের {count}টি রেফারেন্স লিংক আছে।',
+    externalLinksNo: 'বাইরের কোনো রেফারেন্স লিংক নেই।',
+    externalLinksHint: 'কোড, স্ট্যান্ডার্ড বা উৎসের লিংক দাবিগুলো যাচাইযোগ্য করে।',
+
+    titleMissing: 'SEO টাইটেল দেওয়া হয়নি।',
+    titleLength: 'SEO টাইটেল {count} অক্ষর (২৫–৬৫ ভালো)।',
+    titleLengthHint: 'বেশি লম্বা হলে সার্চ ফলাফলে কেটে যায়।',
+
+    titleStartsYes: 'টাইটেল ফোকাস কিওয়ার্ড দিয়ে শুরু হয়েছে।',
+    titleStartsNo: 'টাইটেল ফোকাস কিওয়ার্ড দিয়ে শুরু হয়নি।',
+    titleStartsHint:
+      'শুরুতে থাকলে চোখে আগে পড়ে; বাক্য অস্বাভাবিক হলে এটি উপেক্ষা করাই ভালো।',
+
+    descriptionMissing: 'মেটা ডেসক্রিপশন দেওয়া হয়নি।',
+    descriptionLength: 'মেটা ডেসক্রিপশন {count} অক্ষর (১১০–১৬০ ভালো)।',
+
+    titleHasNumber: 'টাইটেলে সংখ্যা আছে।',
+    titleNoNumber: 'টাইটেলে কোনো সংখ্যা নেই।',
+    titleNumberHint:
+      'ঐচ্ছিক — সংখ্যা থাকলে তালিকা বা ধাপভিত্তিক লেখায় ক্লিক বাড়ে, সব লেখায় নয়।',
+
+    noHeadings: 'কোনো সাবহেডিং নেই।',
+    headingCount: '{count}টি সাবহেডিং আছে।',
+    headingHint: 'সাবহেডিং ছাড়া লম্বা লেখা স্ক্যান করা যায় না।',
+
+    paragraphsShort: 'অনুচ্ছেদগুলো ছোট ও পাঠযোগ্য।',
+    paragraphsLong: '{count}টি অনুচ্ছেদ ১৫০ শব্দের বেশি।',
+
+    imagesYes: '{count}টি ছবি আছে।',
+    imagesNo: 'কোনো ছবি বা ডায়াগ্রাম নেই।',
+    imagesHint: 'হিসাব বা ধাপভিত্তিক লেখায় একটি চিত্র অনেক ব্যাখ্যা বাঁচায়।',
+
+    altAllPresent: 'প্রতিটি ছবির alt টেক্সট আছে।',
+    altMissing: '{count}টি ছবির alt টেক্সট নেই।',
+    altHint:
+      'alt টেক্সট ছাড়া ছবি স্ক্রিন রিডারে অদৃশ্য — এটি অ্যাক্সেসিবিলিটির শর্ত, শুধু SEO নয়।',
+
+    excerptLength: 'সারসংক্ষেপ {count} অক্ষর।',
+    excerptMissing: 'সারসংক্ষেপ দেওয়া হয়নি।',
+    excerptHint: 'তালিকা ও কার্ডে এটিই দেখানো হয়; না থাকলে লেখার শুরুটা কেটে দেখানো হয়।',
+  },
+
+  /*
+    Status values the API returns as machine names.
+
+    Kept beside every other label rather than in the component that renders a
+    badge, because the same order status appears in the admin, in the customer's
+    order list and in an email.
+  */
+  status: {
+    order: {
+      draft: 'খসড়া',
+      pending_payment: 'পেমেন্টের অপেক্ষায়',
+      paid: 'পরিশোধিত',
+      fulfilled: 'সম্পন্ন',
+      failed: 'ব্যর্থ',
+      cancelled: 'বাতিল',
+      refund_pending: 'রিফান্ড প্রক্রিয়াধীন',
+      partially_refunded: 'আংশিক রিফান্ড',
+      refunded: 'রিফান্ড হয়েছে',
+    },
+    enrollment: {
+      active: 'চলছে',
+      completed: 'সম্পন্ন',
+      expired: 'মেয়াদ শেষ',
+      revoked: 'বাতিল',
+    },
+    ticket: {
+      open: 'খোলা',
+      pending: 'অপেক্ষমাণ',
+      resolved: 'সমাধান হয়েছে',
+      closed: 'বন্ধ',
+    },
+    activation: {
+      submitted: 'জমা হয়েছে',
+      in_review: 'যাচাই চলছে',
+      approved: 'অনুমোদিত',
+      rejected: 'প্রত্যাখ্যাত',
+      cancelled: 'বাতিল',
+    },
+    content: {
+      draft: 'খসড়া',
+      in_review: 'রিভিউয়ে',
+      scheduled: 'নির্ধারিত',
+      published: 'প্রকাশিত',
+      archived: 'সংরক্ষিত',
+    },
+  },
+
+  /*
+    The signed-in admin panel.
+
+    Its language is a preference rather than a URL - see lib/i18n/admin-locale.ts
+    - and it defaults to English. Everything an editor reads while working lives
+    under this key.
+  */
+  admin: {
+    shellTitle: 'অ্যাডমিন',
+    navLabel: 'ড্যাশবোর্ড নেভিগেশন',
+
+    group: {
+      overview: 'ওভারভিউ',
+      content: 'কনটেন্ট',
+      commerce: 'কমার্স',
+      learning: 'শিক্ষা',
+      support: 'সাপোর্ট',
+      platform: 'প্ল্যাটফর্ম',
+    },
+
+    nav: {
+      dashboard: 'ড্যাশবোর্ড',
+      posts: 'আর্টিকেল',
+      pages: 'পেজ',
+      media: 'মিডিয়া',
+      redirects: 'রিডাইরেক্ট',
+      products: 'প্রোডাক্ট',
+      orders: 'অর্ডার',
+      releases: 'রিলিজ ও ডাউনলোড',
+      courses: 'কোর্স',
+      activationRequests: 'অ্যাক্টিভেশন',
+      tickets: 'টিকিট',
+      users: 'ব্যবহারকারী',
+      settings: 'সেটিংস',
+      auditLog: 'অডিট লগ',
+    },
+
+    /** Words that appear on nearly every admin screen. */
+    common: {
+      status: 'অবস্থা',
+      actions: 'কার্যক্রম',
+      created: 'তৈরি',
+      updated: 'হালনাগাদ',
+      published: 'প্রকাশিত',
+      title: 'শিরোনাম',
+      name: 'নাম',
+      email: 'ইমেইল',
+      role: 'রোল',
+      price: 'দাম',
+      type: 'ধরন',
+      slug: 'স্লাগ',
+      date: 'তারিখ',
+      view: 'দেখুন',
+      edit: 'সম্পাদনা',
+      save: 'সংরক্ষণ',
+      saving: 'সংরক্ষণ হচ্ছে…',
+      saved: 'সংরক্ষিত হয়েছে',
+      cancel: 'বাতিল',
+      search: 'খুঁজুন',
+      filter: 'ফিল্টার',
+      all: 'সব',
+      none: 'নেই',
+      notSet: 'নির্ধারিত হয়নি',
+      loadFailed: 'তথ্য আনা যায়নি। পাতাটি রিফ্রেশ করুন।',
+      saveFailed: 'সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
+    },
+
+    dashboard: {
+      window: 'গত {days} দিনের হিসাব। শুধু যাচাই হওয়া পেমেন্ট আয় হিসেবে গণনা করা হয়।',
+      settledRevenue: 'নিষ্পত্তি হওয়া আয়',
+      refunded: 'ফেরত',
+      paidOrders: 'পরিশোধিত অর্ডার',
+      activeEnrollments: 'সক্রিয় এনরোলমেন্ট',
+      needsAttention: 'মনোযোগ প্রয়োজন',
+      paymentsOnHold: 'ঝুঁকি হিসেবে চিহ্নিত পেমেন্ট',
+      openActivations: 'খোলা অ্যাক্টিভেশন রিকোয়েস্ট',
+      openTickets: 'খোলা সাপোর্ট টিকিট',
+      postsInReview: 'রিভিউয়ের অপেক্ষায় আর্টিকেল',
+      awaitingPayment:
+        '{count} টি অর্ডার এখনো পেমেন্টের অপেক্ষায়। Reconciliation প্রতি ১৫ মিনিটে গেটওয়ের সঙ্গে মিলিয়ে দেখে।',
+    },
+
+    filterByStatus: 'অবস্থা অনুযায়ী ছাঁকুন',
+
+    posts: {
+      caption: 'আর্টিকেলের তালিকা',
+      empty: 'কোনো আর্টিকেল নেই',
+      unpublished: 'অপ্রকাশিত',
+      review: 'রিভিউ',
+      reviewed: 'রিভিউ হয়েছে',
+      awaitingReview: 'রিভিউ বাকি',
+    },
+
+    orders: {
+      caption: 'অর্ডারের তালিকা',
+      empty: 'কোনো অর্ডার নেই',
+      order: 'অর্ডার',
+      customer: 'গ্রাহক',
+      total: 'মোট',
+    },
+
+    courses: {
+      caption: 'কোর্সের তালিকা',
+      empty: 'কোনো কোর্স নেই',
+      publishRule: 'অন্তত একটি লেসন যুক্ত না করা পর্যন্ত কোনো কোর্স প্রকাশ করা যায় না।',
+      level: 'স্তর',
+      lessons: 'লেসন',
+      analysis: 'বিশ্লেষণ',
+      draft: 'খসড়া',
+    },
+
+    tickets: {
+      title: 'সাপোর্ট টিকিট',
+      caption: 'সাপোর্ট টিকিটের তালিকা',
+      empty: 'কোনো টিকিট নেই',
+      reference: 'রেফারেন্স',
+      subject: 'বিষয়',
+      category: 'ক্যাটাগরি',
+      opened: 'খোলা হয়েছে',
+    },
+
+    media: {
+      altAdvice: 'প্রতিটি ছবির জন্য alt টেক্সট লিখুন। alt ছাড়া ছবি প্রকাশ করলে অ্যাক্সেসিবিলিটি ভাঙে।',
+      empty: 'কোনো মিডিয়া আপলোড করা হয়নি',
+      noAlt: 'Alt টেক্সট নেই',
+    },
+
+    auditLog: {
+      privacyNote: 'পাসওয়ার্ড, টোকেন এবং সম্পূর্ণ Machine ID লগে লেখার আগেই মুছে ফেলা হয়।',
+      caption: 'অডিট লগ',
+      empty: 'কোনো রেকর্ড নেই',
+      event: 'ঘটনা',
+      actor: 'কে',
+      subject: 'বিষয়',
+      when: 'কখন',
+      system: 'সিস্টেম',
+    },
+
+    users: {
+      roleRule:
+        'রোল পরিবর্তন শুধু super admin করতে পারেন এবং নিজের অ্যাকাউন্টে নয়। পরিবর্তনের আগে পাসওয়ার্ড নিশ্চিতকরণ লাগে।',
+      searchLabel: 'নাম বা ইমেইল দিয়ে খুঁজুন',
+      searchPlaceholder: 'নাম বা ইমেইল',
+      caption: 'ব্যবহারকারীর তালিকা',
+      empty: 'কোনো ব্যবহারকারী পাওয়া যায়নি',
+      verified: 'যাচাই হয়েছে',
+      unverified: 'যাচাই হয়নি',
+    },
+
+    products: {
+      priceRule:
+        'দাম প্রকাশ না করা পর্যন্ত ভ্যারিয়েন্টটি বিক্রয়যোগ্য নয় এবং সাইটে “দাম জানতে যোগাযোগ করুন” দেখায়।',
+      caption: 'প্রোডাক্টের তালিকা',
+      empty: 'কোনো প্রোডাক্ট নেই',
+      product: 'প্রোডাক্ট',
+      variants: 'ভ্যারিয়েন্ট',
+      noPrice: 'দাম প্রকাশ করা হয়নি',
+      analysis: 'বিশ্লেষণ',
+    },
+
+    pages: {
+      legalRule: 'আইনি পাতাগুলো পেশাগত পর্যালোচনা রেকর্ড না হওয়া পর্যন্ত DRAFT নোটিশ দেখায়।',
+      caption: 'পেজের তালিকা',
+      empty: 'কোনো পেজ নেই',
+      template: 'টেমপ্লেট',
+      legalReview: 'আইনি পর্যালোচনা',
+      notApplicable: 'প্রযোজ্য নয়',
+      awaiting: 'অপেক্ষমাণ',
+      done: 'সম্পন্ন',
+    },
+
+    redirects: {
+      rule: 'উৎস ও গন্তব্য দুটোই সাইট-আপেক্ষিক পথ হতে হবে, তাই এটি কখনো ওপেন রিডাইরেক্ট হতে পারে না।',
+      caption: 'রিডাইরেক্টের তালিকা',
+      empty: 'কোনো রিডাইরেক্ট নেই',
+      source: 'উৎস',
+      destination: 'গন্তব্য',
+      code: 'কোড',
+    },
+
+    activations: {
+      title: 'অ্যাক্টিভেশন রিকোয়েস্ট',
+      maskNote:
+        'Machine ID সবসময় মাস্ক করা অবস্থায় দেখানো হয়; সম্পূর্ণ মান সার্ভারে এনক্রিপ্ট করা থাকে।',
+      caption: 'অ্যাক্টিভেশন রিকোয়েস্টের তালিকা',
+      empty: 'কোনো রিকোয়েস্ট নেই',
+      reference: 'রেফারেন্স',
+      submitted: 'জমা',
+      reviewTitle: 'রিকোয়েস্ট রিভিউ',
+      details: 'রিকোয়েস্টের তথ্য',
+      maskedMachineId: 'Machine ID (মাস্ক করা)',
+      order: 'অর্ডার',
+      licence: 'লাইসেন্স',
+      customerNote: 'গ্রাহকের নোট',
+      secretsWarning:
+        'এই ওয়েবসাইটে কোনো signing key, token বা recovery ফাইল সংরক্ষণ করা হয় না। গ্রাহকের রেসপন্সে কখনো সেরকম কিছু লিখবেন না।',
+      history: 'ইতিহাস',
+    },
+
+    orderDetail: {
+      title: 'অর্ডারের বিস্তারিত',
+      itemsCaption: 'অর্ডারের আইটেম',
+      item: 'আইটেম',
+      quantity: 'পরিমাণ',
+      statusHistory: 'অবস্থার ইতিহাস',
+    },
+
+    releases: {
+      storageNote:
+        'ইনস্টলার সবসময় প্রাইভেট ডিস্কে থাকে, কখনো Next.js-এর /public ফোল্ডারে বা পাবলিক বাকেটে নয়। চেকসাম আপলোড করা বাইট থেকে সার্ভারেই হিসাব করা হয়। ফাইল আপলোড না করা পর্যন্ত রিলিজ উপলব্ধ করা যায় না।',
+      caption: 'রিলিজের তালিকা',
+      empty: 'কোনো রিলিজ নেই',
+      release: 'রিলিজ',
+      noVersion: 'ভার্সন নেই',
+      file: 'ফাইল',
+      notUploaded: 'আপলোড হয়নি',
+      notComputed: 'হিসাব করা হয়নি',
+      signing: 'সাইনিং',
+      available: 'উপলব্ধ',
+      notPublished: 'প্রকাশিত নয়',
+    },
+
+    settings: {
+      title: 'সাইট সেটিংস',
+      envNote:
+        'দাম, ফোন, ঠিকানা, সাপোর্ট সময়, SSLCOMMERZ ক্রেডেনশিয়াল এবং আইনি অনুমোদনের মতো মানগুলো এখানে নয়, সার্ভারের environment-এ রাখা হয়। তালিকা:',
+      empty: 'কোনো সেটিং নেই',
+      emptyHint: 'সিডার চালালে ডিফল্ট সেটিংস তৈরি হবে।',
+    },
+
+
+    postEditor: {
+      sendToReview: 'রিভিউতে পাঠান',
+      publish: 'প্রকাশ করুন',
+      backToDraft: 'খসড়ায় ফেরত',
+      publishNow: 'এখনই প্রকাশ',
+      archive: 'আর্কাইভ',
+      saveFailed: 'সংরক্ষণ করা যায়নি।',
+      statusFailed: 'অবস্থা পরিবর্তন করা যায়নি।',
+      saved: 'সংরক্ষিত হয়েছে। আগের সংস্করণটি রিভিশন হিসেবে রাখা হয়েছে।',
+      title: 'শিরোনাম',
+      slug: 'স্লাগ',
+      slugHint: 'ছোট হাতের অক্ষর ও হাইফেন',
+      excerpt: 'সারসংক্ষেপ',
+      body: 'মূল লেখা (Markdown)',
+      bodyHint: 'Raw HTML রেন্ডারের সময় বাদ দেওয়া হয়; শুধু Markdown ব্যবহার করুন।',
+      funnelStage: 'ফানেল স্টেজ',
+      searchIntent: 'সার্চ ইনটেন্ট',
+      choose: 'নির্বাচন করুন',
+      focusKeyword: 'ফোকাস কিওয়ার্ড',
+      focusHint: 'যে শব্দগুচ্ছে এই লেখাটি খুঁজে পাওয়া উচিত। নিচের বিশ্লেষণ এর সাপেক্ষেই হয়।',
+      currentStatus: 'বর্তমান অবস্থা',
+      reviewWarning: 'ইঞ্জিনিয়ার রিভিউ রেকর্ড করা হয়নি। রিভিউ ছাড়া প্রকাশ করা উচিত নয়।',
+    },
+
+    activationReview: {
+      startReview: 'রিভিউ শুরু করুন',
+      needsInfo: 'আরও তথ্য দরকার',
+      reject: 'বাতিল করুন',
+      approve: 'অনুমোদন করুন',
+      backToReview: 'রিভিউতে ফেরত',
+      markComplete: 'সম্পন্ন হিসেবে চিহ্নিত করুন',
+      finalState: 'এই রিকোয়েস্টটি চূড়ান্ত অবস্থায় আছে; আর কোনো পরিবর্তন করা যাবে না।',
+      updated: 'রিকোয়েস্ট হালনাগাদ করা হয়েছে।',
+      failed: 'হালনাগাদ করা যায়নি।',
+      heading: 'রিভিউ',
+      newStatus: 'নতুন অবস্থা',
+      internalNote: 'অভ্যন্তরীণ নোট',
+      internalHint: 'শুধু স্টাফ দেখতে পাবে',
+      customerResponse: 'গ্রাহকের জন্য রেসপন্স',
+      customerHint: 'কখনো token, key বা recovery ফাইল এখানে লিখবেন না।',
+      historyNote: 'ইতিহাসে নোট',
+      notifyCustomer: 'গ্রাহককে ইমেইলে জানান',
+      update: 'হালনাগাদ করুন',
+    },
+
+    seoPanel: {
+      title: 'SEO বিশ্লেষণ',
+      pass: 'ঠিক আছে',
+      warn: 'বিবেচনা করুন',
+      fail: 'সমস্যা',
+      summary: '{passed} ঠিক · {warned} বিবেচনা · {failed} সমস্যা',
+      noKeyword:
+        'ফোকাস কিওয়ার্ড দিলে কিওয়ার্ড-ভিত্তিক চেকগুলোও চালু হবে। এখন শুধু দৈর্ঘ্য ও গঠনের চেক দেখানো হচ্ছে।',
+      disclaimer:
+        'এগুলো পরিচ্ছন্নতার চেক — কোনো র‍্যাঙ্কিংয়ের প্রতিশ্রুতি নয়। সব সবুজ হলেই লেখা ভালো হয়ে যায় না, আর কিছু হলুদ থাকলেও সমস্যা নেই।',
+    },
+
+    settingsForm: {
+      invalidJson: 'এটি বৈধ JSON নয়।',
+      saved: 'সেটিংস সংরক্ষিত হয়েছে।',
+      failed: 'সংরক্ষণ করা যায়নি।',
+      group: 'গ্রুপ',
+      public: 'পাবলিক',
+      internal: 'অভ্যন্তরীণ',
+      valueLabel: 'মান (JSON)',
+      saveAll: 'সব সংরক্ষণ করুন',
+    },
+
+    seoEditor: {
+      failed: 'সংরক্ষণ করা যায়নি।',
+      saved: 'সংরক্ষিত হয়েছে।',
+      focusKeyword: 'ফোকাস কিওয়ার্ড',
+      focusHint: 'যে শব্দগুচ্ছে এটি খুঁজে পাওয়া উচিত। পাশের বিশ্লেষণ এর সাপেক্ষেই হয়।',
+    },
+
+    orderActions: {
+      failed: 'অনুরোধটি সম্পন্ন হয়নি।',
+      changeStatus: 'অবস্থা পরিবর্তন',
+      statusChanged: 'অবস্থা পরিবর্তন করা হয়েছে।',
+      newStatus: 'নতুন অবস্থা',
+      reason: 'কারণ',
+      reasonHint: 'অডিট লগে সংরক্ষিত হবে',
+      change: 'পরিবর্তন করুন',
+      refundRequest: 'রিফান্ড অনুরোধ',
+      refundCeiling: 'সর্বোচ্চ {amount} ফেরত দেওয়া যাবে। অনুমোদন আলাদা ধাপ।',
+      refundCreated: 'রিফান্ড অনুরোধ তৈরি হয়েছে; অনুমোদনের অপেক্ষায়।',
+      amountLabel: 'পরিমাণ (minor unit)',
+      amountHint: '১০০ = ১ টাকা',
+      revokeLabel: 'অ্যাক্সেস প্রত্যাহার করবেন?',
+      revokeYes: 'হ্যাঁ, ডাউনলোড ও কোর্স প্রত্যাহার করুন',
+      revokeNo: 'না, অ্যাক্সেস রেখে দিন',
+      requestRefund: 'রিফান্ড অনুরোধ করুন',
+    },
+
+    editPost: 'আর্টিকেল সম্পাদনা',
+    productSeo: 'প্রোডাক্টের SEO',
+    courseSeo: 'কোর্সের SEO',
+  },
+
   /** Page names, used in breadcrumbs and in the footer link lists. */
   pageTitle: {
     about: 'পরিচিতি',
@@ -1162,6 +1640,476 @@ const en: Dictionary = {
     useContactForm: 'Use the contact form',
     disclaimer:
       'The software and the writing here are aids to engineering work; final checking and professional responsibility rest with the qualified user.',
+  },
+
+  seoCheck: {
+    kind: { post: 'article', course: 'course', product: 'product' },
+
+    groups: {
+      basic: 'Basic SEO',
+      additional: 'Additional',
+      title: 'Title and description',
+      readability: 'Readability',
+    },
+
+    keywordInTitleYes: 'The focus keyword is in the SEO title.',
+    keywordInTitleNo: 'The focus keyword is not in the SEO title.',
+    keywordInTitleHint: 'The title is the strongest signal in a search result.',
+
+    keywordInDescriptionYes: 'The focus keyword is in the meta description.',
+    keywordInDescriptionNo: 'The focus keyword is not in the meta description.',
+    keywordInDescriptionHint:
+      'A search result shows the keyword in bold, which earns more clicks.',
+
+    keywordInSlugYes: 'The focus keyword is in the URL.',
+    keywordInSlugNo: 'The focus keyword is not in the URL.',
+    keywordInSlugHint:
+      'Changing a slug after publishing breaks the old links - settle it before publishing.',
+
+    keywordInOpeningYes: 'The focus keyword appears in the first 10% of the text.',
+    keywordInOpeningNo: 'The focus keyword is missing from the first 10% of the text.',
+    keywordInOpeningHint:
+      'A reader and a crawler both work out what this is about from the opening.',
+
+    keywordInContentYes: 'The focus keyword appears {count} time(s) in the body.',
+    keywordInContentNo: 'The focus keyword does not appear in the body.',
+
+    contentLength: 'The {noun} is {words} words long (target {target}+).',
+    contentLengthHint:
+      'Word count is not a ranking factor in itself; a very short piece usually does not answer the question.',
+
+    keywordInHeadingYes: 'The focus keyword appears in a subheading.',
+    keywordInHeadingNo: 'The focus keyword appears in no subheading.',
+
+    keywordInAltYes: 'The focus keyword appears in an image alt text.',
+    keywordInAltNo: 'The focus keyword appears in no image alt text.',
+    keywordInAltHint:
+      'Alt text is for screen readers first - describe what the image shows rather than forcing the keyword in.',
+
+    density: 'Keyword density {value}%.',
+    densityHigh: 'Unusually high - it may read as forced.',
+    densityNormal: 'There is no ideal figure; ordinary language is enough.',
+
+    slugMissing: 'No URL slug has been set.',
+    slugLength: 'The URL is {count} characters long.',
+
+    internalLinksYes: 'There are {count} link(s) to other pages on the site.',
+    internalLinksNo: 'There are no links to other pages on the site.',
+    internalLinksHint:
+      'Linking to related writing gives both the reader and the crawler a route onward.',
+
+    externalLinksYes: 'There are {count} outward reference link(s).',
+    externalLinksNo: 'There are no outward reference links.',
+    externalLinksHint:
+      'Linking a code, a standard or a source is what makes a claim checkable.',
+
+    titleMissing: 'No SEO title has been set.',
+    titleLength: 'The SEO title is {count} characters (25-65 is good).',
+    titleLengthHint: 'Too long and it is cut off in a search result.',
+
+    titleStartsYes: 'The title begins with the focus keyword.',
+    titleStartsNo: 'The title does not begin with the focus keyword.',
+    titleStartsHint:
+      'It catches the eye sooner at the start; ignore this when it makes the sentence read oddly.',
+
+    descriptionMissing: 'No meta description has been set.',
+    descriptionLength: 'The meta description is {count} characters (110-160 is good).',
+
+    titleHasNumber: 'The title contains a number.',
+    titleNoNumber: 'The title contains no number.',
+    titleNumberHint:
+      'Optional - a number earns clicks on a list or a step-by-step piece, not on everything.',
+
+    noHeadings: 'There are no subheadings.',
+    headingCount: 'There are {count} subheading(s).',
+    headingHint: 'A long piece without subheadings cannot be scanned.',
+
+    paragraphsShort: 'The paragraphs are short and readable.',
+    paragraphsLong: '{count} paragraph(s) run past 150 words.',
+
+    imagesYes: 'There are {count} image(s).',
+    imagesNo: 'There is no image or diagram.',
+    imagesHint: 'On a calculation or a step-by-step piece, one figure saves a lot of explaining.',
+
+    altAllPresent: 'Every image has alt text.',
+    altMissing: '{count} image(s) have no alt text.',
+    altHint:
+      'An image without alt text is invisible to a screen reader - this is an accessibility requirement, not only SEO.',
+
+    excerptLength: 'The summary is {count} characters.',
+    excerptMissing: 'No summary has been set.',
+    excerptHint:
+      'This is what lists and cards show; without it the opening of the text is cut down instead.',
+  },
+
+  status: {
+    order: {
+      draft: 'Draft',
+      pending_payment: 'Awaiting payment',
+      paid: 'Paid',
+      fulfilled: 'Fulfilled',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+      refund_pending: 'Refund in progress',
+      partially_refunded: 'Partially refunded',
+      refunded: 'Refunded',
+    },
+    enrollment: {
+      active: 'In progress',
+      completed: 'Completed',
+      expired: 'Expired',
+      revoked: 'Revoked',
+    },
+    ticket: {
+      open: 'Open',
+      pending: 'Pending',
+      resolved: 'Resolved',
+      closed: 'Closed',
+    },
+    activation: {
+      submitted: 'Submitted',
+      in_review: 'In review',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      cancelled: 'Cancelled',
+    },
+    content: {
+      draft: 'Draft',
+      in_review: 'In review',
+      scheduled: 'Scheduled',
+      published: 'Published',
+      archived: 'Archived',
+    },
+  },
+
+  admin: {
+    shellTitle: 'Admin',
+    navLabel: 'Dashboard navigation',
+
+    group: {
+      overview: 'Overview',
+      content: 'Content',
+      commerce: 'Commerce',
+      learning: 'Learning',
+      support: 'Support',
+      platform: 'Platform',
+    },
+
+    nav: {
+      dashboard: 'Dashboard',
+      posts: 'Articles',
+      pages: 'Pages',
+      media: 'Media',
+      redirects: 'Redirects',
+      products: 'Products',
+      orders: 'Orders',
+      releases: 'Releases & downloads',
+      courses: 'Courses',
+      activationRequests: 'Activations',
+      tickets: 'Tickets',
+      users: 'Users',
+      settings: 'Settings',
+      auditLog: 'Audit log',
+    },
+
+    common: {
+      status: 'Status',
+      actions: 'Actions',
+      created: 'Created',
+      updated: 'Updated',
+      published: 'Published',
+      title: 'Title',
+      name: 'Name',
+      email: 'Email',
+      role: 'Role',
+      price: 'Price',
+      type: 'Type',
+      slug: 'Slug',
+      date: 'Date',
+      view: 'View',
+      edit: 'Edit',
+      save: 'Save',
+      saving: 'Saving\u2026',
+      saved: 'Saved',
+      cancel: 'Cancel',
+      search: 'Search',
+      filter: 'Filter',
+      all: 'All',
+      none: 'None',
+      notSet: 'Not set',
+      loadFailed: 'That could not be loaded. Refresh the page.',
+      saveFailed: 'That could not be saved. Please try again.',
+    },
+
+    dashboard: {
+      window:
+        'The last {days} days. Only payments that have settled are counted as revenue.',
+      settledRevenue: 'Settled revenue',
+      refunded: 'Refunded',
+      paidOrders: 'Paid orders',
+      activeEnrollments: 'Active enrolments',
+      needsAttention: 'Needs attention',
+      paymentsOnHold: 'Payments held as risky',
+      openActivations: 'Open activation requests',
+      openTickets: 'Open support tickets',
+      postsInReview: 'Articles awaiting review',
+      awaitingPayment:
+        '{count} order(s) are still awaiting payment. Reconciliation checks against the gateway every 15 minutes.',
+    },
+
+    filterByStatus: 'Filter by status',
+
+    posts: {
+      caption: 'List of articles',
+      empty: 'No articles yet',
+      unpublished: 'Unpublished',
+      review: 'Review',
+      reviewed: 'Reviewed',
+      awaitingReview: 'Review outstanding',
+    },
+
+    orders: {
+      caption: 'List of orders',
+      empty: 'No orders yet',
+      order: 'Order',
+      customer: 'Customer',
+      total: 'Total',
+    },
+
+    courses: {
+      caption: 'List of courses',
+      empty: 'No courses yet',
+      publishRule: 'A course cannot be published until it holds at least one lesson.',
+      level: 'Level',
+      lessons: 'Lessons',
+      analysis: 'Analysis',
+      draft: 'Draft',
+    },
+
+    tickets: {
+      title: 'Support tickets',
+      caption: 'List of support tickets',
+      empty: 'No tickets yet',
+      reference: 'Reference',
+      subject: 'Subject',
+      category: 'Category',
+      opened: 'Opened',
+    },
+
+    media: {
+      altAdvice:
+        'Write alt text for every image. Publishing one without it breaks accessibility.',
+      empty: 'No media uploaded yet',
+      noAlt: 'No alt text',
+    },
+
+    auditLog: {
+      privacyNote:
+        'Passwords, tokens and full Machine IDs are stripped before anything is written to the log.',
+      caption: 'Audit log',
+      empty: 'No records yet',
+      event: 'Event',
+      actor: 'Who',
+      subject: 'Subject',
+      when: 'When',
+      system: 'System',
+    },
+
+    users: {
+      roleRule:
+        'Only a super admin can change a role, and never their own. The change needs a password confirmation first.',
+      searchLabel: 'Search by name or email',
+      searchPlaceholder: 'Name or email',
+      caption: 'List of users',
+      empty: 'No users found',
+      verified: 'Verified',
+      unverified: 'Not verified',
+    },
+
+    products: {
+      priceRule:
+        'Until a price is published the variant cannot be sold, and the site says “contact us for pricing”.',
+      caption: 'List of products',
+      empty: 'No products yet',
+      product: 'Product',
+      variants: 'Variants',
+      noPrice: 'No price published',
+      analysis: 'Analysis',
+    },
+
+    pages: {
+      legalRule:
+        'Legal pages keep a DRAFT notice until a professional review has been recorded.',
+      caption: 'List of pages',
+      empty: 'No pages yet',
+      template: 'Template',
+      legalReview: 'Legal review',
+      notApplicable: 'Not applicable',
+      awaiting: 'Awaiting',
+      done: 'Done',
+    },
+
+    redirects: {
+      rule:
+        'Both the source and the destination have to be site-relative paths, so this can never become an open redirect.',
+      caption: 'List of redirects',
+      empty: 'No redirects yet',
+      source: 'Source',
+      destination: 'Destination',
+      code: 'Code',
+    },
+
+    activations: {
+      title: 'Activation requests',
+      maskNote:
+        'A Machine ID is always shown masked; the full value is stored encrypted on the server.',
+      caption: 'List of activation requests',
+      empty: 'No requests yet',
+      reference: 'Reference',
+      submitted: 'Submitted',
+      reviewTitle: 'Review request',
+      details: 'Request details',
+      maskedMachineId: 'Machine ID (masked)',
+      order: 'Order',
+      licence: 'Licence',
+      customerNote: 'Customer note',
+      secretsWarning:
+        'No signing key, token or recovery file is ever stored on this website. Never write anything of that kind into a response to a customer.',
+      history: 'History',
+    },
+
+    orderDetail: {
+      title: 'Order detail',
+      itemsCaption: 'Order items',
+      item: 'Item',
+      quantity: 'Quantity',
+      statusHistory: 'Status history',
+    },
+
+    releases: {
+      storageNote:
+        'The installer always lives on a private disk, never in the Next.js /public folder or a public bucket. The checksum is computed on the server from the uploaded bytes. A release cannot be made available until its file has been uploaded.',
+      caption: 'List of releases',
+      empty: 'No releases yet',
+      release: 'Release',
+      noVersion: 'No version',
+      file: 'File',
+      notUploaded: 'Not uploaded',
+      notComputed: 'Not computed',
+      signing: 'Signing',
+      available: 'Available',
+      notPublished: 'Not published',
+    },
+
+    settings: {
+      title: 'Site settings',
+      envNote:
+        'Values such as prices, phone number, address, support hours, SSLCOMMERZ credentials and legal approval are not kept here but in the server environment. The list:',
+      empty: 'No settings yet',
+      emptyHint: 'Running the seeder creates the default settings.',
+    },
+
+
+    postEditor: {
+      sendToReview: 'Send for review',
+      publish: 'Publish',
+      backToDraft: 'Back to draft',
+      publishNow: 'Publish now',
+      archive: 'Archive',
+      saveFailed: 'That could not be saved.',
+      statusFailed: 'The status could not be changed.',
+      saved: 'Saved. The previous version has been kept as a revision.',
+      title: 'Title',
+      slug: 'Slug',
+      slugHint: 'Lower case and hyphens',
+      excerpt: 'Summary',
+      body: 'Body (Markdown)',
+      bodyHint: 'Raw HTML is stripped when rendering; use Markdown only.',
+      funnelStage: 'Funnel stage',
+      searchIntent: 'Search intent',
+      choose: 'Choose',
+      focusKeyword: 'Focus keyword',
+      focusHint:
+        'The phrase this article should be found for. The analysis below is measured against it.',
+      currentStatus: 'Current status',
+      reviewWarning:
+        'No engineer review has been recorded. This should not be published without one.',
+    },
+
+    activationReview: {
+      startReview: 'Start the review',
+      needsInfo: 'More information needed',
+      reject: 'Reject',
+      approve: 'Approve',
+      backToReview: 'Back to review',
+      markComplete: 'Mark as complete',
+      finalState: 'This request is in a final state; it cannot be changed any further.',
+      updated: 'The request has been updated.',
+      failed: 'That could not be updated.',
+      heading: 'Review',
+      newStatus: 'New status',
+      internalNote: 'Internal note',
+      internalHint: 'Only staff can see this',
+      customerResponse: 'Response to the customer',
+      customerHint: 'Never write a token, a key or a recovery file here.',
+      historyNote: 'Note for the history',
+      notifyCustomer: 'Email the customer',
+      update: 'Update',
+    },
+
+    seoPanel: {
+      title: 'SEO analysis',
+      pass: 'Fine',
+      warn: 'Worth a look',
+      fail: 'Problem',
+      summary: '{passed} fine · {warned} worth a look · {failed} problem(s)',
+      noKeyword:
+        'Setting a focus keyword turns on the keyword checks too. For now only the length and structure checks are shown.',
+      disclaimer:
+        'These are tidiness checks, not a ranking promise. All green does not make the writing good, and a few amber ones are not a problem.',
+    },
+
+    settingsForm: {
+      invalidJson: 'That is not valid JSON.',
+      saved: 'Settings saved.',
+      failed: 'That could not be saved.',
+      group: 'Group',
+      public: 'Public',
+      internal: 'Internal',
+      valueLabel: 'Value (JSON)',
+      saveAll: 'Save all',
+    },
+
+    seoEditor: {
+      failed: 'That could not be saved.',
+      saved: 'Saved.',
+      focusKeyword: 'Focus keyword',
+      focusHint:
+        'The phrase this should be found for. The analysis beside it is measured against this.',
+    },
+
+    orderActions: {
+      failed: 'The request did not go through.',
+      changeStatus: 'Change status',
+      statusChanged: 'The status has been changed.',
+      newStatus: 'New status',
+      reason: 'Reason',
+      reasonHint: 'Recorded in the audit log',
+      change: 'Change',
+      refundRequest: 'Refund request',
+      refundCeiling: 'At most {amount} can be refunded. Approval is a separate step.',
+      refundCreated: 'The refund request has been created and is awaiting approval.',
+      amountLabel: 'Amount (minor units)',
+      amountHint: '100 = 1 taka',
+      revokeLabel: 'Revoke access?',
+      revokeYes: 'Yes, revoke the downloads and the courses',
+      revokeNo: 'No, leave access in place',
+      requestRefund: 'Request refund',
+    },
+
+    editPost: 'Edit article',
+    productSeo: 'Product SEO',
+    courseSeo: 'Course SEO',
   },
 
   pageTitle: {

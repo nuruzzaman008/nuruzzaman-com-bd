@@ -9,14 +9,20 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { sessionApi } from '@/lib/api/server';
 import { dateTime } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
-import { ACTIVATION_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('রিকোয়েস্ট রিভিউ');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.activations.reviewTitle);
+}
 
 export default async function DashboardActivationRequestPage(props: {
   params: Promise<{ reference: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const { reference } = await props.params;
 
   let request: ActivationRequest;
@@ -38,8 +44,8 @@ export default async function DashboardActivationRequestPage(props: {
     <div>
       <Breadcrumbs
         trail={[
-          { name: 'ড্যাশবোর্ড', path: '/dashboard' },
-          { name: 'অ্যাক্টিভেশন', path: '/dashboard/activation-requests' },
+          { name: t.admin.nav.dashboard, path: '/dashboard' },
+          { name: t.admin.nav.activationRequests, path: '/dashboard/activation-requests' },
           { name: request.reference, path: `/dashboard/activation-requests/${request.reference}` },
         ]}
       />
@@ -48,28 +54,28 @@ export default async function DashboardActivationRequestPage(props: {
         <h1 className="font-latin text-[length:var(--step-h1)] font-bold text-navy">
           {request.reference}
         </h1>
-        <Badge tone={request.status === 'completed' ? 'success' : 'info'}>{label(ACTIVATION_STATUS_LABELS, request.status)}</Badge>
+        <Badge tone={request.status === 'completed' ? 'success' : 'info'}>{statusLabel('activation', request.status, locale)}</Badge>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-4">
           <Card className="p-5">
-            <h2 className="font-bold text-navy">রিকোয়েস্টের তথ্য</h2>
+            <h2 className="font-bold text-navy">{t.admin.activations.details}</h2>
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-muted">Machine ID (মাস্ক করা)</dt>
+                <dt className="text-muted">{t.admin.activations.maskedMachineId}</dt>
                 <dd className="font-latin font-medium text-navy">{request.machine_id_masked}</dd>
               </div>
               <div>
-                <dt className="text-muted">ধরন</dt>
+                <dt className="text-muted">{t.admin.common.type}</dt>
                 <dd className="font-medium text-navy">{request.request_type}</dd>
               </div>
               <div>
-                <dt className="text-muted">অর্ডার</dt>
+                <dt className="text-muted">{t.admin.activations.order}</dt>
                 <dd className="font-latin font-medium text-navy">{request.order_number ?? '-'}</dd>
               </div>
               <div>
-                <dt className="text-muted">লাইসেন্স</dt>
+                <dt className="text-muted">{t.admin.activations.licence}</dt>
                 <dd className="font-latin font-medium text-navy">{request.license_code ?? '-'}</dd>
               </div>
               <div>
@@ -84,20 +90,19 @@ export default async function DashboardActivationRequestPage(props: {
 
             {request.customer_note ? (
               <div className="mt-4 border-t border-line pt-4">
-                <p className="text-sm text-muted">গ্রাহকের নোট</p>
+                <p className="text-sm text-muted">{t.admin.activations.customerNote}</p>
                 <p className="mt-1 text-sm whitespace-pre-line">{request.customer_note}</p>
               </div>
             ) : null}
           </Card>
 
           <Callout tone="warning">
-            এই ওয়েবসাইটে কোনো signing key, token বা recovery ফাইল সংরক্ষণ করা হয় না।
-            গ্রাহকের রেসপন্সে কখনো সেরকম কিছু লিখবেন না।
+            {t.admin.activations.secretsWarning}
           </Callout>
 
           {request.timeline?.length ? (
             <Card className="p-5">
-              <h2 className="font-bold text-navy">ইতিহাস</h2>
+              <h2 className="font-bold text-navy">{t.admin.activations.history}</h2>
               <ol className="mt-3 space-y-3 text-sm">
                 {request.timeline.map((event, index) => (
                   <li key={`${event.to}-${index}`}>

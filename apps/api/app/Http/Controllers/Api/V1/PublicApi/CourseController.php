@@ -26,7 +26,7 @@ class CourseController extends Controller
         $courses = Course::query()
             ->published()
             ->withCount('lessons')
-            ->with('cover')
+            ->with(['cover', 'purchasableVariants.prices'])
             ->when($validated['level'] ?? null, fn ($query, $level) => $query->where('level', $level))
             ->when($validated['track'] ?? null, fn ($query, $track) => $query->where('track', $track))
             ->orderByDesc('published_at')

@@ -7,34 +7,40 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { number } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
+import { levelLabel } from '@/lib/i18n/labels';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('কোর্স');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.courses);
+}
 
 export default async function DashboardCoursesPage() {
+  const { locale, t } = await adminDictionary();
   const courses = await sessionApi<{ data: Course[] }>('/admin/courses');
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">কোর্স</h1>
-      <p className="mt-2 text-muted">
-        অন্তত একটি লেসন যুক্ত না করা পর্যন্ত কোনো কোর্স প্রকাশ করা যায় না।
-      </p>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.courses}</h1>
+      <p className="mt-2 text-muted">{t.admin.courses.publishRule}</p>
 
       <div className="mt-6">
         <DataTable
-          caption="কোর্সের তালিকা"
+          caption={t.admin.courses.caption}
           rows={courses.data}
           getRowKey={(course) => course.slug}
-          empty={<EmptyState title="কোনো কোর্স নেই" />}
+          empty={<EmptyState title={t.admin.courses.empty} />}
           columns={[
             {
               key: 'title',
-              header: 'কোর্স',
+              header: t.admin.nav.courses,
               render: (course) => (
                 <span>
                   <Link
                     href={`/courses/${course.slug}`}
+                    data-authored="true"
                     className="block font-medium text-blue hover:underline"
                   >
                     {course.title}
@@ -43,7 +49,11 @@ export default async function DashboardCoursesPage() {
                 </span>
               ),
             },
-            { key: 'level', header: 'স্তর', render: (course) => course.level },
+            {
+              key: 'level',
+              header: t.admin.courses.level,
+              render: (course) => levelLabel(t, course.level),
+            },
             {
               key: 'seo',
               header: 'SEO',
@@ -53,24 +63,24 @@ export default async function DashboardCoursesPage() {
                     href={`/dashboard/courses/${course.id}/seo`}
                     className="text-blue hover:underline"
                   >
-                    বিশ্লেষণ
+                    {t.admin.courses.analysis}
                   </Link>
                 ) : null,
             },
             {
               key: 'lessons',
-              header: 'লেসন',
+              header: t.admin.courses.lessons,
               align: 'end',
-              render: (course) => number(course.lesson_count ?? 0),
+              render: (course) => number(course.lesson_count ?? 0, locale),
             },
             {
               key: 'published',
-              header: 'প্রকাশ',
+              header: t.admin.common.published,
               render: (course) =>
                 course.published_at ? (
-                  <Badge tone="success">প্রকাশিত</Badge>
+                  <Badge tone="success">{t.admin.common.published}</Badge>
                 ) : (
-                  <Badge tone="neutral">খসড়া</Badge>
+                  <Badge tone="neutral">{t.admin.courses.draft}</Badge>
                 ),
             },
           ]}

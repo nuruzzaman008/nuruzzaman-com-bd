@@ -5,11 +5,17 @@ import { ApiError, type Post } from '@nuruzzaman/contracts';
 import { PostEditor } from '@/features/dashboard/post-editor';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { sessionApi } from '@/lib/api/server';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('আর্টিকেল সম্পাদনা');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.editPost);
+}
 
 export default async function EditPostPage(props: { params: Promise<{ id: string }> }) {
+  const { t } = await adminDictionary();
   const { id } = await props.params;
 
   let post: Post;
@@ -29,8 +35,8 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
     <div>
       <Breadcrumbs
         trail={[
-          { name: 'ড্যাশবোর্ড', path: '/dashboard' },
-          { name: 'আর্টিকেল', path: '/dashboard/posts' },
+          { name: t.admin.nav.dashboard, path: '/dashboard' },
+          { name: t.admin.nav.posts, path: '/dashboard/posts' },
           { name: post.title, path: `/dashboard/posts/${post.id}` },
         ]}
       />

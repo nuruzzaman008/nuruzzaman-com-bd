@@ -9,6 +9,7 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Field, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
  * Site settings editor.
@@ -17,6 +18,7 @@ import { ApiError, api } from '@/lib/api/browser';
  * error inline rather than silently saving a string where an array was meant.
  */
 export function SettingsForm({ settings }: { settings: Setting[] }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function SettingsForm({ settings }: { settings: Setting[] }) {
           is_public: setting.is_public,
         });
       } catch {
-        errors[setting.key] = 'এটি বৈধ JSON নয়।';
+        errors[setting.key] = t.admin.settingsForm.invalidJson;
       }
     }
 
@@ -58,11 +60,13 @@ export function SettingsForm({ settings }: { settings: Setting[] }) {
     try {
       await api('/admin/settings', { method: 'PUT', body: { settings: payload } });
       setTone('success');
-      setMessage('সেটিংস সংরক্ষিত হয়েছে।');
+      setMessage(t.admin.settingsForm.saved);
       router.refresh();
     } catch (caught) {
       setTone('danger');
-      setMessage(caught instanceof ApiError ? caught.message : 'সংরক্ষণ করা যায়নি।');
+      setMessage(
+        caught instanceof ApiError ? caught.message : t.admin.settingsForm.failed,
+      );
     } finally {
       setBusy(false);
     }
@@ -80,11 +84,14 @@ export function SettingsForm({ settings }: { settings: Setting[] }) {
         <Card key={setting.key} className="p-5">
           <p className="font-latin text-sm font-semibold text-navy">{setting.key}</p>
           <p className="text-xs text-muted">
-            গ্রুপ: {setting.group} · {setting.is_public ? 'পাবলিক' : 'অভ্যন্তরীণ'}
+            {t.admin.settingsForm.group}: {setting.group} ·{' '}
+            {setting.is_public
+              ? t.admin.settingsForm.public
+              : t.admin.settingsForm.internal}
           </p>
 
-          <div className="mt-3">
-            <Field label="মান (JSON)" error={parseErrors[setting.key]}>
+          <div data-authored="true" className="mt-3">
+            <Field label={t.admin.settingsForm.valueLabel} error={parseErrors[setting.key]}>
               {(props) => (
                 <Textarea
                   name={`value:${setting.key}`}
@@ -100,7 +107,7 @@ export function SettingsForm({ settings }: { settings: Setting[] }) {
       ))}
 
       <Button type="submit" size="lg" disabled={busy}>
-        {busy ? 'সংরক্ষণ হচ্ছে…' : 'সব সংরক্ষণ করুন'}
+        {busy ? t.admin.common.saving : t.admin.settingsForm.saveAll}
       </Button>
     </form>
   );

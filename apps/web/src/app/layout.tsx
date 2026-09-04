@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 
+import { cookies } from 'next/headers';
+
 import { SkipLink } from '@/components/layout/skip-link';
+import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { LocaleProvider } from '@/lib/i18n/locale-provider';
 import { SessionProvider } from '@/lib/session/session-provider';
 import { publicEnv } from '@/lib/env';
@@ -52,13 +55,22 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  /*
+    The signed-in applications take their language from a preference rather
+    than the URL, and it is read here so that the parts of the shell above
+    them - the skip link most of all - follow it too. LocaleProvider only
+    honours this on a private path, so a stale cookie can never decide the
+    language of a public page.
+  */
+  const adminLocale = adminLocaleFrom((await cookies()).get(ADMIN_LOCALE_COOKIE)?.value);
+
   return (
     <html lang="bn" dir="ltr" className={`${bengali.variable} ${inter.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         {/* Inside LocaleProvider: the skip link is the first thing a keyboard
             or screen-reader user meets, so it has to be in their language. */}
-        <LocaleProvider>
+        <LocaleProvider locale={adminLocale}>
           <SkipLink />
           {/* One `/me` and `/cart` request per page load, shared by the header
               and the footer's admin entrance. */}

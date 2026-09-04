@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Field, Input, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import { useLocale } from '@/lib/i18n/locale-provider';
 import type { SeoInput } from '@/lib/seo-analysis/analyze';
 
 /**
@@ -44,6 +45,7 @@ export function SeoEditor({
   } | null;
 }) {
   const router = useRouter();
+  const { t } = useLocale();
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export function SeoEditor({
           setMessage(caught.message);
         }
       } else {
-        setMessage('সংরক্ষণ করা যায়নি।');
+        setMessage(t.admin.seoEditor.failed);
       }
     } finally {
       setBusy(false);
@@ -98,7 +100,7 @@ export function SeoEditor({
 
         {saved ? (
           <Callout tone="success" role="status">
-            সংরক্ষিত হয়েছে।
+            {t.admin.seoEditor.saved}
           </Callout>
         ) : null}
 
@@ -111,8 +113,8 @@ export function SeoEditor({
         ) : null}
 
         <Field
-          label="ফোকাস কিওয়ার্ড"
-          hint="যে শব্দগুচ্ছে এটি খুঁজে পাওয়া উচিত। পাশের বিশ্লেষণ এর সাপেক্ষেই হয়।"
+          label={t.admin.seoEditor.focusKeyword}
+          hint={t.admin.seoEditor.focusHint}
           error={errors['seo.focus_keyword']?.[0]}
         >
           {(props) => (
@@ -135,7 +137,7 @@ export function SeoEditor({
         </Field>
 
         <Button type="submit" size="lg" disabled={busy}>
-          {busy ? 'সংরক্ষণ হচ্ছে…' : 'সংরক্ষণ করুন'}
+          {busy ? t.admin.common.saving : t.admin.common.save}
         </Button>
       </form>
 

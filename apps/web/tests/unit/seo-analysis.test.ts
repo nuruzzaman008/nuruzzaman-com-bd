@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { analyzeSeo, type SeoInput } from '@/lib/seo-analysis/analyze';
+import { getDictionary } from '@/lib/i18n/dictionary';
+
+/* The findings are worded from the dictionary; these tests assert on the
+   check ids and statuses, so either language would do. */
+const t = getDictionary('bn');
 
 const base: SeoInput = {
   kind: 'post',
@@ -15,14 +20,14 @@ const base: SeoInput = {
 };
 
 function find(input: SeoInput, id: string) {
-  return analyzeSeo(input)
+  return analyzeSeo(input, t)
     .groups.flatMap((group) => group.checks)
     .find((check) => check.id === id);
 }
 
 describe('analyzeSeo', () => {
   it('skips every keyword check when no focus keyword is set', () => {
-    const result = analyzeSeo({ ...base, focusKeyword: '' });
+    const result = analyzeSeo({ ...base, focusKeyword: '' }, t);
     const ids = result.groups.flatMap((group) => group.checks).map((check) => check.id);
 
     expect(result.keywordMissing).toBe(true);
@@ -93,8 +98,8 @@ describe('analyzeSeo', () => {
     const strong = analyzeSeo({
       ...base,
       content: `## পাঞ্চিং শিয়ার\n\n${'শব্দ '.repeat(700)}\n\n[উৎস](https://example.org) [ভেতরে](/blog/x)\n\n![পাঞ্চিং শিয়ার চিত্র](/img/a.png)`,
-    });
-    const weak = analyzeSeo({ ...base, content: 'অল্প কথা।' });
+    }, t);
+    const weak = analyzeSeo({ ...base, content: 'অল্প কথা।' }, t);
 
     expect(strong.score).toBeGreaterThan(weak.score);
     expect(strong.score).toBeLessThanOrEqual(100);

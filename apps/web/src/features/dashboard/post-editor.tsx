@@ -12,22 +12,27 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
+import type { Dictionary } from '@/lib/i18n/dictionary';
+import { useLocale } from '@/lib/i18n/locale-provider';
 
-const TRANSITIONS: Record<string, { label: string; to: string }[]> = {
+type Transition = keyof Dictionary['admin']['postEditor'];
+
+/** Which moves each status allows. The API enforces the same rules. */
+const TRANSITIONS: Record<string, { label: Transition; to: string }[]> = {
   draft: [
-    { label: 'রিভিউতে পাঠান', to: 'in_review' },
-    { label: 'প্রকাশ করুন', to: 'published' },
+    { label: 'sendToReview', to: 'in_review' },
+    { label: 'publish', to: 'published' },
   ],
   in_review: [
-    { label: 'খসড়ায় ফেরত', to: 'draft' },
-    { label: 'প্রকাশ করুন', to: 'published' },
+    { label: 'backToDraft', to: 'draft' },
+    { label: 'publish', to: 'published' },
   ],
   scheduled: [
-    { label: 'এখনই প্রকাশ', to: 'published' },
-    { label: 'খসড়ায় ফেরত', to: 'draft' },
+    { label: 'publishNow', to: 'published' },
+    { label: 'backToDraft', to: 'draft' },
   ],
-  published: [{ label: 'আর্কাইভ', to: 'archived' }],
-  archived: [{ label: 'খসড়ায় ফেরত', to: 'draft' }],
+  published: [{ label: 'archive', to: 'archived' }],
+  archived: [{ label: 'backToDraft', to: 'draft' }],
 };
 
 /**
@@ -38,6 +43,7 @@ const TRANSITIONS: Record<string, { label: string; to: string }[]> = {
  * Every save snapshots a revision on the server first.
  */
 export function PostEditor({ post }: { post: Post }) {
+  const { t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -81,7 +87,7 @@ export function PostEditor({ post }: { post: Post }) {
           setMessage(caught.message);
         }
       } else {
-        setMessage('সংরক্ষণ করা যায়নি।');
+        setMessage(t.admin.postEditor.saveFailed);
       }
     } finally {
       setBusy(false);
@@ -100,7 +106,9 @@ export function PostEditor({ post }: { post: Post }) {
 
       router.refresh();
     } catch (caught) {
-      setMessage(caught instanceof ApiError ? caught.message : 'অবস্থা পরিবর্তন করা যায়নি।');
+      setMessage(
+        caught instanceof ApiError ? caught.message : t.admin.postEditor.statusFailed,
+      );
     } finally {
       setBusy(false);
     }
@@ -119,28 +127,33 @@ export function PostEditor({ post }: { post: Post }) {
 
         {saved ? (
           <Callout tone="success" role="status">
-            সংরক্ষিত হয়েছে। আগের সংস্করণটি রিভিশন হিসেবে রাখা হয়েছে।
+            {t.admin.postEditor.saved}
           </Callout>
         ) : null}
 
-        <Field label="শিরোনাম" required error={errors.title?.[0]}>
+        <Field label={t.admin.postEditor.title} required error={errors.title?.[0]}>
           {(props) => <Input name="title" defaultValue={post.title} {...props} />}
         </Field>
 
-        <Field label="স্লাগ" required hint="ছোট হাতের অক্ষর ও হাইফেন" error={errors.slug?.[0]}>
+        <Field
+          label={t.admin.postEditor.slug}
+          required
+          hint={t.admin.postEditor.slugHint}
+          error={errors.slug?.[0]}
+        >
           {(props) => (
             <Input name="slug" defaultValue={post.slug} className="font-latin" {...props} />
           )}
         </Field>
 
-        <Field label="সারসংক্ষেপ" error={errors.excerpt?.[0]}>
+        <Field label={t.admin.postEditor.excerpt} error={errors.excerpt?.[0]}>
           {(props) => <Textarea name="excerpt" defaultValue={post.excerpt ?? ''} {...props} />}
         </Field>
 
         <Field
-          label="মূল লেখা (Markdown)"
+          label={t.admin.postEditor.body}
           required
-          hint="Raw HTML রেন্ডারের সময় বাদ দেওয়া হয়; শুধু Markdown ব্যবহার করুন।"
+          hint={t.admin.postEditor.bodyHint}
           error={errors.body_markdown?.[0]}
         >
           {(props) => (
@@ -155,10 +168,10 @@ export function PostEditor({ post }: { post: Post }) {
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="ফানেল স্টেজ">
+          <Field label={t.admin.postEditor.funnelStage}>
             {(props) => (
               <Select name="funnel_stage" defaultValue={post.funnel_stage ?? ''} {...props}>
-                <option value="">নির্বাচন করুন</option>
+                <option value="">{t.admin.postEditor.choose}</option>
                 <option value="awareness">Awareness</option>
                 <option value="consideration">Consideration</option>
                 <option value="decision">Decision</option>
@@ -166,10 +179,10 @@ export function PostEditor({ post }: { post: Post }) {
             )}
           </Field>
 
-          <Field label="সার্চ ইনটেন্ট">
+          <Field label={t.admin.postEditor.searchIntent}>
             {(props) => (
               <Select name="search_intent" defaultValue="" {...props}>
-                <option value="">নির্বাচন করুন</option>
+                <option value="">{t.admin.postEditor.choose}</option>
                 <option value="informational">Informational</option>
                 <option value="commercial">Commercial</option>
                 <option value="transactional">Transactional</option>
@@ -183,8 +196,8 @@ export function PostEditor({ post }: { post: Post }) {
           <legend className="font-bold text-navy">SEO</legend>
 
           <Field
-            label="ফোকাস কিওয়ার্ড"
-            hint="যে শব্দগুচ্ছে এই লেখাটি খুঁজে পাওয়া উচিত। নিচের বিশ্লেষণ এর সাপেক্ষেই হয়।"
+            label={t.admin.postEditor.focusKeyword}
+            hint={t.admin.postEditor.focusHint}
           >
             {(props) => (
               <Input name="focus_keyword" defaultValue={post.seo?.focus_keyword ?? ''} {...props} />
@@ -209,13 +222,13 @@ export function PostEditor({ post }: { post: Post }) {
         </fieldset>
 
         <Button type="submit" size="lg" disabled={busy}>
-          {busy ? 'সংরক্ষণ হচ্ছে…' : 'সংরক্ষণ করুন'}
+          {busy ? t.admin.common.saving : t.admin.common.save}
         </Button>
       </form>
 
       <aside className="space-y-4">
         <Card className="p-5">
-          <p className="text-sm text-muted">বর্তমান অবস্থা</p>
+          <p className="text-sm text-muted">{t.admin.postEditor.currentStatus}</p>
           <Badge tone={post.status === 'published' ? 'success' : 'neutral'}>{post.status}</Badge>
 
           <div className="mt-4 space-y-2">
@@ -228,14 +241,14 @@ export function PostEditor({ post }: { post: Post }) {
                 disabled={busy}
                 onClick={() => void transition(option.to)}
               >
-                {option.label}
+                {t.admin.postEditor[option.label]}
               </Button>
             ))}
           </div>
 
           {!post.reviewed_at ? (
             <Callout tone="warning" className="mt-4">
-              ইঞ্জিনিয়ার রিভিউ রেকর্ড করা হয়নি। রিভিউ ছাড়া প্রকাশ করা উচিত নয়।
+              {t.admin.postEditor.reviewWarning}
             </Callout>
           ) : null}
         </Card>

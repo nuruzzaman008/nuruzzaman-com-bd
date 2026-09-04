@@ -7,10 +7,15 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
 import { date, price } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
-import { ORDER_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
-export const metadata: Metadata = privateMetadata('অর্ডার');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.orders);
+}
 
 const STATUSES = [
   'pending_payment',
@@ -24,6 +29,7 @@ const STATUSES = [
 export default async function DashboardOrdersPage(props: {
   searchParams: Promise<{ status?: string; q?: string }>;
 }) {
+  const { locale, t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const orders = await sessionApi<{ data: Order[] }>('/admin/orders', {
@@ -32,36 +38,36 @@ export default async function DashboardOrdersPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">অর্ডার</h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.orders}</h1>
 
-      <nav aria-label="অবস্থা অনুযায়ী ছাঁকুন" className="mt-5 flex flex-wrap gap-2">
+      <nav aria-label={t.admin.filterByStatus} className="mt-5 flex flex-wrap gap-2">
         <Link
           href="/dashboard/orders"
           className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
         >
-          সব
+          {t.admin.common.all}
         </Link>
         {STATUSES.map((status) => (
           <Link
             key={status}
             href={`/dashboard/orders?status=${status}`}
-            className="font-latin inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
+            className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
           >
-            {status}
+            {statusLabel('order', status, locale)}
           </Link>
         ))}
       </nav>
 
       <div className="mt-6">
         <DataTable
-          caption="অর্ডারের তালিকা"
+          caption={t.admin.orders.caption}
           rows={orders.data}
           getRowKey={(order) => order.number}
-          empty={<EmptyState title="কোনো অর্ডার নেই" />}
+          empty={<EmptyState title={t.admin.orders.empty} />}
           columns={[
             {
               key: 'number',
-              header: 'অর্ডার',
+              header: t.admin.orders.order,
               render: (order) => (
                 <Link
                   href={`/dashboard/orders/${order.number}`}
@@ -73,7 +79,7 @@ export default async function DashboardOrdersPage(props: {
             },
             {
               key: 'customer',
-              header: 'গ্রাহক',
+              header: t.admin.orders.customer,
               render: (order) => (
                 <span>
                   <span className="block">{order.billing_name}</span>
@@ -83,19 +89,23 @@ export default async function DashboardOrdersPage(props: {
             },
             {
               key: 'status',
-              header: 'অবস্থা',
+              header: t.admin.common.status,
               render: (order) => (
                 <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>
-                  {label(ORDER_STATUS_LABELS, order.status)}
+                  {statusLabel('order', order.status, locale)}
                 </Badge>
               ),
             },
-            { key: 'placed', header: 'তারিখ', render: (order) => date(order.placed_at) ?? '—' },
+            {
+              key: 'placed',
+              header: t.admin.common.date,
+              render: (order) => date(order.placed_at, locale) ?? '—',
+            },
             {
               key: 'total',
-              header: 'মোট',
+              header: t.admin.orders.total,
               align: 'end',
-              render: (order) => price(order.total_minor, order.currency),
+              render: (order) => price(order.total_minor, order.currency, locale),
             },
           ]}
         />

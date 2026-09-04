@@ -6,32 +6,38 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { sessionApi } from '@/lib/api/server';
 import { number, price } from '@/lib/format';
+import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = privateMetadata('ড্যাশবোর্ড');
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await adminDictionary();
+
+  return privateMetadata(t.admin.nav.dashboard);
+}
 
 export default async function DashboardPage() {
+  const { locale, t } = await adminDictionary();
   const response = await sessionApi<{ data: AdminDashboard }>('/admin/dashboard');
   const data = response.data;
 
   const attention = [
     {
-      label: 'ঝুঁকি হিসেবে চিহ্নিত পেমেন্ট',
+      label: t.admin.dashboard.paymentsOnHold,
       value: data.attention.payments_on_risk_hold,
       href: '/dashboard/orders?status=pending_payment',
     },
     {
-      label: 'খোলা অ্যাক্টিভেশন রিকোয়েস্ট',
+      label: t.admin.dashboard.openActivations,
       value: data.attention.activation_requests_open,
       href: '/dashboard/activation-requests',
     },
     {
-      label: 'খোলা সাপোর্ট টিকিট',
+      label: t.admin.dashboard.openTickets,
       value: data.attention.support_tickets_open,
       href: '/dashboard/support-tickets',
     },
     {
-      label: 'রিভিউয়ের অপেক্ষায় আর্টিকেল',
+      label: t.admin.dashboard.postsInReview,
       value: data.attention.posts_in_review,
       href: '/dashboard/posts?status=in_review',
     },
@@ -40,41 +46,45 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">ড্যাশবোর্ড</h1>
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+          {t.admin.nav.dashboard}
+        </h1>
         <p className="mt-2 text-muted">
-          গত {number(data.window_days)} দিনের হিসাব। শুধু যাচাই হওয়া পেমেন্ট আয় হিসেবে গণনা করা হয়।
+          {t.admin.dashboard.window.replace('{days}', number(data.window_days, locale))}
         </p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-5">
-          <p className="text-sm text-muted">নিষ্পত্তি হওয়া আয়</p>
+          <p className="text-sm text-muted">{t.admin.dashboard.settledRevenue}</p>
           <p className="mt-1 text-2xl font-bold text-navy">
-            {price(data.revenue.settled_minor, data.revenue.currency)}
+            {price(data.revenue.settled_minor, data.revenue.currency, locale)}
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-sm text-muted">ফেরত</p>
+          <p className="text-sm text-muted">{t.admin.dashboard.refunded}</p>
           <p className="mt-1 text-2xl font-bold text-navy">
-            {price(data.revenue.refunded_minor, data.revenue.currency)}
+            {price(data.revenue.refunded_minor, data.revenue.currency, locale)}
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-sm text-muted">পরিশোধিত অর্ডার</p>
+          <p className="text-sm text-muted">{t.admin.dashboard.paidOrders}</p>
           <p className="font-latin mt-1 text-2xl font-bold text-navy">
-            {number(data.orders.paid)}
+            {number(data.orders.paid, locale)}
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-sm text-muted">সক্রিয় এনরোলমেন্ট</p>
+          <p className="text-sm text-muted">{t.admin.dashboard.activeEnrollments}</p>
           <p className="font-latin mt-1 text-2xl font-bold text-navy">
-            {number(data.learning.active_enrollments)}
+            {number(data.learning.active_enrollments, locale)}
           </p>
         </Card>
       </div>
 
       <section>
-        <h2 className="text-[length:var(--step-h2)] font-bold text-navy">মনোযোগ প্রয়োজন</h2>
+        <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
+          {t.admin.dashboard.needsAttention}
+        </h2>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {attention.map((item) => (
             <li key={item.label}>
@@ -89,7 +99,7 @@ export default async function DashboardPage() {
                       : 'font-latin rounded-full bg-surface px-3 py-1 text-sm font-bold text-muted'
                   }
                 >
-                  {number(item.value)}
+                  {number(item.value, locale)}
                 </span>
               </Card>
             </li>
@@ -99,8 +109,10 @@ export default async function DashboardPage() {
 
       {data.orders.pending > 0 ? (
         <Callout tone="info">
-          {number(data.orders.pending)} টি অর্ডার এখনো পেমেন্টের অপেক্ষায়। Reconciliation প্রতি
-          ১৫ মিনিটে গেটওয়ের সঙ্গে মিলিয়ে দেখে।
+          {t.admin.dashboard.awaitingPayment.replace(
+            '{count}',
+            number(data.orders.pending, locale),
+          )}
         </Callout>
       ) : null}
     </div>

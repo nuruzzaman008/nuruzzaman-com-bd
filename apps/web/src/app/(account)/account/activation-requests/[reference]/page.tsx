@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { sessionApi } from '@/lib/api/server';
 import { dateTime } from '@/lib/format';
 import { privateMetadata } from '@/lib/seo';
-import { ACTIVATION_STATUS_LABELS, label } from '@/lib/status';
+import { statusLabel } from '@/lib/status';
 
 export const metadata: Metadata = privateMetadata('অ্যাক্টিভেশন রিকোয়েস্ট');
 
@@ -47,7 +47,7 @@ export default async function ActivationRequestPage(props: {
         <h1 className="font-latin text-[length:var(--step-h1)] font-bold text-navy">
           {request.reference}
         </h1>
-        <Badge tone={request.status === 'completed' ? 'success' : 'info'}>{label(ACTIVATION_STATUS_LABELS, request.status)}</Badge>
+        <Badge tone={request.status === 'completed' ? 'success' : 'info'}>{statusLabel('activation', request.status)}</Badge>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
