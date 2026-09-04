@@ -11,7 +11,7 @@ signed-in areas) against the versions in
 | Laravel unit + feature (PHPUnit) | **156 passed, 645 assertions** | Run in Docker against MySQL 8.4 — the same engine as production, so a driver-specific query fails here rather than after deployment |
 | API contract test | **passed** | Every route the router knows is documented bar the declared exclusions |
 | Frontend unit + component (Vitest) | **68 passed** | 8 files |
-| End-to-end (Playwright), mock API | **96 passed** | 32 tests across desktop / tablet / mobile |
+| End-to-end (Playwright), mock API | **96 passed** | 32 tests across desktop / tablet / mobile. Its web server runs its own `next build`, which replaces the local preview build — rebuild before serving on 3200 again |
 | Bilingual sweep (`tools/check-english.mjs`) | **clean** | 28 English routes, no Bengali interface text left |
 | Public smoke (`tools/smoke.mjs`) | **clean** | Mobile menu, both sign-ins, the footer's admin entrance |
 | Admin smoke (`tools/admin-smoke.mjs`) | **clean** | 15 screens English by default; the switcher persists across screens and reloads |
