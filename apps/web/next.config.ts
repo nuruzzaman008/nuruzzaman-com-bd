@@ -61,9 +61,17 @@ const nextConfig: NextConfig = {
    * Changing it means building again, not restarting.
    *
    * NEXT_DEV_API_PROXY is the old name for the same thing and still works.
+   *
+   * In development the local Laravel port is the default, because `next dev`
+   * started by hand is otherwise a site whose every write 404s - and the
+   * symptom, a sign-in that reports bad credentials, points nowhere near the
+   * cause. Nothing is defaulted for a production build: there, guessing an
+   * origin would be worse than the honest empty list.
    */
   async rewrites() {
-    const target = process.env.NB_API_PROXY ?? process.env.NEXT_DEV_API_PROXY;
+    const configured = process.env.NB_API_PROXY ?? process.env.NEXT_DEV_API_PROXY;
+    const target =
+      configured ?? (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8001' : undefined);
 
     if (!target) {
       return [];
