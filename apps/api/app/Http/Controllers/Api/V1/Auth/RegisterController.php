@@ -22,7 +22,8 @@ class RegisterController extends Controller
     public function __invoke(RegisterRequest $request): JsonResponse
     {
         $user = DB::transaction(function () use ($request) {
-            $user = User::create($request->safe()->only(['name', 'email', 'password', 'phone']));
+            $user = User::create($request->safe()->only(['name', 'email', 'password', 'phone', 'account_mode']));
+            $user->refresh();
             $user->profile()->create(['display_name' => $user->name]);
 
             // Everyone starts as a customer; staff roles are granted explicitly.

@@ -22,6 +22,7 @@ class RegisterRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:32'],
             'password' => ['required', 'confirmed', Password::min(10)->letters()->numbers()->uncompromised()],
             'accepts_terms' => ['accepted'],
+            'account_mode' => ['sometimes', 'required', 'string', 'in:student,ecommerce'],
         ];
     }
 

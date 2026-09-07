@@ -42,6 +42,7 @@ class LessonResource extends JsonResource
                 'title' => $asset->title,
                 'size_bytes' => $asset->size_bytes,
                 'checksum_sha256' => $asset->checksum_sha256,
+                'download_url' => '/api/v1/learn/'.rawurlencode($this->course->slug).'/lessons/'.rawurlencode($this->slug).'/assets/'.$asset->id,
             ])->values()),
             // Expiring descriptor; the private source URL is never included.
             'playback' => $this->playback,

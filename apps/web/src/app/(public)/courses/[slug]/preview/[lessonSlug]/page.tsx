@@ -99,6 +99,12 @@ export default async function PreviewLessonPage(
 
       {lesson.body_html ? <Prose html={lesson.body_html} className="mt-8" /> : null}
 
+      {lesson.playback?.available && lesson.playback.url ? (
+        <div className="mt-6 aspect-video overflow-hidden rounded-xl bg-navy">
+          {lesson.playback.kind === 'video' ? <video controls playsInline preload="metadata" src={lesson.playback.url} className="size-full" aria-label={lesson.title} /> : lesson.playback.kind === 'link' ? <div className="flex h-full items-center justify-center"><a href={lesson.playback.url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-white px-5 py-3 font-semibold text-navy">{locale === 'bn' ? 'ভিডিও ওয়েবসাইটে খুলুন' : 'Open video website'} ↗</a></div> : <iframe src={lesson.playback.url} title={lesson.title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" className="size-full" />}
+        </div>
+      ) : null}
+
       <Callout tone="warning" className="mt-10">
         <p className="font-semibold">{t.course.previewMoreHeading}</p>
         <p className="mt-1">{t.course.previewMoreBody}</p>

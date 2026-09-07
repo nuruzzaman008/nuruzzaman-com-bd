@@ -25,6 +25,7 @@ export default async function DashboardCoursesPage() {
     <div>
       <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.courses}</h1>
       <p className="mt-2 text-muted">{t.admin.courses.publishRule}</p>
+      <Link href="/dashboard/courses/new" className="mt-4 inline-block rounded-lg bg-blue px-5 py-3 font-semibold text-white">{locale === 'bn' ? '+ নতুন কোর্স' : '+ New course'}</Link>
 
       <div className="mt-6">
         <DataTable
@@ -39,7 +40,7 @@ export default async function DashboardCoursesPage() {
               render: (course) => (
                 <span>
                   <Link
-                    href={`/courses/${course.slug}`}
+                    href={course.id ? `/dashboard/courses/${course.id}` : `/courses/${course.slug}`}
                     data-authored="true"
                     className="block font-medium text-blue hover:underline"
                   >

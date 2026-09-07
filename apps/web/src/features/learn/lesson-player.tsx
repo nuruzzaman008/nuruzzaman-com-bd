@@ -28,7 +28,7 @@ export function LessonPlayer({
   lesson: Lesson;
   isCompleted: boolean;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const [completed, setCompleted] = useState(isCompleted);
   const [busy, setBusy] = useState(false);
@@ -93,13 +93,18 @@ export function LessonPlayer({
       {lesson.playback ? (
         lesson.playback.available && lesson.playback.url ? (
           <div className="mt-6 aspect-video w-full overflow-hidden rounded-[--radius-card] border border-line bg-navy">
-            <iframe
+            {lesson.playback.kind === 'video' ? (
+              <video controls playsInline preload="metadata" src={lesson.playback.url} className="size-full" aria-label={lesson.title} />
+            ) : lesson.playback.kind === 'link' ? (
+              <div className="flex h-full items-center justify-center p-6"><a href={lesson.playback.url} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-white px-5 py-3 font-semibold text-navy">{locale === 'bn' ? 'ভিডিও ওয়েবসাইটে খুলুন' : 'Open video website'} ↗</a></div>
+            ) : <iframe
               src={lesson.playback.url}
               title={lesson.title}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               className="size-full"
-            />
+              referrerPolicy="strict-origin-when-cross-origin"
+            />}
           </div>
         ) : lesson.type === 'video' ? (
           <Callout tone="info" className="mt-6">
@@ -119,6 +124,7 @@ export function LessonPlayer({
                 <span className="font-medium text-navy" data-authored="true">
                   {asset.title}
                 </span>
+                {asset.download_url ? <a href={asset.download_url} className="ms-4 inline-block font-semibold text-blue hover:underline">{locale === 'bn' ? 'ডাউনলোড' : 'Download'} ↓</a> : null}
                 {asset.checksum_sha256 ? (
                   <span className="font-latin mt-1 block text-xs break-all text-muted">
                     SHA-256: {asset.checksum_sha256}

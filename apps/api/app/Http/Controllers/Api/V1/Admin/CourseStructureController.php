@@ -14,6 +14,23 @@ use Illuminate\Validation\Rule;
 
 class CourseStructureController extends Controller
 {
+    public function show(Course $course): JsonResponse
+    {
+        $this->authorize('update', $course);
+        $course->load('sections.lessons.assets');
+        return response()->json(['data' => [
+            'id' => $course->id, 'title' => $course->title, 'slug' => $course->slug,
+            'status' => $course->status->value, 'sequential' => (bool) $course->sequential,
+            'issues_certificate' => (bool) $course->issues_certificate,
+            'description_markdown' => $course->description_markdown,
+            'sections' => $course->sections->map(function ($section) {
+                return array_merge($section->toArray(), ['lessons' => $section->lessons->map(
+                    fn (Lesson $lesson) => $lesson->makeVisible(['video_url', 'video_asset_id'])->toArray()
+                )->values()]);
+            })->values(),
+        ]]);
+    }
+
     public function storeSection(Request $request, Course $course): JsonResponse
     {
         $this->authorize('update', $course);
@@ -25,6 +42,7 @@ class CourseStructureController extends Controller
             'drip_days' => ['nullable', 'integer', 'min:0', 'max:3650'],
         ]);
 
+        $validated['position'] ??= ($course->sections()->max('position') ?? -1) + 1;
         return response()->json(['data' => $course->sections()->create($validated)], 201);
     }
 
@@ -58,6 +76,7 @@ class CourseStructureController extends Controller
         $this->authorize('update', $course);
 
         $validated = $request->validate($this->lessonRules($course, null));
+        $validated['position'] ??= ($course->lessons()->max('position') ?? -1) + 1;
 
         return response()->json([
             'data' => $course->lessons()->create($validated),
@@ -133,6 +152,11 @@ class CourseStructureController extends Controller
             'body_markdown' => ['nullable', 'string', 'max:200000'],
             'video_provider' => ['nullable', 'string', 'in:bunny,vimeo'],
             'video_asset_id' => ['nullable', 'string', 'max:128'],
+            'video_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
+                if (\App\Support\LessonVideoUrl::descriptor($value) === null) {
+                    $fail('Enter a valid HTTPS video link (YouTube, Vimeo or another video website).');
+                }
+            }],
             'duration_seconds' => ['nullable', 'integer', 'min:1', 'max:86400'],
             'is_free_preview' => ['sometimes', 'boolean'],
             'position' => ['sometimes', 'integer', 'min:0'],

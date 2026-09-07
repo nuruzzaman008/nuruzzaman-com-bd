@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: { proxyClientMaxBodySize: '110mb' },
 
   images: {
     // Media is served from the API host or from object storage; both are

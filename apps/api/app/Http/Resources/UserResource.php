@@ -13,6 +13,7 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'account_mode' => $this->account_mode ?? 'ecommerce',
             'email' => $this->email,
             'phone' => $this->phone,
             'locale' => $this->locale,

@@ -88,6 +88,8 @@ class QuizService
             ]);
 
             if ($attempt->passed && $quiz->lesson_id) {
+                $attempt->loadMissing('enrollment');
+                $quiz->loadMissing('lesson');
                 $this->progress->complete($attempt->enrollment, $quiz->lesson);
             }
 

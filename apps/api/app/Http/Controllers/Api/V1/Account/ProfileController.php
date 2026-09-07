@@ -17,6 +17,7 @@ class ProfileController extends Controller
     public function update(Request $request): UserResource
     {
         $validated = $request->validate([
+            'account_mode' => ['sometimes', 'required', 'string', 'in:student,ecommerce'],
             'name' => ['sometimes', 'string', 'min:2', 'max:120'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'locale' => ['sometimes', 'string', 'in:bn,en'],

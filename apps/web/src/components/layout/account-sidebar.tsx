@@ -7,6 +7,7 @@ import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switch
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { accountNav } from '@/lib/site';
+import { AccountModeSwitcher } from '@/features/account/account-mode-switcher';
 
 /**
  * The customer account sidebar.
@@ -24,6 +25,7 @@ export function AccountSidebar({ user }: { user: User }) {
       <p className="text-sm text-muted">{t.account.signedInAs}</p>
       <p className="font-bold text-navy">{user.name}</p>
       <p className="font-latin text-xs break-all text-muted">{user.email}</p>
+      <AccountModeSwitcher mode={user.account_mode} />
 
       {!user.email_verified ? (
         <p className="mt-3 rounded-lg border border-amber/40 bg-amber-soft p-3 text-xs text-navy">
@@ -33,7 +35,7 @@ export function AccountSidebar({ user }: { user: User }) {
 
       <nav aria-label={t.account.navigation} className="mt-5">
         <ul className="space-y-1">
-          {accountNav.map((item) => (
+          {accountNav.filter((item) => user.account_mode === 'student' ? ['overview', 'courses', 'support'].includes(item.key) : item.key !== 'courses').map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}

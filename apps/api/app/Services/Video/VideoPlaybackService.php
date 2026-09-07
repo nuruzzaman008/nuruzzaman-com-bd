@@ -17,6 +17,10 @@ class VideoPlaybackService
     /** @return array{provider:string,url:?string,token:?string,expires_in:int,available:bool,message:?string} */
     public function playbackFor(Lesson $lesson): array
     {
+        if (filled($lesson->video_url)) {
+            return \App\Support\LessonVideoUrl::descriptor($lesson->video_url)
+                ?? $this->unavailable('Invalid video link.');
+        }
         $ttl = (int) config('video.playback_ttl_seconds');
         $driver = $lesson->video_provider ?: config('video.driver');
 

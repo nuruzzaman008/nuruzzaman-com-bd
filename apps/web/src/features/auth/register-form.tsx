@@ -14,7 +14,7 @@ import { useSession } from '@/lib/session/session-provider';
 
 export function RegisterForm() {
   const router = useRouter();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { refresh: refreshSession } = useSession();
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -38,6 +38,7 @@ export function RegisterForm() {
           password: form.get('password'),
           password_confirmation: form.get('password_confirmation'),
           accepts_terms: form.get('accepts_terms') === 'on',
+          account_mode: form.get('account_mode'),
         },
       });
 
@@ -73,6 +74,23 @@ export function RegisterForm() {
           {message}
         </Callout>
       ) : null}
+
+      <fieldset className="space-y-3">
+        <legend className="font-bold text-navy">{locale === 'bn' ? 'কোন ধরনের অ্যাকাউন্ট খুলতে চান?' : 'Choose your account experience'}</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            { value: 'student', title: 'Student account', detail: locale === 'bn' ? 'কোর্স, ভিডিও ক্লাস, পাঠের ফাইল ও শেখার অগ্রগতি' : 'Courses, video lessons, resources and learning progress' },
+            { value: 'ecommerce', title: 'Ecommerce account', detail: locale === 'bn' ? 'কেনাকাটা, অর্ডার, সফটওয়্যার ও ডাউনলোড' : 'Shopping, orders, software and downloads' },
+          ].map((mode) => (
+            <label key={mode.value} className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4 has-checked:border-blue has-checked:bg-blue-soft">
+              <input className="mt-1 accent-blue" type="radio" name="account_mode" value={mode.value} defaultChecked={mode.value === 'student'} />
+              <span><strong className="block text-navy">{mode.title}</strong><span className="mt-1 block text-sm text-muted">{mode.detail}</span></span>
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-muted">{locale === 'bn' ? 'একই অ্যাকাউন্ট থেকে যেকোনো সময় Student ও Ecommerce মোডে সুইচ করতে পারবেন।' : 'Switch between Student and Ecommerce anytime with the same account.'}</p>
+        {errors.account_mode ? <p role="alert" className="text-sm text-danger">{errors.account_mode[0]}</p> : null}
+      </fieldset>
 
       <Field label={t.auth.name} required error={errors.name?.[0]}>
         {(props) => <Input name="name" autoComplete="name" {...props} />}

@@ -116,6 +116,14 @@ Route::middleware([
     Route::patch('courses/{course:id}/lessons/{lesson:id}', [Admin\CourseStructureController::class, 'updateLesson']);
     Route::delete('courses/{course:id}/lessons/{lesson:id}', [Admin\CourseStructureController::class, 'destroyLesson']);
     Route::put('courses/{course:id}/reorder', [Admin\CourseStructureController::class, 'reorder']);
+    Route::get('courses/{course:id}/curriculum', [Admin\CourseStructureController::class, 'show']);
+    Route::get('courses/{course:id}/lessons/{lesson:id}/assessments', [Admin\LessonAssessmentController::class, 'show']);
+    Route::put('courses/{course:id}/lessons/{lesson:id}/quiz', [Admin\LessonAssessmentController::class, 'quiz']);
+    Route::put('courses/{course:id}/lessons/{lesson:id}/assignment', [Admin\LessonAssessmentController::class, 'assignment']);
+    Route::patch('courses/{course:id}/lessons/{lesson:id}/submissions/{submission}', [Admin\LessonAssessmentController::class, 'grade']);
+    Route::get('courses/{course:id}/lessons/{lesson:id}/submissions/{submission}/file', [Admin\LessonAssessmentController::class, 'download']);
+    Route::post('courses/{course:id}/lessons/{lesson:id}/assets', [Admin\LessonAssetController::class, 'store']);
+    Route::delete('courses/{course:id}/lessons/{lesson:id}/assets/{asset:id}', [Admin\LessonAssetController::class, 'destroy']);
 
     Route::get('enrollments', [Admin\EnrollmentController::class, 'index']);
     Route::post('enrollments', [Admin\EnrollmentController::class, 'store']);

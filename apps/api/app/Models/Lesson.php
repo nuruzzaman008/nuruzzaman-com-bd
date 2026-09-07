@@ -13,12 +13,12 @@ class Lesson extends Model
     protected $fillable = [
         'course_id', 'course_section_id', 'slug', 'title', 'title_en', 'type',
         'body_markdown',
-        'video_provider', 'video_asset_id', 'duration_seconds', 'is_free_preview',
+        'video_provider', 'video_asset_id', 'video_url', 'duration_seconds', 'is_free_preview',
         'position', 'drip_days',
     ];
 
     /** The provider asset id is only exposed through the signed playback endpoint. */
-    protected $hidden = ['video_asset_id'];
+    protected $hidden = ['video_asset_id', 'video_url'];
 
     protected function casts(): array
     {

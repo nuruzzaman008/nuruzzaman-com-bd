@@ -136,14 +136,14 @@ class EnrollmentService
     /** Applies both the content-drip window and the sequential-progress rule. */
     public function isUnlocked(Enrollment $enrollment, Lesson $lesson): bool
     {
-        $course = $enrollment->course()->with('lessons')->first();
+        $course = $enrollment->course()->with('sections.lessons')->first();
         $start = $enrollment->starts_at ?? $enrollment->created_at ?? now();
 
         // Only consult the section when the caller supplied it. Reaching for an
         // unloaded relation here throws under strict mode, and this runs on every
         // lesson of every outline.
-        $dripDays = $lesson->drip_days
-            ?? ($lesson->relationLoaded('section') ? $lesson->section?->drip_days : null);
+        $lesson->loadMissing('section');
+        $dripDays = $lesson->drip_days ?? $lesson->section?->drip_days;
 
         if ($dripDays !== null && $start->copy()->addDays((int) $dripDays)->isFuture()) {
             return false;
@@ -153,7 +153,7 @@ class EnrollmentService
             return true;
         }
 
-        $ordered = $course->lessons->sortBy('position')->values();
+        $ordered = $course->sections->flatMap(fn ($section) => $section->lessons)->values();
         $index = $ordered->search(fn (Lesson $item) => $item->is($lesson));
 
         if ($index === false || $index === 0) {

@@ -61,6 +61,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::prefix('learn')->group(function () {
         Route::get('{courseSlug}/outline', [Learn\LessonController::class, 'outline']);
         Route::get('{courseSlug}/lessons/{lessonSlug}', [Learn\LessonController::class, 'show']);
+        Route::get('{courseSlug}/lessons/{lessonSlug}/assets/{assetId}', [Learn\LessonController::class, 'download'])->middleware('throttle:api');
         Route::post('{courseSlug}/lessons/{lessonSlug}/heartbeat', [Learn\ProgressController::class, 'heartbeat'])
             ->middleware('throttle:progress');
         Route::post('{courseSlug}/lessons/{lessonSlug}/complete', [Learn\ProgressController::class, 'complete'])

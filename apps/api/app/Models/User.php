@@ -20,7 +20,7 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'name', 'email', 'password', 'phone', 'locale', 'timezone', 'status',
+        'name', 'email', 'password', 'phone', 'locale', 'timezone', 'status', 'account_mode',
     ];
 
     protected $hidden = [

@@ -101,6 +101,9 @@ class QuizController extends Controller
             ->firstOrFail();
 
         $this->authorize('learn', $enrollment);
+        if ($quiz->lesson_id) {
+            app(\App\Services\Lms\EnrollmentService::class)->assertAccess($request->user(), $quiz->lesson()->with('section')->firstOrFail());
+        }
 
         return $enrollment;
     }

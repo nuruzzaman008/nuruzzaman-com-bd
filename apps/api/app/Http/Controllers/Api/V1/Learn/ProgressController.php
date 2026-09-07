@@ -39,6 +39,14 @@ class ProgressController extends Controller
     {
         [$enrollment, $lesson] = $this->resolve($request, $courseSlug, $lessonSlug);
 
+        $quiz = $lesson->quiz()->first();
+        if ($quiz) {
+            abort_unless($quiz->attempts()->where('enrollment_id', $enrollment->id)->where('passed', true)->exists(), 403, 'Pass this lesson quiz before completing the lesson.');
+        }
+        $assignment = $lesson->assignment()->first();
+        if ($assignment) {
+            abort_unless($assignment->submissions()->where('enrollment_id', $enrollment->id)->where('score_percent', '>=', $assignment->pass_percentage)->exists(), 403, 'Your assignment must receive a passing grade first.');
+        }
         $this->progress->complete($enrollment, $lesson);
 
         return new EnrollmentResource($enrollment->fresh()->load(['course', 'certificate']));

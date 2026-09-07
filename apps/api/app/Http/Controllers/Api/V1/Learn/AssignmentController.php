@@ -54,7 +54,7 @@ class AssignmentController extends Controller
         $allowed = $assignment->allowed_mime_types ?: ['application/pdf', 'image/png', 'image/jpeg', 'application/zip'];
 
         $validated = $request->validate([
-            'notes' => ['nullable', 'string', 'max:2000'],
+            'notes' => ['required_without:file', 'nullable', 'string', 'max:2000'],
             'file' => [
                 'nullable',
                 'file',
@@ -104,6 +104,9 @@ class AssignmentController extends Controller
             ->firstOrFail();
 
         $this->authorize('learn', $enrollment);
+        if ($assignment->lesson_id) {
+            app(\App\Services\Lms\EnrollmentService::class)->assertAccess($request->user(), $assignment->lesson()->with('section')->firstOrFail());
+        }
 
         return $enrollment;
     }

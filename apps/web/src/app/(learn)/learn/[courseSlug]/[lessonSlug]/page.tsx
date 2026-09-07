@@ -6,6 +6,7 @@ import { ApiError, type CourseOutline, type Lesson, type LessonNote } from '@nur
 import { CourseOutlineNav } from '@/features/learn/course-outline';
 import { LessonNotes } from '@/features/learn/lesson-notes';
 import { LessonPlayer } from '@/features/learn/lesson-player';
+import { LessonAssessments } from '@/features/learn/lesson-assessments';
 import { Callout } from '@/components/ui/callout';
 import { Container } from '@/components/ui/container';
 import { sessionApi } from '@/lib/api/server';
@@ -88,15 +89,21 @@ export default async function LessonPage(props: {
           {lesson ? (
             <>
               <LessonPlayer
+                key={lessonSlug}
                 courseSlug={courseSlug}
                 lesson={lesson}
                 isCompleted={outlineLesson.is_completed}
               />
               <LessonNotes
+                key={`notes-${lessonSlug}`}
                 courseSlug={courseSlug}
                 lessonSlug={lessonSlug}
                 notes={lessonNotes}
               />
+              <LessonAssessments key={`activities-${lessonSlug}`} quizId={lesson.quiz_id} assignmentId={lesson.assignment_id} />
+              <nav aria-label="Lesson navigation" className="mt-8 flex flex-wrap justify-between gap-4 border-t border-line pt-5 text-sm font-semibold text-blue">
+                {(() => { const rows = outline.sections.flatMap((section) => section.lessons); const index = rows.findIndex((row) => row.slug === lessonSlug); const previous = rows[index - 1]; const next = rows[index + 1]; return <>{previous ? <Link href={`/learn/${courseSlug}/${previous.slug}`}>← {previous.title}</Link> : <span />}{next?.is_unlocked ? <Link href={`/learn/${courseSlug}/${next.slug}`}>{next.title} →</Link> : null}</>; })()}
+              </nav>
             </>
           ) : (
             <Callout tone="warning" title={t.learn.lockedTitle} role="status">

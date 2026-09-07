@@ -26,8 +26,9 @@ class ProgressService
 
         // Monotonic: a reload that reports 0 seconds cannot erase real progress,
         // and a value beyond the lesson duration is clamped.
-        $ceiling = $lesson->duration_seconds ?: max($watchedSeconds, $progress->watched_seconds);
-        $progress->watched_seconds = min($ceiling, max($progress->watched_seconds, max(0, $watchedSeconds)));
+        $previous = (int) ($progress->watched_seconds ?? 0);
+        $ceiling = $lesson->duration_seconds ?: max($watchedSeconds, $previous);
+        $progress->watched_seconds = min($ceiling, max($previous, max(0, $watchedSeconds)));
         $progress->last_seen_at = now();
         $progress->save();
 
@@ -39,6 +40,12 @@ class ProgressService
     /** Idempotent: completing a lesson twice does not change anything. */
     public function complete(Enrollment $enrollment, Lesson $lesson): LessonProgress
     {
+        $quiz = $lesson->quiz()->first();
+        $assignment = $lesson->assignment()->first();
+        if (($quiz && ! $quiz->attempts()->where('enrollment_id', $enrollment->id)->where('passed', true)->exists())
+            || ($assignment && ! $assignment->submissions()->where('enrollment_id', $enrollment->id)->where('score_percent', '>=', $assignment->pass_percentage)->exists())) {
+            return $this->markSeen($enrollment, $lesson);
+        }
         $progress = DB::transaction(function () use ($enrollment, $lesson) {
             /** @var LessonProgress $progress */
             $progress = LessonProgress::query()->firstOrNew([

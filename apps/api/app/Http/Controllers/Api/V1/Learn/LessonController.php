@@ -18,6 +18,26 @@ use Illuminate\Http\Request;
  */
 class LessonController extends Controller
 {
+    public function download(Request $request, string $courseSlug, string $lessonSlug, int $assetId): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $course = Course::query()->where('slug', $courseSlug)->firstOrFail();
+        $lesson = $course->lessons()->where('slug', $lessonSlug)->with('section')->firstOrFail();
+        $this->enrollments->assertAccess($request->user(), $lesson);
+        $asset = $lesson->assets()->findOrFail($assetId);
+        $disk = \Illuminate\Support\Facades\Storage::disk($asset->disk);
+        abort_unless($disk->exists($asset->storage_path), 404);
+        $extension = pathinfo($asset->storage_path, PATHINFO_EXTENSION);
+        $name = preg_replace('/[\\\\\/\r\n\x00-\x1f]/u', '-', $asset->title);
+        if ($extension && ! str_ends_with(strtolower($name), '.'.strtolower($extension))) {
+            $name .= '.'.$extension;
+        }
+        return $disk->download($asset->storage_path, $name, [
+            'Content-Type' => 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public function __construct(
         private readonly EnrollmentService $enrollments,
         private readonly VideoPlaybackService $video,

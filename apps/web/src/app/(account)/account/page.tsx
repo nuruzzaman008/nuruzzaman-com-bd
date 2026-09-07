@@ -9,6 +9,7 @@ import { date, number, price } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
+import { StudentDashboard } from '@/features/account/student-dashboard';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await adminDictionary();
@@ -19,8 +20,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AccountOverviewPage() {
   const { locale, t } = await adminDictionary();
 
-  const [me, orders, enrollments, downloads] = await Promise.all([
-    sessionApi<{ data: User }>('/me'),
+  const me = await sessionApi<{ data: User }>('/me');
+  if (me.data.account_mode === 'student') {
+    const enrollments = await sessionApi<{ data: Enrollment[] }>('/account/courses');
+    return <StudentDashboard name={me.data.name} enrollments={enrollments.data} locale={locale} />;
+  }
+
+  const [orders, enrollments, downloads] = await Promise.all([
     sessionApi<{ data: Order[] }>('/account/orders'),
     sessionApi<{ data: Enrollment[] }>('/account/courses'),
     sessionApi<{ data: DownloadEntitlement[] }>('/account/downloads'),
