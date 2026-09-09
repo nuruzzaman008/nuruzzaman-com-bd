@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\User */
+/** @mixin User */
 class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -27,6 +28,7 @@ class UserResource extends JsonResource
                 fn () => $this->permissionNames()->values(),
             ),
             'profile' => $this->whenLoaded('profile', fn () => [
+                'has_photo' => filled($this->profile?->avatar_path),
                 'display_name' => $this->profile?->display_name,
                 'headline' => $this->profile?->headline,
                 'bio' => $this->profile?->bio,

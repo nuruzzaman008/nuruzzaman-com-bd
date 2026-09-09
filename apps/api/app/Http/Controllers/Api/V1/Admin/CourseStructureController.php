@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseSection;
 use App\Models\Lesson;
+use App\Services\Lms\CoursePricingService;
+use App\Support\LessonVideoUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,15 +16,27 @@ use Illuminate\Validation\Rule;
 
 class CourseStructureController extends Controller
 {
+    public function price(Request $request, Course $course, CoursePricingService $pricing): JsonResponse
+    {
+        $this->authorize('update', $course);
+        $input = $request->validate(['amount_minor' => ['required', 'integer', 'min:1', 'max:100000000']]);
+        $pricing->set($course, $input['amount_minor']);
+
+        return response()->json(['data' => ['saved' => true]]);
+    }
+
     public function show(Course $course): JsonResponse
     {
         $this->authorize('update', $course);
-        $course->load('sections.lessons.assets');
+        $course->load('sections.lessons.assets', 'seo');
+
         return response()->json(['data' => [
             'id' => $course->id, 'title' => $course->title, 'slug' => $course->slug,
             'status' => $course->status->value, 'sequential' => (bool) $course->sequential,
             'issues_certificate' => (bool) $course->issues_certificate,
             'description_markdown' => $course->description_markdown,
+            'seo' => $course->seo?->only(['meta_title', 'meta_title_en', 'meta_description', 'meta_description_en', 'focus_keyword', 'canonical_url', 'noindex', 'nofollow']),
+            'price_minor' => $course->purchasableVariants()->with('prices')->get()->map(fn ($variant) => $variant->currentPrice()?->amount_minor)->filter(fn ($amount) => $amount !== null)->min(),
             'sections' => $course->sections->map(function ($section) {
                 return array_merge($section->toArray(), ['lessons' => $section->lessons->map(
                     fn (Lesson $lesson) => $lesson->makeVisible(['video_url', 'video_asset_id'])->toArray()
@@ -43,6 +57,7 @@ class CourseStructureController extends Controller
         ]);
 
         $validated['position'] ??= ($course->sections()->max('position') ?? -1) + 1;
+
         return response()->json(['data' => $course->sections()->create($validated)], 201);
     }
 
@@ -153,7 +168,7 @@ class CourseStructureController extends Controller
             'video_provider' => ['nullable', 'string', 'in:bunny,vimeo'],
             'video_asset_id' => ['nullable', 'string', 'max:128'],
             'video_url' => ['nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
-                if (\App\Support\LessonVideoUrl::descriptor($value) === null) {
+                if (LessonVideoUrl::descriptor($value) === null) {
                     $fail('Enter a valid HTTPS video link (YouTube, Vimeo or another video website).');
                 }
             }],

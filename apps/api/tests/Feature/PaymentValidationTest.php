@@ -34,7 +34,7 @@ class PaymentValidationTest extends TestCase
             'accepts_refund_policy' => true,
         ])->assertCreated();
 
-        return Payment::query()->firstOrFail();
+        return app(PaymentProcessor::class)->startPayment(Order::query()->firstOrFail())['payment'];
     }
 
     private function ipnPayload(Payment $payment, array $overrides = []): array

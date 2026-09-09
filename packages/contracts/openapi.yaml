@@ -2074,7 +2074,7 @@ paths:
                     required: [order, payment_reference, redirect_url]
                     properties:
                       order: { $ref: '#/components/schemas/Order' }
-                      payment_reference: { type: string }
+                      payment_reference: { type: [string, 'null'] }
                       redirect_url: { type: string, format: uri }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '409': { $ref: '#/components/responses/Conflict' }

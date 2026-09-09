@@ -2164,7 +2164,10 @@
                           "$ref": "#/components/schemas/Order"
                         },
                         "payment_reference": {
-                          "type": "string"
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "redirect_url": {
                           "type": "string",

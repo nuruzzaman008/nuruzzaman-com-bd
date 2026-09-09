@@ -8,6 +8,7 @@ use App\Http\Resources\CourseSummaryResource;
 use App\Http\Resources\LessonResource;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Services\Video\VideoPlaybackService;
 use App\Support\CourseTracks;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -71,6 +72,6 @@ class CourseController extends Controller
             ->with(['course', 'assets'])
             ->firstOrFail();
 
-        return new LessonResource($lesson);
+        return new LessonResource($lesson, app(VideoPlaybackService::class)->playbackFor($lesson));
     }
 }

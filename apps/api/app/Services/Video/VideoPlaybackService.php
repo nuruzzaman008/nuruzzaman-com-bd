@@ -4,6 +4,8 @@ namespace App\Services\Video;
 
 use App\Exceptions\DomainException;
 use App\Models\Lesson;
+use App\Support\LessonVideoUrl;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Mints a short-lived playback descriptor for a lesson video.
@@ -18,8 +20,11 @@ class VideoPlaybackService
     public function playbackFor(Lesson $lesson): array
     {
         if (filled($lesson->video_url)) {
-            return \App\Support\LessonVideoUrl::descriptor($lesson->video_url)
+            return LessonVideoUrl::descriptor($lesson->video_url)
                 ?? $this->unavailable('Invalid video link.');
+        }
+        if ($lesson->video_provider === 'uploaded' && filled($lesson->video_asset_id)) {
+            return ['provider' => 'uploaded', 'kind' => 'video', 'url' => URL::temporarySignedRoute('lesson.video.stream', now()->addHours(2), ['lesson' => $lesson->id, 'viewer' => $lesson->is_free_preview ? 0 : (auth()->id() ?? 0)], absolute: false), 'token' => null, 'expires_in' => 7200, 'available' => true, 'message' => null];
         }
         $ttl = (int) config('video.playback_ttl_seconds');
         $driver = $lesson->video_provider ?: config('video.driver');

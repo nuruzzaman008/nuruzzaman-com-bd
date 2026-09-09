@@ -11,13 +11,12 @@ import { Checkbox, ErrorSummary, Field, Input } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { useSession } from '@/lib/session/session-provider';
+import { loginDestination } from '@/lib/account-routing';
 
 /**
  * Sign-in against the first-party cookie session. No token is returned or
  * stored; the browser simply receives an HttpOnly session cookie.
  */
-/** Roles that belong in the admin panel rather than the customer account. */
-const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'instructor', 'support'];
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,7 +28,6 @@ export function LoginForm() {
   const [busy, setBusy] = useState(false);
 
   const next = searchParams.get('next');
-  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/account';
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,10 +47,7 @@ export function LoginForm() {
         },
       });
 
-      // Staff go to the admin panel, customers to their account. An explicit
-      // `next` always wins, so a deep link the visitor was sent to still works.
-      const isStaff = signedIn.data.roles.some((role) => STAFF_ROLES.includes(role));
-      const destination = next ? safeNext : isStaff ? '/dashboard' : '/account';
+      const destination = loginDestination(signedIn.data.roles, next);
 
       // The header, the cart badge and the footer's staff entrance all read
       // the shared session, which was fetched while nobody was signed in.

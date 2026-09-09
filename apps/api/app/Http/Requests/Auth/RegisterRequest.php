@@ -19,7 +19,7 @@ class RegisterRequest extends FormRequest
             // RFC validation only. A DNS lookup here would make sign-up depend on
             // outbound DNS being reachable, which fails closed on a blip.
             'email' => ['required', 'string', 'email:rfc', 'max:191', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => ['required', 'string', 'regex:/^\+?[0-9]{7,15}$/'],
             'password' => ['required', 'confirmed', Password::min(10)->letters()->numbers()->uncompromised()],
             'accepts_terms' => ['accepted'],
             'account_mode' => ['sometimes', 'required', 'string', 'in:student,ecommerce'],

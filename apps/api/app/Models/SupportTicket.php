@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SupportTicket extends Model
 {
     protected $fillable = [
-        'reference', 'user_id', 'name', 'email', 'subject', 'category',
+        'reference', 'user_id', 'name', 'mobile', 'email', 'subject', 'category',
         'status', 'priority', 'order_id', 'assigned_to', 'resolved_at',
     ];
 

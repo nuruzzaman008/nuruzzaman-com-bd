@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { ApiError, type Order } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
+import { ButtonLink } from '@/components/ui/button';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Card } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
@@ -55,6 +56,8 @@ export default async function AccountOrderPage(props: {
         </h1>
         <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{statusLabel('order', order.status, locale)}</Badge>
       </div>
+
+      {order.status === 'pending_payment' && <ButtonLink className="mt-5" href={`/checkout/payment/${order.number}`}>{locale === 'en' ? 'Payment options / verification status' : 'Payment option / যাচাইয়ের status'}</ButtonLink>}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">

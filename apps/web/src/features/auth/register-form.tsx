@@ -100,8 +100,8 @@ export function RegisterForm() {
         {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
       </Field>
 
-      <Field label={t.auth.phoneOptional} error={errors.phone?.[0]}>
-        {(props) => <Input name="phone" type="tel" autoComplete="tel" {...props} />}
+      <Field label={locale === 'bn' ? 'মোবাইল নম্বর' : 'Mobile number'} required error={errors.phone?.[0]}>
+        {(props) => <Input name="phone" type="tel" pattern="[+]?[0-9]{7,15}" maxLength={16} autoComplete="tel" {...props} />}
       </Field>
 
       <Field

@@ -13,6 +13,13 @@ class CheckoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_checkout_idempotency_response_cannot_be_replayed_by_another_customer(): void
+    {
+        [$user] = $this->cartWithItem();
+        $this->actingAs($user)->withHeader('Idempotency-Key', 'private-checkout-test')->postJson('/api/v1/checkout', $this->payload())->assertCreated();
+        $this->actingAs($this->customer())->withHeader('Idempotency-Key', 'private-checkout-test')->postJson('/api/v1/checkout', $this->payload())->assertConflict();
+    }
+
     private function cartWithItem(int $amountMinor = 350000): array
     {
         $user = $this->customer();
@@ -48,6 +55,9 @@ class CheckoutTest extends TestCase
         $this->assertSame(OrderStatus::PendingPayment, $order->status);
         $this->assertSame(350000, $order->total_minor);
         $this->assertNotEmpty($response->json('data.redirect_url'));
+        $response->assertJsonPath('data.redirect_url', '/checkout/payment/'.$order->number)
+            ->assertJsonPath('data.payment_reference', null);
+        $this->assertDatabaseCount('payments', 0);
         $this->assertSame(['terms', 'privacy', 'refund_policy'], $order->accepted_terms);
     }
 

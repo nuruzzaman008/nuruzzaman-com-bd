@@ -5,6 +5,7 @@ import type { CourseSummary, PostSummary, ProductSummary, SiteSettings } from '@
 import { PostCard } from '@/features/content/post-card';
 import { CourseCard } from '@/features/courses/course-card';
 import { ProductCard } from '@/features/catalog/product-card';
+import { CreditGuide } from '@/features/catalog/credit-guide';
 import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Container, Section, SectionHeading } from '@/components/ui/container';
@@ -243,6 +244,10 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
             />
           )}
         </Container>
+      </Section>
+
+      <Section tone="blue">
+        <Container><CreditGuide locale={active} compact /></Container>
       </Section>
 
       <Section tone="blue">

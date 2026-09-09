@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { ApiError } from '@nuruzzaman/contracts';
 
 import { AccountSidebar } from '@/components/layout/account-sidebar';
+import { isAdministrator } from '@/lib/account-routing';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { Container } from '@/components/ui/container';
@@ -28,6 +29,8 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
     throw error;
   }
+
+  if (isAdministrator(user.roles)) redirect('/dashboard');
 
   const settings = await tryPublicApi<{ data: SiteSettings }>('/site/settings', {
     tags: ['settings'],

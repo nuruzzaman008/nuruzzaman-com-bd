@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Api\V1\Commerce;
 use App\Http\Controllers\Api\V1\Learn;
 use App\Http\Controllers\Api\V1\PublicApi;
+use App\Http\Middleware\EnsureCustomerAccount;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,8 +13,10 @@ use Illuminate\Support\Facades\Route;
 | inside the /api/v1 prefix.
 */
 
-Route::middleware(['auth:sanctum', 'active'])->group(function () {
+Route::middleware(['auth:sanctum', 'active', EnsureCustomerAccount::class])->group(function () {
     Route::get('me', [Account\ProfileController::class, 'show']);
+    Route::get('me/avatar', [Account\AvatarController::class, 'own']);
+    Route::post('me/avatar', [Account\AvatarController::class, 'store']);
     Route::patch('me', [Account\ProfileController::class, 'update']);
     Route::post('me/password', [Auth\PasswordController::class, 'update']);
     Route::post('me/confirm-password', [Auth\PasswordController::class, 'confirm']);
@@ -31,6 +34,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::post('checkout', Commerce\CheckoutController::class)
         ->middleware(['throttle:checkout', 'idempotent:checkout']);
+
+    Route::get('checkout/orders/{number}/payment', [Commerce\PaymentSelectionController::class, 'show']);
+    Route::post('checkout/orders/{number}/payment/manual', [Commerce\PaymentSelectionController::class, 'submit'])->middleware('throttle:checkout');
+    Route::post('checkout/orders/{number}/payment/gateway', [Commerce\PaymentSelectionController::class, 'gateway'])->middleware(['throttle:checkout', 'idempotent:payment']);
 
     Route::get('payments/{reference}/status', [Commerce\PaymentCallbackController::class, 'status']);
 

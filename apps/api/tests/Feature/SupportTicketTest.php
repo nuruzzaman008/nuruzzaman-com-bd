@@ -82,4 +82,33 @@ class SupportTicketTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data');
     }
+
+    public function test_ticket_creation_requires_name_and_valid_mobile(): void
+    {
+        $this->actingAs($this->customer());
+        $payload = ['subject' => 'Installation help', 'category' => 'installation', 'message' => 'Please help with installing the software.'];
+        $this->postJson('/api/v1/account/support-tickets', $payload)->assertUnprocessable();
+        $this->postJson('/api/v1/account/support-tickets', $payload + ['name' => 'Test Buyer', 'mobile' => 'invalid'])->assertUnprocessable();
+        $this->postJson('/api/v1/account/support-tickets', $payload + ['name' => 'Test Buyer', 'mobile' => '01712345678'])->assertCreated()->assertJsonPath('data.name', 'Test Buyer')->assertJsonPath('data.mobile', '01712345678')->assertJsonCount(1, 'data.messages');
+        $this->assertDatabaseCount('support_tickets', 1);
+    }
+
+    public function test_admin_and_owner_can_reply_while_internal_notes_stay_private(): void
+    {
+        $owner = $this->customer();
+        $ticket = $this->ticketFor($owner);
+        $adminUrl = '/api/v1/admin/support-tickets/'.$ticket->reference;
+        $userUrl = '/api/v1/account/support-tickets/'.$ticket->reference;
+        $this->actingAs($this->userWithRole(RoleEnum::SuperAdmin));
+        $this->postJson($adminUrl.'/replies', ['message' => 'Please restart AutoCAD.'])->assertOk()->assertJsonPath('data.status', 'pending');
+        $this->postJson($adminUrl.'/replies', ['message' => 'Private investigation details', 'is_internal' => true])->assertOk()->assertJsonCount(2, 'data.messages');
+        $this->actingAs($owner)->getJson($userUrl)->assertOk()->assertJsonCount(1, 'data.messages')->assertJsonMissing(['body' => 'Private investigation details']);
+        $this->postJson($userUrl.'/replies', ['message' => 'I restarted, please check again.', 'is_internal' => true])->assertOk()->assertJsonPath('data.status', 'open')->assertJsonPath('data.messages.1.author_kind', 'customer')->assertJsonPath('data.messages.1.is_internal', false);
+        $this->actingAs($this->userWithRole(RoleEnum::SuperAdmin))->patchJson($adminUrl, ['status' => 'resolved'])->assertOk();
+        $this->actingAs($owner)->postJson($userUrl.'/replies', ['message' => 'Still need assistance.'])->assertOk()->assertJsonPath('data.status', 'open')->assertJsonPath('data.resolved_at', null);
+        $count = $ticket->messages()->count();
+        $this->actingAs($this->customer())->postJson($userUrl.'/replies', ['message' => 'Unauthorized reply'])->assertForbidden();
+        $this->postJson($adminUrl.'/replies', ['message' => 'Unauthorized staff reply'])->assertForbidden();
+        $this->assertSame($count, $ticket->messages()->count());
+    }
 }

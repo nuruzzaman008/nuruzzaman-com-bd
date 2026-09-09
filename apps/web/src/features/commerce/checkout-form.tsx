@@ -80,8 +80,7 @@ export function CheckoutForm() {
         },
       });
 
-      // The gateway hosts the payment page; card details never touch this site.
-      window.location.href = response.data.redirect_url;
+      router.push(response.data.redirect_url);
     } catch (caught) {
       setBusy(false);
 
@@ -259,7 +258,7 @@ export function CheckoutForm() {
             </div>
           </dl>
 
-          <p className="mt-5 text-xs text-muted">{t.checkout.hostedPaymentNote}</p>
+          <p className="mt-5 text-xs text-muted">{locale === 'en' ? 'Choose an enabled mobile banking or bank-transfer method on the next page. All payments require manual admin verification before access or refill processing.' : 'পরের পেজে চালু থাকা mobile banking বা bank transfer বেছে নিন। সব payment admin manually যাচাই ও approve করার পর access বা refill processing হবে।'}</p>
         </Card>
       </aside>
     </div>

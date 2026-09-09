@@ -33,6 +33,9 @@ class EnforceIdempotency
         $existing = IdempotencyKey::query()->where('scope', $scope)->where('key', $key)->first();
 
         if ($existing) {
+            abort_unless($existing->user_id === $request->user()?->getKey()
+                && $existing->method === $request->method()
+                && $existing->path === $request->path(), 409, 'This idempotency key belongs to a different request.');
             if ($existing->request_hash !== $hash) {
                 abort(409, 'This Idempotency-Key was already used with a different request body.');
             }

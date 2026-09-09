@@ -1,396 +1,160 @@
 #!/usr/bin/env bash
-#
-# Deploys this repository on a cPanel account.
-#
-# Called by .cpanel.yml on "Deploy HEAD Commit", and safe to run by hand over
-# SSH to see what it does:
-#
-#   cd ~/repositories/nuruzzaman-com-bd && bash infra/cpanel/deploy.sh
-#   NB_DRY_RUN=1 bash infra/cpanel/deploy.sh      # print the plan, change nothing
-#
-# WHAT IT DOES NOT DO, ON PURPOSE
-#
-#   - It never writes the Laravel .env. Credentials live on the server, outside
-#     the repository, and a deployment that could overwrite them would make a
-#     bad push a credential incident.
-#   - It never touches storage/ or public/storage. Those hold uploaded media and
-#     logs; syncing them from a Git clone would delete them.
-#   - It refuses to run at all if a signing key, a recovery file or any other
-#     forbidden artefact has found its way into the tree. Those must never reach
-#     a web server, and a deployment is the last place to catch it.
-#
 set -euo pipefail
-
-SOURCE="${NB_DEPLOY_SOURCE:-$PWD}"
-DRY_RUN="${NB_DRY_RUN:-0}"
-
-say() { printf '\n== %s\n' "$1"; }
-note() { printf '   %s\n' "$1"; }
-fail() { printf '\nDEPLOY FAILED: %s\n' "$1" >&2; exit 1; }
-
-run() {
-  if [ "${DRY_RUN}" = "1" ]; then
-    printf '   would run: %s\n' "$*"
-  else
-    "$@"
-  fi
-}
-
-# ---------------------------------------------------------------------------
-# 1. Configuration
-#
-# Host-specific paths come from ~/.nb-deploy.conf, which is not in the
-# repository. infra/cpanel/deploy.conf.example is the template. Nothing is
-# guessed: if the file is missing, the deployment stops and says what to write.
-# ---------------------------------------------------------------------------
+umask 077
+fail() { printf 'DEPLOY FAILED: %s\n' "$1" >&2; exit 1; }
+SOURCE="$(cd "${NB_DEPLOY_SOURCE:-$PWD}" && pwd -P)"
 CONFIG="${NB_DEPLOY_CONFIG:-$HOME/.nb-deploy.conf}"
-
-if [ ! -f "${CONFIG}" ]; then
-  fail "no ${CONFIG}. Copy infra/cpanel/deploy.conf.example to it and fill in
-  the paths for this account, then deploy again. See docs/DEPLOY_CPANEL_BN.md."
-fi
-
-# shellcheck disable=SC1090
-. "${CONFIG}"
-
-: "${NB_API_ROOT:?NB_API_ROOT is not set in ${CONFIG}}"
-: "${NB_WEB_ROOT:?NB_WEB_ROOT is not set in ${CONFIG}}"
-
-# This script mirrors directories and removes what is no longer in the
-# commit. Pointed at the wrong place that is destructive, so the obvious
-# wrong places are refused outright.
-check_target() {
-  case "$1" in
-    "" | "/" | "${HOME}" | "${HOME}/" | "${HOME}/public_html")
-      fail "$2 is set to '$1'. That is the account root or the live document
-  root, and this script removes files under it. Point it at a directory of
-  its own." ;;
-  esac
-}
-
-check_target "${NB_API_ROOT}" NB_API_ROOT
-check_target "${NB_WEB_ROOT}" NB_WEB_ROOT
-
-DEPLOY_WEB="${NB_DEPLOY_WEB:-1}"
+[ -f "$CONFIG" ] || fail 'Create ~/.nb-deploy.conf from the example first.'
+. "$CONFIG"
+DRY_RUN="${NB_DRY_RUN:-0}"
 DEPLOY_API="${NB_DEPLOY_API:-1}"
+DEPLOY_WEB="${NB_DEPLOY_WEB:-1}"
 BUILD_WEB="${NB_BUILD_WEB:-1}"
-RUN_MIGRATIONS="${NB_RUN_MIGRATIONS:-1}"
-
-say "nuruzzaman.com.bd deployment"
-note "source     ${SOURCE}"
-note "api root   ${NB_API_ROOT}"
-note "web root   ${NB_WEB_ROOT}"
-note "commit     $(git -C "${SOURCE}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-[ "${DRY_RUN}" = "1" ] && note "DRY RUN - nothing will be written"
-
-# ---------------------------------------------------------------------------
-# 2. Refuse to deploy anything that must never reach a web server
-#
-# The NB Engineering Tools signing material, the vendor recovery files and the
-# LSP sources are not part of this site and have no reason to be in the tree.
-# If one is here, something has gone wrong upstream and copying it onto a public
-# document root would be the worst possible outcome, so this stops first.
-# ---------------------------------------------------------------------------
-say "checking for files that must never be published"
-
-FORBIDDEN=$(cd "${SOURCE}" && git ls-files -- \
-  '*.pfx' '*.p12' '*.pem' '*.key' '*.nbk' '*.nbrk' '*.lsp' '*.vlx' '*.fas' \
-  'SecurityBuild/*' 'DeveloperBackup/*' 'VendorTools/*' 'secrets/*' \
-  2>/dev/null | grep -v '^public/' || true)
-
-if [ -n "${FORBIDDEN}" ]; then
-  printf '%s\n' "${FORBIDDEN}" >&2
-  fail "the files above are tracked in Git and must not be deployed.
-  Remove them from the repository and its history before deploying."
-fi
-
-note "none found"
-
-# ---------------------------------------------------------------------------
-# 3. Toolchain
-#
-# cPanel keeps its interpreters outside PATH, and the version that answers
-# `php` on a shared account is often not the one the site runs on. So each
-# binary is resolved explicitly and its version checked, rather than assuming.
-# ---------------------------------------------------------------------------
-find_php() {
-  if [ -n "${NB_PHP_BIN:-}" ]; then
-    printf '%s' "${NB_PHP_BIN}"
-    return
-  fi
-
-  for candidate in /opt/cpanel/ea-php84/root/usr/bin/php \
-                   /opt/cpanel/ea-php83/root/usr/bin/php; do
-    [ -x "${candidate}" ] && { printf '%s' "${candidate}"; return; }
-  done
-
-  command -v php || true
+RUN_MIGRATIONS="${NB_RUN_MIGRATIONS:-0}"
+for flag in "$DRY_RUN" "$DEPLOY_API" "$DEPLOY_WEB" "$BUILD_WEB" "$RUN_MIGRATIONS"; do
+  [[ "$flag" = 0 || "$flag" = 1 ]] || fail 'Flags must be 0 or 1.'
+done
+for tool in git realpath tar rsync flock; do command -v "$tool" >/dev/null || fail "Missing $tool"; done
+ACCOUNT="$(realpath "$HOME")"
+check_target() {
+  [[ "$(realpath -m "$1")" = "$ACCOUNT/$2" && ! -L "$1" ]] || fail "Unsafe target: $1"
+  [[ "$SOURCE/" != "$(realpath -m "$1")/"* ]] || fail 'Source overlaps target.'
 }
-
-find_node() {
-  if [ -n "${NB_NODE_BIN:-}" ]; then
-    printf '%s' "${NB_NODE_BIN}"
-    return
+check_target "${NB_API_ROOT:?Set NB_API_ROOT}" api.nuruzzaman.com.bd
+check_target "${NB_WEB_ROOT:?Set NB_WEB_ROOT}" nuruzzaman-web
+NB_API_ROOT="$(realpath -m "$NB_API_ROOT")"
+NB_WEB_ROOT="$(realpath -m "$NB_WEB_ROOT")"
+[ -z "$(git -C "$SOURCE" status --porcelain)" ] || fail 'Commit reviewed changes first; repository must be clean.'
+COMMIT="$(git -C "$SOURCE" rev-parse HEAD)"
+if git -C "$SOURCE" ls-files | grep -Eq '(^|/)(\.env($|\.(production|local)$)|secrets/)|\.(pfx|p12|pem|key|nbk|nbrk|lsp|vlx|fas)$'; then fail 'Tracked private files detected.'; fi
+if [ "$DEPLOY_API" = 1 ]; then
+  PHP_BIN="${NB_PHP_BIN:-}"
+  if [ -z "$PHP_BIN" ]; then
+    for candidate in /opt/cpanel/ea-php84/root/usr/bin/php /opt/alt/php84/usr/bin/php /opt/cpanel/ea-php85/root/usr/bin/php /opt/alt/php85/usr/bin/php; do
+      if [ -x "$candidate" ] && "$candidate" -r 'exit(PHP_VERSION_ID >= 80401 ? 0 : 1);'; then PHP_BIN="$candidate"; break; fi
+    done
+    PHP_BIN="${PHP_BIN:-$(command -v php || true)}"
   fi
-
-  # "Setup Node.js App" installs into ~/nodevenv/<app>/<major>/bin.
-  for candidate in "${HOME}"/nodevenv/*/2*/bin/node; do
-    [ -x "${candidate}" ] && { printf '%s' "${candidate}"; return; }
+  [ -x "$PHP_BIN" ] || fail 'Set NB_PHP_BIN.'
+  "$PHP_BIN" -r 'exit(PHP_VERSION_ID >= 80401 ? 0 : 1);' || fail 'composer.lock requires PHP >=8.4.1.'
+  "$PHP_BIN" -r 'echo "PHP ",PHP_VERSION,PHP_EOL; exit(extension_loaded("pdo_mysql") ? 0 : 1);' || fail 'Enable pdo_mysql.'
+  COMPOSER_FILE="${NB_COMPOSER_PHAR:-}"
+  if [ -z "$COMPOSER_FILE" ]; then
+    if [ -f "$HOME/composer.phar" ]; then COMPOSER_FILE="$HOME/composer.phar"; else COMPOSER_FILE="$(command -v composer || true)"; fi
+  fi
+  [ -f "$COMPOSER_FILE" ] || fail 'Set NB_COMPOSER_PHAR to a Composer PHP script/phar.'
+  "$PHP_BIN" "$COMPOSER_FILE" check-platform-reqs --working-dir="$SOURCE/apps/api" --lock --no-dev
+  [ -f "$NB_API_ROOT/.env" ] || fail 'Production API .env is missing; configure it securely first.'
+  [ -w "$NB_API_ROOT" ] || fail 'API root is not writable.'
+  for dir in storage bootstrap/cache; do
+    [ ! -e "$NB_API_ROOT/$dir" ] || [ -w "$NB_API_ROOT/$dir" ] || fail "$dir is not writable."
   done
-
-  for candidate in /opt/cpanel/ea-nodejs22/bin/node /opt/cpanel/ea-nodejs20/bin/node; do
-    [ -x "${candidate}" ] && { printf '%s' "${candidate}"; return; }
+  if [ -e "$NB_API_ROOT/public/storage" ] && [ ! -L "$NB_API_ROOT/public/storage" ]; then fail 'Preserve and reconcile existing public/storage directory first.'; fi
+  if [ "$RUN_MIGRATIONS" = 1 ]; then
+    [ "${NB_MIGRATIONS_REVIEWED_COMMIT:-}" = "$COMMIT" ] || fail 'Set NB_MIGRATIONS_REVIEWED_COMMIT after reviewing pending migrations.'
+    [ -s "${NB_DATABASE_BACKUP:-}" ] || fail 'Set NB_DATABASE_BACKUP to a verified nonempty database backup.'
+  fi
+fi
+if [ "$DEPLOY_WEB" = 1 ]; then
+  NODE_BIN="${NB_NODE_BIN:-}"
+  if [ -z "$NODE_BIN" ]; then
+    for candidate in "$HOME"/nodevenv/nuruzzaman-web/22/bin/node /opt/alt/alt-nodejs22/root/usr/bin/node /opt/cpanel/ea-nodejs22/bin/node; do
+      if [ -x "$candidate" ]; then NODE_BIN="$candidate"; break; fi
+    done
+    NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
+  fi
+  [ -x "$NODE_BIN" ] || fail 'Configure cPanel Node.js 22 App or set NB_NODE_BIN.'
+  "$NODE_BIN" -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>20 || (a===20 && b>=9) ? 0 : 1)' || fail 'Node >=20.9 required; use Node 22.'
+  export PATH="$(dirname "$NODE_BIN"):$PATH"
+  : "${NB_PUBLIC_SITE_URL:?Set NB_PUBLIC_SITE_URL}"
+  : "${NB_INTERNAL_API_URL:?Set NB_INTERNAL_API_URL}"
+  : "${NB_API_PROXY:?Set NB_API_PROXY}"
+  : "${NB_MEDIA_HOST:?Set NB_MEDIA_HOST}"
+  [ -d "$NB_WEB_ROOT" ] && [ -w "$NB_WEB_ROOT" ] || fail 'Configure the cPanel Node application root first.'
+  for entry in releases server.js; do [ ! -L "$NB_WEB_ROOT/$entry" ] || fail "Unexpected symlink: $entry"; done
+  if [ -L "$NB_WEB_ROOT/current" ]; then
+    [[ "$(realpath "$NB_WEB_ROOT/current")" = "$NB_WEB_ROOT/releases/"* ]] || fail 'current points outside releases.'
+  elif [ -e "$NB_WEB_ROOT/current" ]; then fail 'current is not a release symlink.'; fi
+  if [ "$BUILD_WEB" = 1 ]; then
+    NPM_BIN="${NB_NPM_BIN:-$(command -v npm || true)}"
+    [ -x "$NPM_BIN" ] || fail 'npm unavailable in selected Node environment.'
+  else
+    : "${NB_WEB_BUILD_ROOT:?Set NB_WEB_BUILD_ROOT to a matching Linux build workspace}"
+    "$NODE_BIN" "$SOURCE/infra/cpanel/verify-web-build.cjs" "$NB_WEB_BUILD_ROOT" "$NB_API_PROXY" "$COMMIT"
+  fi
+fi
+printf 'Preflight passed for %s. Web PHP handler, SSL, DB and hosting limits still need verification.\n' "$COMMIT"
+if [ "$DRY_RUN" = 1 ]; then echo 'Dry run: no writes, build, migrations or restart.'; exit 0; fi
+exec 9>"$HOME/.nb-deploy.lock"
+flock -n 9 || fail 'Another deployment is running.'
+RELEASE="$(date -u +%Y%m%dT%H%M%SZ)-${COMMIT:0:12}-$$"
+BACKUP="$HOME/nb-deploy-backups/$RELEASE"
+[ ! -L "$HOME/nb-deploy-backups" ] || fail 'Backup directory must not be a symlink.'
+mkdir -p "$BACKUP"
+chmod 700 "$HOME/nb-deploy-backups" "$BACKUP"
+trap 'printf "Deployment failed. Backup: %s. Inspect maintenance state; never roll back migrations blindly.\n" "$BACKUP"' ERR
+# Prepare and validate the frontend before touching either live application.
+if [ "$DEPLOY_WEB" = 1 ]; then
+  if [ "$BUILD_WEB" = 1 ]; then
+    BUILD_ROOT="$BACKUP/build"
+    mkdir "$BUILD_ROOT"
+    git -C "$SOURCE" archive HEAD | tar -x -C "$BUILD_ROOT"
+    "$NPM_BIN" --prefix "$BUILD_ROOT" ci --include=dev --no-audit --no-fund
+    env NEXT_PUBLIC_SITE_URL="$NB_PUBLIC_SITE_URL" NEXT_PUBLIC_API_BASE=/api/v1 NEXT_PUBLIC_SESSION_COOKIE=nuruzzaman_session NEXT_PUBLIC_MEDIA_HOST="$NB_MEDIA_HOST" INTERNAL_API_URL="$NB_INTERNAL_API_URL" NB_API_PROXY="$NB_API_PROXY" "$NPM_BIN" --prefix "$BUILD_ROOT" run build
+    printf '%s\n' "$COMMIT" > "$BUILD_ROOT/apps/web/.next/nb-commit"
+  else BUILD_ROOT="$NB_WEB_BUILD_ROOT"; fi
+  "$NODE_BIN" "$SOURCE/infra/cpanel/verify-web-build.cjs" "$BUILD_ROOT" "$NB_API_PROXY" "$COMMIT"
+  WEB_RELEASE="$NB_WEB_ROOT/releases/$RELEASE"
+  mkdir -p "$WEB_RELEASE"
+  rsync -a --exclude='.env' --exclude='.env.*' "$BUILD_ROOT/apps/web/.next/standalone/" "$WEB_RELEASE/"
+  mkdir -p "$WEB_RELEASE/apps/web/.next/static" "$WEB_RELEASE/apps/web/public"
+  rsync -a "$BUILD_ROOT/apps/web/.next/static/" "$WEB_RELEASE/apps/web/.next/static/"
+  rsync -a "$BUILD_ROOT/apps/web/public/" "$WEB_RELEASE/apps/web/public/"
+  chmod -R u+rwX "$WEB_RELEASE"
+fi
+if [ "$DEPLOY_API" = 1 ]; then
+  tar -C "$NB_API_ROOT" -cpf "$BACKUP/api.tar" .
+  API_STAGE="$BACKUP/api-stage"
+  mkdir "$API_STAGE"
+  git -C "$SOURCE" archive HEAD apps/api | tar -x -C "$API_STAGE" --strip-components=2
+  mkdir -p "$API_STAGE/bootstrap/cache"
+  "$PHP_BIN" "$COMPOSER_FILE" install --working-dir="$API_STAGE" --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
+  mkdir -p "$API_STAGE/storage/framework/"{cache/data,sessions,views} "$API_STAGE/storage/logs"
+  "$PHP_BIN" "$SOURCE/infra/cpanel/check-api.php" "$API_STAGE" "$NB_API_ROOT" "$RUN_MIGRATIONS"
+  if [ -f "$NB_API_ROOT/artisan" ]; then "$PHP_BIN" "$NB_API_ROOT/artisan" down; fi
+  rsync -a --exclude='.env' --exclude='.env.*' --exclude='storage/' --exclude='public/storage' --exclude='bootstrap/cache/' --exclude='tests/' --exclude='public/.htaccess' "$API_STAGE/" "$NB_API_ROOT/"
+  if [ ! -e "$NB_API_ROOT/public/.htaccess" ]; then cp "$API_STAGE/public/.htaccess" "$NB_API_ROOT/public/.htaccess"; fi
+  mkdir -p "$NB_API_ROOT/bootstrap/cache" "$NB_API_ROOT/storage/framework/"{cache/data,sessions,views} "$NB_API_ROOT/storage/logs" "$NB_API_ROOT/storage/app/"{public,private-assets}
+  # Apache must traverse the public upload link; private-assets stays private.
+  chmod u+rwx,go+x "$NB_API_ROOT/storage" "$NB_API_ROOT/storage/app"
+  chmod u+rwx,go+rx "$NB_API_ROOT/storage/app/public"
+  # Retire cached provider manifests so removed development providers cannot boot.
+  for cache in packages.php services.php; do
+    if [ -f "$NB_API_ROOT/bootstrap/cache/$cache" ]; then mv "$NB_API_ROOT/bootstrap/cache/$cache" "$BACKUP/$cache"; fi
   done
-
-  command -v node || true
-}
-
-PHP_BIN="$(find_php)"
-NODE_BIN="$(find_node)"
-
-if [ "${DEPLOY_API}" = "1" ]; then
-  [ -n "${PHP_BIN}" ] || fail "no PHP binary found. Set NB_PHP_BIN in ${CONFIG}."
-
-  PHP_VERSION="$("${PHP_BIN}" -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')"
-  say "PHP ${PHP_VERSION} at ${PHP_BIN}"
-
-  case "${PHP_VERSION}" in
-    8.3 | 8.4 | 8.5) : ;;
-    *) fail "this application needs PHP 8.3 or newer; ${PHP_BIN} is ${PHP_VERSION}.
-  Pick the right binary with NB_PHP_BIN in ${CONFIG}." ;;
-  esac
-
-  COMPOSER="${NB_COMPOSER:-}"
-
-  if [ -z "${COMPOSER}" ]; then
-    if [ -f "${HOME}/composer.phar" ]; then
-      COMPOSER="${PHP_BIN} ${HOME}/composer.phar"
-    elif command -v composer >/dev/null 2>&1; then
-      COMPOSER="${PHP_BIN} $(command -v composer)"
-    else
-      fail "Composer not found. Put composer.phar in ${HOME} or set NB_COMPOSER
-  in ${CONFIG}."
-    fi
-  fi
-
-  note "composer   ${COMPOSER}"
+  "$PHP_BIN" "$NB_API_ROOT/artisan" config:clear
+  "$PHP_BIN" "$NB_API_ROOT/artisan" package:discover
+  if [ "$RUN_MIGRATIONS" = 1 ]; then "$PHP_BIN" "$NB_API_ROOT/artisan" migrate --force --step; fi
+  for command in config:cache route:cache view:cache event:cache; do "$PHP_BIN" "$NB_API_ROOT/artisan" "$command"; done
+  [ -L "$NB_API_ROOT/public/storage" ] || "$PHP_BIN" "$NB_API_ROOT/artisan" storage:link
+  "$PHP_BIN" "$NB_API_ROOT/artisan" up
 fi
-
-if [ "${DEPLOY_WEB}" = "1" ]; then
-  [ -n "${NODE_BIN}" ] || fail "no Node binary found. Set NB_NODE_BIN in ${CONFIG}."
-
-  NODE_VERSION="$("${NODE_BIN}" -p 'process.versions.node')"
-  NODE_MAJOR="${NODE_VERSION%%.*}"
-
-  say "Node ${NODE_VERSION} at ${NODE_BIN}"
-
-  [ "${NODE_MAJOR}" -ge 20 ] || fail "Next.js 16 needs Node 20.9 or newer; this is ${NODE_VERSION}."
-
-  NPM_BIN="${NB_NPM_BIN:-$(dirname "${NODE_BIN}")/npm}"
-  [ -x "${NPM_BIN}" ] || NPM_BIN="$(command -v npm || true)"
-  [ -n "${NPM_BIN}" ] || fail "npm not found next to ${NODE_BIN}. Set NB_NPM_BIN in ${CONFIG}."
-
-  export PATH="$(dirname "${NODE_BIN}"):${PATH}"
-fi
-
-# ---------------------------------------------------------------------------
-# 4. Laravel API
-# ---------------------------------------------------------------------------
-if [ "${DEPLOY_API}" = "1" ]; then
-  say "deploying the API to ${NB_API_ROOT}"
-
-  [ -d "${NB_API_ROOT}" ] || fail "${NB_API_ROOT} does not exist. Create it, or fix
-  NB_API_ROOT in ${CONFIG}."
-
-  if [ ! -f "${NB_API_ROOT}/.env" ]; then
-    fail "${NB_API_ROOT}/.env is missing. Create it on the server first - the
-  deployment never writes it, so credentials cannot be pushed from Git.
-  apps/api/.env.example lists every key; docs/CONFIGURATION_CHECKLIST_BN.md
-  says which ones the owner has to supply."
-  fi
-
-  # Maintenance mode, so nobody hits a half-updated application. `|| true`
-  # because `down` fails when the app is already down, which is not an error.
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" down --render="errors::503" || true
-
-  # --delete keeps the target a mirror of the commit, so a file removed in Git
-  # is removed on the server too. Everything excluded below either belongs to
-  # the server (env, storage, uploaded media) or has no business on it.
-  if command -v rsync >/dev/null 2>&1; then
-    run rsync -a --delete \
-      --exclude '.env' \
-      --exclude '.env.*' \
-      --exclude 'storage/' \
-      --exclude 'public/storage' \
-      --exclude 'vendor/' \
-      --exclude 'node_modules/' \
-      --exclude 'tests/' \
-      --exclude '.phpunit.cache/' \
-      "${SOURCE}/apps/api/" "${NB_API_ROOT}/"
-  else
-    # Shared accounts sometimes have no rsync. tar keeps the exclusions -
-    # plain cp would carry a stray .env from the clone onto the server - but
-    # it cannot mirror deletions, so say so rather than let the operator
-    # assume a removed file is gone from the server too.
-    note "rsync not available - copying with tar; files deleted in this commit"
-    note "will remain on the server and have to be removed by hand"
-
-    if [ "${DRY_RUN}" = "1" ]; then
-      note "would copy apps/api -> ${NB_API_ROOT} (tar, same exclusions)"
-    else
-      tar -C "${SOURCE}/apps/api" \
-        --exclude='./.env' \
-        --exclude='./.env.*' \
-        --exclude='./storage' \
-        --exclude='./public/storage' \
-        --exclude='./vendor' \
-        --exclude='./node_modules' \
-        --exclude='./tests' \
-        --exclude='./.phpunit.cache' \
-        -cf - . | tar -C "${NB_API_ROOT}" -xf -
-    fi
-  fi
-
-  say "installing PHP dependencies"
-  run env COMPOSER_ALLOW_SUPERUSER=1 ${COMPOSER} install \
-    --working-dir="${NB_API_ROOT}" \
-    --no-dev --no-interaction --prefer-dist --optimize-autoloader
-
-  if [ "${RUN_MIGRATIONS}" = "1" ]; then
-    say "running migrations"
-    # --force because there is no terminal to confirm at; --step so a failure
-    # can be rolled back one migration at a time.
-    run "${PHP_BIN}" "${NB_API_ROOT}/artisan" migrate --force --step
-  else
-    note "migrations skipped (NB_RUN_MIGRATIONS=0)"
-  fi
-
-  say "rebuilding the Laravel caches"
-  # Cleared first: a cached config from the previous release survives the file
-  # copy and would keep the old values live.
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" optimize:clear
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" config:cache
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" route:cache
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" view:cache
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" event:cache
-
-  [ -L "${NB_API_ROOT}/public/storage" ] || \
-    run "${PHP_BIN}" "${NB_API_ROOT}/artisan" storage:link
-
-  run "${PHP_BIN}" "${NB_API_ROOT}/artisan" up
-
-  note "API deployed"
-fi
-
-# ---------------------------------------------------------------------------
-# 5. Next.js
-#
-# `output: standalone` means the server that runs in production is
-# .next/standalone/apps/web/server.js plus two directories it does not bundle:
-# .next/static and public. All three have to be copied, or the pages render
-# without CSS and every image 404s.
-# ---------------------------------------------------------------------------
-if [ "${DEPLOY_WEB}" = "1" ]; then
-  say "building the front end"
-
-  [ -d "${NB_WEB_ROOT}" ] || fail "${NB_WEB_ROOT} does not exist. Create it, or fix
-  NB_WEB_ROOT in ${CONFIG}."
-
-  if [ "${BUILD_WEB}" = "1" ]; then
-    : "${NB_PUBLIC_SITE_URL:?NB_PUBLIC_SITE_URL is not set in ${CONFIG}}"
-    : "${NB_INTERNAL_API_URL:?NB_INTERNAL_API_URL is not set in ${CONFIG}}"
-    : "${NB_API_PROXY:?NB_API_PROXY is not set in ${CONFIG}. On cPanel there is
-  no Nginx to route /api and /sanctum to Laravel, so Next has to do it. Without
-  it the browser leaves the origin, the session cookie is not sent, and every
-  sign-in fails with a CSRF error that looks like a wrong password.}"
-
-    note "site url   ${NB_PUBLIC_SITE_URL}"
-    note "api url    ${NB_INTERNAL_API_URL}"
-    note "api proxy  ${NB_API_PROXY}"
-
-    # Both of these are read at BUILD time, not at run time: the site URL is
-    # baked into the client bundle and the API URL into the generated pages.
-    # Changing either later means building again, not restarting.
-    # Deliberately not NODE_ENV=production: that makes npm skip
-    # devDependencies, and the build needs them. `next build` sets its own
-    # production mode regardless.
-    run "${NPM_BIN}" --prefix "${SOURCE}" ci --include=dev --no-audit --no-fund
-
-    # All three are read at build time and baked in: the site URL into the
-    # client bundle, the API URL into the generated pages, the proxy target
-    # into the routes manifest.
-    run env \
-      NEXT_PUBLIC_SITE_URL="${NB_PUBLIC_SITE_URL}" \
-      INTERNAL_API_URL="${NB_INTERNAL_API_URL}" \
-      NB_API_PROXY="${NB_API_PROXY}" \
-      "${NPM_BIN}" --prefix "${SOURCE}" run build
-  else
-    note "build skipped (NB_BUILD_WEB=0) - deploying whatever is in .next/"
-  fi
-
-  STANDALONE="${SOURCE}/apps/web/.next/standalone/apps/web"
-
-  [ -f "${STANDALONE}/server.js" ] || fail "no build output at ${STANDALONE}/server.js.
-  The build did not produce a standalone server. Run it again with NB_BUILD_WEB=1,
-  or build locally and upload apps/web/.next before deploying."
-
-  say "deploying the front end to ${NB_WEB_ROOT}"
-
-  # The standalone tree carries its own node_modules, so it replaces the old one
-  # wholesale rather than merging with it.
-  # The standalone tree is self-contained, down to its own node_modules, so
-  # the previous release is removed rather than merged with. Only the paths
-  # the build produces are touched: anything else at the application root -
-  # a .env, a Passenger log - belongs to the server and stays.
-  run rm -rf "${NB_WEB_ROOT}/apps" "${NB_WEB_ROOT}/node_modules" \
-             "${NB_WEB_ROOT}/server.js" "${NB_WEB_ROOT}/package.json"
-
-  run cp -R "${SOURCE}/apps/web/.next/standalone/." "${NB_WEB_ROOT}/"
-
-  # `cp -R src dst` nests when dst already exists, and the standalone output
-  # already contains an (empty) apps/web/public - which is how a deployment ends
-  # up serving nothing from public/apps/web/public/public. The `src/.` form
-  # copies the CONTENTS into the directory either way.
-  run mkdir -p "${NB_WEB_ROOT}/apps/web/.next/static" "${NB_WEB_ROOT}/apps/web/public"
-  run cp -R "${SOURCE}/apps/web/.next/static/." "${NB_WEB_ROOT}/apps/web/.next/static/"
-  run cp -R "${SOURCE}/apps/web/public/." "${NB_WEB_ROOT}/apps/web/public/"
-
-  # Passenger looks for the entry point at the application root, so the server
-  # the standalone build nests two levels down is re-exported from the top.
-  if [ "${DRY_RUN}" != "1" ]; then
-    cat > "${NB_WEB_ROOT}/server.js" <<'ENTRY'
-// Passenger's entry point. The standalone build puts the real server two
-// directories down; this re-exports it so "Setup Node.js App" can point at the
-// application root and stay pointed there across deployments.
-process.chdir(__dirname + '/apps/web');
-require('./apps/web/server.js');
+if [ "$DEPLOY_WEB" = 1 ]; then
+  [ ! -e "$NB_WEB_ROOT/server.js" ] || cp -p "$NB_WEB_ROOT/server.js" "$BACKUP/server.js"
+  if [ -L "$NB_WEB_ROOT/current" ]; then readlink "$NB_WEB_ROOT/current" > "$BACKUP/previous-web-release"; fi
+  cat > "$NB_WEB_ROOT/server.js.$RELEASE" <<'ENTRY'
+// Keep release dependencies separate from cPanel-managed node_modules.
+const path = require('node:path');
+const root = require('node:fs').realpathSync(path.join(__dirname, 'current'));
+process.chdir(path.join(root, 'apps/web'));
+require(path.join(root, 'apps/web/server.js'));
 ENTRY
-  else
-    note "would write ${NB_WEB_ROOT}/server.js"
-  fi
-
-  # The proxy is the difference between a site people can sign in to and one
-  # they cannot, and it is baked into the build rather than set at run time -
-  # so it is worth confirming it actually made it in.
-  MANIFEST="${NB_WEB_ROOT}/apps/web/.next/routes-manifest.json"
-
-  if [ "${DRY_RUN}" != "1" ] && [ -f "${MANIFEST}" ]; then
-    if grep -q '"/sanctum/:path' "${MANIFEST}"; then
-      note "/api and /sanctum are proxied to Laravel"
-    else
-      fail "the build has no /api or /sanctum rewrite, so the browser would
-  leave the origin and sign-in would fail with a CSRF error. Set NB_API_PROXY
-  in ${CONFIG} and deploy again."
-    fi
-  fi
-
-  # Passenger restarts on the next request when this file's mtime changes.
-  run mkdir -p "${NB_WEB_ROOT}/tmp"
-  run touch "${NB_WEB_ROOT}/tmp/restart.txt"
-
-  note "front end deployed; Passenger will restart on the next request"
+  "$NODE_BIN" --check "$NB_WEB_ROOT/server.js.$RELEASE"
+  ln -s "$WEB_RELEASE" "$NB_WEB_ROOT/current.$RELEASE"
+  mv -Tf "$NB_WEB_ROOT/current.$RELEASE" "$NB_WEB_ROOT/current"
+  mv -f "$NB_WEB_ROOT/server.js.$RELEASE" "$NB_WEB_ROOT/server.js"
+  mkdir -p "$NB_WEB_ROOT/tmp"
+  touch "$NB_WEB_ROOT/tmp/restart.txt"
 fi
-
-say "done"
-note "check https://nuruzzaman.com.bd/up for the API"
-note "and the home page in both languages: / and /en"
+printf 'Files deployed. Backup: %s\n' "$BACKUP"
+echo 'Verify https://api.nuruzzaman.com.bd/up and frontend /, /en, /sanctum/csrf-cookie.'

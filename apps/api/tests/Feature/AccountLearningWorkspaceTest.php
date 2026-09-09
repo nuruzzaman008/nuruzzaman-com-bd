@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Enums\Role;
 use App\Models\Course;
 use App\Models\Enrollment;
-use App\Models\User;
-use App\Services\Video\VideoPlaybackService;
 use App\Support\LessonVideoUrl;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +21,7 @@ class AccountLearningWorkspaceTest extends TestCase
         Notification::fake();
         $this->seedRoles();
         $this->postJson('/api/v1/auth/register', [
-            'name' => 'Student Example', 'email' => 'student@example.com',
+            'name' => 'Student Example', 'email' => 'student@example.com', 'phone' => '01712345678',
             'password' => 'correct-horse-42', 'password_confirmation' => 'correct-horse-42',
             'accepts_terms' => true, 'account_mode' => 'student', 'roles' => ['super_admin'],
         ])->assertCreated()->assertJsonPath('data.account_mode', 'student')

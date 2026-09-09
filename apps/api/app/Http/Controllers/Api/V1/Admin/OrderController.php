@@ -11,6 +11,7 @@ use App\Services\Commerce\OrderStateMachine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -66,7 +67,13 @@ class OrderController extends Controller
         $order = Order::query()->where('number', $number)->firstOrFail();
         $target = OrderStatus::from($validated['status']);
 
-        $this->states->transition($order, $target, $validated['reason'], $request->user());
+        DB::transaction(function () use ($order, $target, $validated, $request) {
+            Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            abort_if(in_array($target, [OrderStatus::Paid, OrderStatus::Fulfilled], true)
+                && DB::table('manual_payment_submissions')->where('order_id', $order->id)->exists()
+                && ! DB::table('manual_payment_submissions')->where('order_id', $order->id)->where('status', 'approved')->exists(), 422, 'Review the submitted payment in Payment verification first.');
+            $this->states->transition($order, $target, $validated['reason'], $request->user());
+        });
 
         if ($target === OrderStatus::Paid) {
             FulfillOrder::dispatch($order->getKey());

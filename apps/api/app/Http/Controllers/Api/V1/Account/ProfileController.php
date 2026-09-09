@@ -19,7 +19,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'account_mode' => ['sometimes', 'required', 'string', 'in:student,ecommerce'],
             'name' => ['sometimes', 'string', 'min:2', 'max:120'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'phone' => ['sometimes', 'required', 'string', 'regex:/^\+?[0-9]{7,15}$/'],
             'locale' => ['sometimes', 'string', 'in:bn,en'],
             'timezone' => ['sometimes', 'string', 'timezone'],
             'profile.display_name' => ['sometimes', 'nullable', 'string', 'max:120'],

@@ -40,7 +40,7 @@ const client = createClient({
   },
 });
 
-export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function requestApi<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (options.method && options.method !== 'GET') {
     await primeCsrf();
   }
@@ -58,6 +58,20 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
     throw error;
   }
+}
+
+// A first guest-cart response establishes its cookie. Concurrent initial reads
+// can create different carts and overwrite the cookie after an item was added.
+let cartQueue: Promise<unknown> = Promise.resolve();
+
+export function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  if (path === '/cart' || path.startsWith('/cart/')) {
+    const response = cartQueue.then(() => requestApi<T>(path, options));
+    cartQueue = response.catch(() => undefined);
+    return response;
+  }
+
+  return requestApi<T>(path, options);
 }
 
 export { ApiError };

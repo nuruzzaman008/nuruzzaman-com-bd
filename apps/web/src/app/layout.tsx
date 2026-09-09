@@ -67,7 +67,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="bn" dir="ltr" className={`${bengali.variable} ${inter.variable}`}>
-      <body className="flex min-h-dvh flex-col antialiased">
+      {/* Extensions such as Grammarly inject body attributes before hydration.
+          Suppression is limited to this element; child mismatches still warn. */}
+      <body suppressHydrationWarning className="flex min-h-dvh flex-col antialiased">
         {/* Inside LocaleProvider: the skip link is the first thing a keyboard
             or screen-reader user meets, so it has to be in their language. */}
         <LocaleProvider locale={adminLocale}>

@@ -5,6 +5,7 @@ import { ApiError, type User } from '@nuruzzaman/contracts';
 
 import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switcher';
 import { SignOutButton } from '@/features/auth/sign-out-button';
+import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { pageDictionary } from '@/lib/i18n/page';
@@ -99,11 +100,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             {t.actions.myAccount}
           </Link>
+          {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <Link href="/dashboard/payments" className="mb-3 block rounded px-3 py-2 text-sm hover:bg-white/10">{locale === 'en' ? 'Payment verification' : 'Payment যাচাই'}</Link>}
           <SignOutButton variant="inverse" className="mt-1" />
         </div>
       </aside>
 
       <main id="main" className="min-w-0 flex-1 p-5 sm:p-8">
+        {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <PendingPaymentAlert />}
         {children}
       </main>
     </div>

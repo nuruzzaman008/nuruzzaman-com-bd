@@ -64,7 +64,7 @@ class SupportTicketController extends Controller
         ]);
 
         if (! ($validated['is_internal'] ?? false)) {
-            $ticket->update(['status' => SupportTicketStatus::Pending]);
+            $ticket->update(['status' => SupportTicketStatus::Pending, 'resolved_at' => null]);
         }
 
         return new SupportTicketResource($ticket->fresh()->load(['messages', 'order']));
@@ -83,6 +83,8 @@ class SupportTicketController extends Controller
 
         if (($validated['status'] ?? null) === SupportTicketStatus::Resolved->value) {
             $validated['resolved_at'] = now();
+        } elseif (isset($validated['status'])) {
+            $validated['resolved_at'] = null;
         }
 
         $ticket->update($validated);

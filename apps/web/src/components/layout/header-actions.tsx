@@ -6,6 +6,7 @@ import { number } from '@/lib/format';
 import { localizeHref } from '@/components/ui/locale-link';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { useSession } from '@/lib/session/session-provider';
+import { isAdministrator } from '@/lib/account-routing';
 
 /**
  * Search, cart and account controls.
@@ -18,6 +19,8 @@ import { useSession } from '@/lib/session/session-provider';
 export function HeaderActions() {
   const { user, cartCount: itemCount } = useSession();
   const { locale, t } = useLocale();
+  const admin = !!user && isAdministrator(user.roles);
+  const accountLabel = admin ? (locale === 'bn' ? 'অ্যাডমিন ড্যাশবোর্ড' : 'Admin dashboard') : user ? t.actions.account : t.actions.signIn;
 
   return (
     <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -56,15 +59,15 @@ export function HeaderActions() {
       </Link>
 
       <Link
-        href={user ? '/account' : '/login'}
+        href={admin ? '/dashboard' : user ? '/account' : '/login'}
         className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-navy hover:bg-blue-soft hover:text-blue"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="8.5" r="3.5" />
           <path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" strokeLinecap="round" />
         </svg>
-        <span className="hidden sm:inline">{user ? t.actions.account : t.actions.signIn}</span>
-        <span className="sr-only sm:hidden">{user ? t.actions.account : t.actions.signIn}</span>
+        <span className="hidden sm:inline">{accountLabel}</span>
+        <span className="sr-only sm:hidden">{accountLabel}</span>
       </Link>
     </div>
   );

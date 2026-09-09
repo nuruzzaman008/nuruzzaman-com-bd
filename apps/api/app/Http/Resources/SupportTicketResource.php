@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\SupportTicket */
+/** @mixin SupportTicket */
 class SupportTicketResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -14,6 +15,8 @@ class SupportTicketResource extends JsonResource
 
         return [
             'reference' => $this->reference,
+            'name' => $this->name,
+            'mobile' => $this->mobile,
             'subject' => $this->subject,
             'category' => $this->category,
             'status' => $this->status->value,

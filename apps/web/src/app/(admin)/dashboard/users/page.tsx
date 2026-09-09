@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { User } from '@nuruzzaman/contracts';
 
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function DashboardUsersPage(props: {
   searchParams: Promise<{ q?: string; role?: string }>;
 }) {
-  const { t } = await adminDictionary();
+  const { locale, t } = await adminDictionary();
   const searchParams = await props.searchParams;
 
   const users = await sessionApi<{ data: User[] }>('/admin/users', {
@@ -64,6 +65,16 @@ export default async function DashboardUsersPage(props: {
                   <span className="font-latin block text-xs text-muted">{user.email}</span>
                 </span>
               ),
+            },
+            {
+              key: 'phone',
+              header: locale === 'bn' ? 'মোবাইল নম্বর (আবশ্যক)' : 'Mobile number (required)',
+              render: (user) => <span>{user.phone || (locale === 'bn' ? 'নম্বর প্রয়োজন' : 'Phone required')}</span>,
+            },
+            {
+              key: 'actions',
+              header: locale === 'bn' ? 'বিস্তারিত' : 'Details',
+              render: (user) => <Link className="inline-flex rounded bg-blue px-4 py-2 font-semibold text-white" href={`/dashboard/users/${user.id}`}>View / Edit</Link>,
             },
             {
               key: 'roles',

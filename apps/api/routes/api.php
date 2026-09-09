@@ -1,9 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Account;
 use App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Api\V1\Commerce;
-use App\Http\Controllers\Api\V1\Learn;
+use App\Http\Controllers\Api\V1\LessonVideoController;
 use App\Http\Controllers\Api\V1\PublicApi;
 use Illuminate\Support\Facades\Route;
 
@@ -94,5 +93,7 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:ipn');
 
     require __DIR__.'/api_account.php';
+    Route::get('lesson-video/{lesson:id}', [LessonVideoController::class, 'stream'])->name('lesson.video.stream');
+    require __DIR__.'/api_licensing.php';
     require __DIR__.'/api_admin.php';
 });

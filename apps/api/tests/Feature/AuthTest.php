@@ -24,6 +24,7 @@ class AuthTest extends TestCase
 
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Rafiq Hasan',
+            'phone' => '01712345678',
             'email' => 'rafiq@example.com',
             'password' => 'correct-horse-42',
             'password_confirmation' => 'correct-horse-42',
@@ -42,6 +43,7 @@ class AuthTest extends TestCase
     {
         $this->postJson('/api/v1/auth/register', [
             'name' => 'Rafiq Hasan',
+            'phone' => '01712345678',
             'email' => 'rafiq@example.com',
             'password' => 'correct-horse-42',
             'password_confirmation' => 'correct-horse-42',
@@ -59,6 +61,18 @@ class AuthTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'validation_failed')
             ->assertJsonStructure(['error' => ['code', 'message', 'fields']]);
+    }
+
+    public function test_customer_can_log_in_and_open_the_account(): void
+    {
+        $user = $this->customer(['password' => 'login-test-only-42']);
+        $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'login-test-only-42',
+        ])->assertOk()->assertJsonPath('data.email', $user->email);
+        $this->assertAuthenticatedAs($user);
+        $this->getJson('/api/v1/me')->assertOk()->assertJsonPath('data.email', $user->email);
+        $this->getJson('/api/v1/account/orders')->assertOk();
     }
 
     public function test_a_suspended_account_cannot_sign_in(): void
@@ -157,5 +171,26 @@ class AuthTest extends TestCase
     public function test_signing_out_requires_a_session(): void
     {
         $this->postJson('/api/v1/auth/logout')->assertStatus(401);
+    }
+
+    public function test_registration_requires_a_valid_phone(): void
+    {
+        $payload = ['name' => 'Test Buyer', 'email' => 'phone@example.test', 'password' => 'correct-horse-42', 'password_confirmation' => 'correct-horse-42', 'accepts_terms' => true];
+        foreach ([null, '', 'invalid', '123'] as $phone) {
+            $this->postJson('/api/v1/auth/register', $payload + ['phone' => $phone])->assertUnprocessable()->assertJsonStructure(['error' => ['fields' => ['phone']]]);
+        }
+        $this->assertDatabaseMissing('users', ['email' => 'phone@example.test']);
+    }
+
+    public function test_admin_can_add_phone_and_neither_admin_nor_owner_can_clear_it(): void
+    {
+        $user = $this->customer(['phone' => null]);
+        $url = '/api/v1/admin/users/'.$user->id;
+        $this->actingAs($this->userWithRole(RoleEnum::SuperAdmin))->patchJson($url, ['phone' => '+8801712345678'])->assertOk()->assertJsonPath('data.phone', '+8801712345678');
+        $this->patchJson($url, ['phone' => ''])->assertUnprocessable();
+        $this->actingAs($user)->patchJson('/api/v1/me', ['phone' => null])->assertUnprocessable();
+        $this->patchJson('/api/v1/me', ['phone' => 'bad'])->assertUnprocessable();
+        $this->patchJson($url, ['phone' => '01712345678'])->assertForbidden();
+        $this->assertSame('+8801712345678', $user->fresh()->phone);
     }
 }

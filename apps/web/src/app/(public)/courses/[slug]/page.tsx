@@ -12,6 +12,7 @@ import { Container } from '@/components/ui/container';
 import { LocaleLink } from '@/components/ui/locale-link';
 import { PriceTag } from '@/components/ui/price';
 import { Prose } from '@/components/ui/prose';
+import { AddToCart } from '@/features/catalog/add-to-cart';
 import { publicApi } from '@/lib/api/server';
 import { counted, date, duration, number } from '@/lib/format';
 import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
@@ -262,9 +263,7 @@ export default async function CoursePage(
 
               <div className="mt-5 space-y-3">
                 {purchasable ? (
-                  <ButtonLink href={`/shop?variant=${purchasable.id}`} className="w-full">
-                    {t.course.enroll}
-                  </ButtonLink>
+                  <AddToCart variants={course.variants ?? []} buttonLabel={t.course.enroll} hidePrice openCart />
                 ) : (
                   <Callout tone="info">
                     {t.course.enrollClosed}

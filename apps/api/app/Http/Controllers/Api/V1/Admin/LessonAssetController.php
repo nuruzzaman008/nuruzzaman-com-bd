@@ -3,15 +3,32 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonAsset;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class LessonAssetController extends Controller
 {
+    public function reorder(Request $request, Course $course, Lesson $lesson): JsonResponse
+    {
+        $this->authorize('update', $course);
+        abort_unless($lesson->course_id === $course->id, 404);
+        $input = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['required', 'integer', 'distinct']]);
+        DB::transaction(function () use ($lesson, $input) {
+            $ids = $lesson->assets()->lockForUpdate()->pluck('id')->all();
+            abort_unless(count($ids) === count($input['ids']) && ! array_diff($ids, $input['ids']), 422, 'Provide every file from this lesson exactly once.');
+            foreach ($input['ids'] as $position => $id) {
+                $lesson->assets()->whereKey($id)->update(['position' => $position]);
+            }
+        });
+
+        return response()->json(['data' => $lesson->assets()->get()]);
+    }
+
     public function store(Request $request, Course $course, Lesson $lesson): JsonResponse
     {
         $this->authorize('update', $course);
@@ -37,6 +54,7 @@ class LessonAssetController extends Controller
             Storage::disk($disk)->delete($path);
             throw $error;
         }
+
         return response()->json(['data' => $asset], 201);
     }
 
@@ -46,6 +64,7 @@ class LessonAssetController extends Controller
         abort_unless($lesson->course_id === $course->id && $asset->lesson_id === $lesson->id, 404);
         Storage::disk($asset->disk)->delete($asset->storage_path);
         $asset->delete();
+
         return response()->json(['message' => 'File deleted.']);
     }
 }

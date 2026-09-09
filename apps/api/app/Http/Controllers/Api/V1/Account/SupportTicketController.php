@@ -27,6 +27,8 @@ class SupportTicketController extends Controller
     public function store(Request $request): SupportTicketResource
     {
         $validated = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:160'],
+            'mobile' => ['required', 'string', 'regex:/^\+?[0-9]{7,15}$/'],
             'subject' => ['required', 'string', 'min:3', 'max:255'],
             'category' => ['required', 'string', 'in:installation,activation,licence,course,billing,general'],
             'message' => ['required', 'string', 'min:10', 'max:5000'],
@@ -46,7 +48,8 @@ class SupportTicketController extends Controller
             $ticket = SupportTicket::create([
                 'reference' => Reference::ticket(),
                 'user_id' => $request->user()->getKey(),
-                'name' => $request->user()->name,
+                'name' => $validated['name'],
+                'mobile' => $validated['mobile'],
                 'email' => $request->user()->email,
                 'subject' => $validated['subject'],
                 'category' => $validated['category'],
@@ -91,7 +94,7 @@ class SupportTicketController extends Controller
             'body' => $validated['message'],
         ]);
 
-        if ($ticket->status === SupportTicketStatus::Resolved) {
+        if ($ticket->status !== SupportTicketStatus::Open) {
             $ticket->update(['status' => SupportTicketStatus::Open, 'resolved_at' => null]);
         }
 

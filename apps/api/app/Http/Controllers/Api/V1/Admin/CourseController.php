@@ -6,11 +6,15 @@ use App\Enums\ContentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CourseResource;
 use App\Models\Course;
-use App\Support\CourseTracks;
 use App\Services\Content\PublishingService;
+use App\Services\Content\RevalidationService;
+use App\Services\Lms\CoursePricingService;
+use App\Support\CourseTracks;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CourseController extends Controller
@@ -39,26 +43,43 @@ class CourseController extends Controller
     {
         $this->authorize('create', Course::class);
 
-        $course = Course::create($request->validate($this->rules(null)) + ['status' => ContentStatus::Draft]);
+        $validated = $request->validate($this->rules(null));
+        $course = DB::transaction(function () use ($validated) {
+            $course = Course::create(collect($validated)->except(['price_minor', 'seo'])->all() + ['status' => ContentStatus::Draft]);
+            if (isset($validated['seo'])) {
+                $course->seo()->create($validated['seo']);
+            }
+            app(CoursePricingService::class)->set($course, $validated['price_minor'] ?? 150000);
 
-        return new CourseResource($course->loadCount('lessons'));
+            return $course;
+        });
+
+        return new CourseResource($course->load('seo')->loadCount('lessons'));
     }
 
     public function update(Request $request, Course $course): CourseResource
     {
         $this->authorize('update', $course);
 
-        $course->update(collect($request->validate($this->rules($course->getKey())))
-            ->except('seo')
-            ->all());
+        $validated = $request->validate($this->rules($course->getKey()));
+        $oldSlug = $course->slug;
+        DB::transaction(function () use ($course, $validated) {
+            $course->update(collect($validated)->except(['seo', 'price_minor'])->all());
+            if (isset($validated['seo'])) {
+                $course->seo()->updateOrCreate([], $validated['seo']);
+            }
+            if (isset($validated['price_minor'])) {
+                app(CoursePricingService::class)->set($course, $validated['price_minor']);
+            }
+        });
 
-        // `seo` is a related record, not a column, so it is written separately
-        // and only when the caller actually sent it.
-        if ($request->has('seo')) {
-            $course->seo()->updateOrCreate([], $request->validated('seo'));
+        try {
+            app(RevalidationService::class)->revalidate(['courses', 'course:'.$oldSlug, 'course:'.$course->slug]);
+        } catch (ConnectionException $error) {
+            report($error);
         }
 
-        return new CourseResource($course->fresh()->loadCount('lessons'));
+        return new CourseResource($course->fresh()->load('seo')->loadCount('lessons'));
     }
 
     /**
@@ -80,6 +101,11 @@ class CourseController extends Controller
         }
 
         $this->publishing->transition($course, $target, $request->user(), $validated['note'] ?? null);
+        foreach ($course->purchasableVariants()->with('product')->get() as $variant) {
+            if ($variant->product->slug === 'course-access-'.$course->id) {
+                $variant->product->update(['status' => $target, 'published_at' => $target === ContentStatus::Published ? now() : null]);
+            }
+        }
 
         return new CourseResource($course->fresh()->loadCount('lessons'));
     }
@@ -154,6 +180,7 @@ class CourseController extends Controller
     private function rules(?int $courseId): array
     {
         return [
+            'price_minor' => ['sometimes', 'integer', 'min:1', 'max:100000000'],
             'slug' => [
                 $courseId ? 'sometimes' : 'required',
                 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
@@ -182,9 +209,11 @@ class CourseController extends Controller
             'support_policy' => ['nullable', 'string', 'max:512'],
             'refund_policy' => ['nullable', 'string', 'max:512'],
             'last_reviewed_at' => ['nullable', 'date'],
-            'seo' => ['sometimes', 'array'],
+            'seo' => ['sometimes', 'array:meta_title,meta_title_en,meta_description,meta_description_en,focus_keyword,canonical_url,noindex,nofollow'],
             'seo.meta_title' => ['nullable', 'string', 'max:255'],
+            'seo.meta_title_en' => ['nullable', 'string', 'max:255'],
             'seo.meta_description' => ['nullable', 'string', 'max:320'],
+            'seo.meta_description_en' => ['nullable', 'string', 'max:320'],
             'seo.focus_keyword' => ['nullable', 'string', 'max:160'],
             'seo.canonical_url' => ['nullable', 'url', 'max:512'],
             'seo.noindex' => ['sometimes', 'boolean'],

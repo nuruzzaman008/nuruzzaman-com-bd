@@ -15,6 +15,7 @@ use App\Models\ProductVariant;
 use App\Models\RefillOrder;
 use App\Models\SoftwareLicense;
 use App\Services\Commerce\OrderStateMachine;
+use App\Services\Licensing\OnlineLicensingService;
 use App\Services\Lms\EnrollmentService;
 use App\Support\Audit;
 use App\Support\Reference;
@@ -45,6 +46,7 @@ class FulfillmentService
             }
 
             $this->issueInvoice($order);
+            app(OnlineLicensingService::class)->autoRefill($order);
         });
 
         Audit::record('order.fulfilled', $order, ['items' => $order->items->count()]);

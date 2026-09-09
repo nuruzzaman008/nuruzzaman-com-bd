@@ -11,6 +11,7 @@ use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -49,12 +50,23 @@ class UserController extends Controller
         $this->authorize('update', $user);
 
         $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:120'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'name' => ['sometimes', 'required', 'string', 'min:2', 'max:120'],
+            'phone' => ['sometimes', 'required', 'string', 'regex:/^\+?[0-9]{7,15}$/'],
             'status' => ['sometimes', 'string', 'in:active,suspended'],
+            'profile.display_name' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'profile.headline' => ['sometimes', 'nullable', 'string', 'max:180'],
+            'profile.bio' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'profile.organization' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'profile.designation' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'profile.district' => ['sometimes', 'nullable', 'string', 'max:80'],
         ]);
 
-        $user->update($validated);
+        DB::transaction(function () use ($user, $validated) {
+            $user->update(collect($validated)->except('profile')->all());
+            if (isset($validated['profile'])) {
+                $user->profile()->updateOrCreate(['user_id' => $user->id], $validated['profile']);
+            }
+        });
         Audit::record('user.updated', $user, $validated);
 
         return new UserResource($user->fresh()->load(['profile', 'roles']));

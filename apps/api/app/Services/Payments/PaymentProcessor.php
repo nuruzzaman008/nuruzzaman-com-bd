@@ -86,7 +86,7 @@ class PaymentProcessor
             'remote_ip' => $remoteIp,
         ]);
 
-        if (! $payment) {
+        if (! $payment || $payment->gateway !== $this->gateway->name()) {
             return tap($event)->update([
                 'is_valid' => false,
                 'validation_error' => 'No payment matches this transaction reference.',

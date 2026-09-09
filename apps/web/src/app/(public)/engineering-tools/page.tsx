@@ -3,6 +3,8 @@ import Link from 'next/link';
 import type { DownloadAsset, Product, SiteSettings } from '@nuruzzaman/contracts';
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
+import { CreditGuide } from '@/features/catalog/credit-guide';
+import { ToolsArticle, ToolsPurchasePolicies } from '@/features/catalog/tools-article';
 import { productFaq } from '@/features/catalog/product-faq';
 import { MODULE_COUNT, PRODUCT_MODULES } from '@/features/catalog/product-modules';
 import { Badge } from '@/components/ui/badge';
@@ -124,6 +126,10 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
               <h1 className="mt-3 text-[length:var(--step-h1)] leading-tight font-bold text-navy">
                 Structural &amp; Engineering Design Tools for AutoCAD
               </h1>
+              <Link href="/connect-autocad" className="mt-4 inline-block font-medium text-blue underline">
+                {locale === 'en' ? 'Connect AutoCAD for online activation and token refills' : 'Online activation ও token refill-এর জন্য AutoCAD সংযোগ করুন'}
+              </Link>
+              <Link href="#credit-pricing" className="mt-3 block font-semibold text-blue underline">{active === 'en' ? 'NB Credit prices & payment guide' : 'NB Credit-এর দাম ও payment-এর নিয়ম'}</Link>
               <p className="mt-4 text-lg text-muted">
                 {t.tools.lede}
               </p>
@@ -140,6 +146,8 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                     : t.tools.untested}
                 </p>
               </Callout>
+
+              <ToolsArticle locale={active} />
 
               <section className="mt-10">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.verifiedFacts}</h2>
@@ -245,6 +253,8 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                   </p>
                 </Callout>
               </section>
+
+              <ToolsPurchasePolicies locale={active} />
 
               <section className="mt-12">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.installation}</h2>
@@ -357,6 +367,7 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
           </div>
         </Container>
       </Section>
+      <Section><Container><CreditGuide locale={active} /></Container></Section>
     </>
   );
 }

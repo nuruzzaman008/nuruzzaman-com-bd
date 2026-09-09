@@ -10,6 +10,7 @@ import { PriceTag } from '@/components/ui/price';
 import { ApiError, api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { useSession } from '@/lib/session/session-provider';
 
 /**
  * Variant picker and add-to-cart control.
@@ -17,8 +18,14 @@ import { useLocale } from '@/lib/i18n/locale-provider';
  * The button only submits a variant id; every price, discount and total is
  * recalculated by the API, so nothing here can influence what is charged.
  */
-export function AddToCart({ variants }: { variants: ProductVariant[] }) {
+export function AddToCart({ variants, buttonLabel, hidePrice = false, openCart = false }: {
+  variants: ProductVariant[];
+  buttonLabel?: string;
+  hidePrice?: boolean;
+  openCart?: boolean;
+}) {
   const { t } = useLocale();
+  const { refresh } = useSession();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -26,16 +33,18 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
   );
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selected = variants.find((variant) => variant.id === selectedId) ?? null;
 
   async function addToCart() {
-    if (!selected) {
+    if (!selected || isSubmitting) {
       return;
     }
 
     setError(null);
     setAdded(false);
+    setIsSubmitting(true);
 
     try {
       await api<{ data: Cart }>('/cart/items', {
@@ -44,6 +53,10 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
       });
 
       setAdded(true);
+      void refresh();
+      if (openCart) {
+        router.push('/cart');
+      }
       startTransition(() => router.refresh());
     } catch (caught) {
       setError(
@@ -51,6 +64,8 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
           ? caught.message
           : t.shop.addFailed,
       );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -96,9 +111,9 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
             ))}
           </div>
         </fieldset>
-      ) : (
+      ) : !hidePrice ? (
         <PriceTag value={selected?.price ?? null} size="lg" />
-      )}
+      ) : null}
 
       {selected?.is_purchasable ? (
         <Button
@@ -106,9 +121,9 @@ export function AddToCart({ variants }: { variants: ProductVariant[] }) {
           size="lg"
           className="w-full"
           onClick={addToCart}
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
         >
-          {isPending ? t.shop.adding : t.shop.addToCart}
+          {isPending || isSubmitting ? t.shop.adding : (buttonLabel ?? t.shop.addToCart)}
         </Button>
       ) : (
         <Callout tone="info">{t.shop.variantUnpriced}</Callout>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0" AppVersion="1.0.0" ProductCode="{D0BE4992-A4AD-4CF5-B03F-30E55FDB09E1}" Name="NB Online Connector" Description="Website payment and token synchronization for NB Engineering Tools" Author="NB Engineering Tools">
+  <CompanyDetails Name="NB Engineering Tools" Url="https://nuruzzaman.com.bd" />
+  <Components>
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R24.3" SeriesMax="R24.3" />
+    <ComponentEntry AppName="NBOnlineConnector" ModuleName="./Contents/Win64/NBOnlineConnector.dll" LoadOnAutoCADStartup="True" />
+  </Components>
+</ApplicationPackage>

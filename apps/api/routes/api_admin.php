@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Account\AvatarController;
 use App\Http\Controllers\Api\V1\Admin;
+use App\Http\Controllers\Api\V1\Commerce\PaymentSelectionController;
+use App\Http\Controllers\Api\V1\LessonVideoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -81,6 +84,11 @@ Route::middleware([
     Route::delete('coupons/{coupon:id}', [Admin\CouponController::class, 'destroy']);
 
     Route::get('orders', [Admin\OrderController::class, 'index']);
+    Route::get('manual-payments', [PaymentSelectionController::class, 'index']);
+    Route::get('manual-payments/pending-count', [PaymentSelectionController::class, 'pendingCount']);
+    Route::get('manual-payments/{id}/proof', [PaymentSelectionController::class, 'proof']);
+    Route::post('manual-payments/{id}/review', [PaymentSelectionController::class, 'review']);
+    Route::match(['get', 'put'], 'payment-methods', [PaymentSelectionController::class, 'settings']);
     Route::get('orders/{number}', [Admin\OrderController::class, 'show']);
     Route::post('orders/{number}/transition', [Admin\OrderController::class, 'transition']);
     Route::post('orders/{number}/refulfill', [Admin\OrderController::class, 'refulfill']);
@@ -116,6 +124,9 @@ Route::middleware([
     Route::patch('courses/{course:id}/lessons/{lesson:id}', [Admin\CourseStructureController::class, 'updateLesson']);
     Route::delete('courses/{course:id}/lessons/{lesson:id}', [Admin\CourseStructureController::class, 'destroyLesson']);
     Route::put('courses/{course:id}/reorder', [Admin\CourseStructureController::class, 'reorder']);
+    Route::put('courses/{course:id}/price', [Admin\CourseStructureController::class, 'price']);
+    Route::post('courses/{course:id}/lessons/{lesson:id}/video', [LessonVideoController::class, 'upload']);
+    Route::put('courses/{course:id}/lessons/{lesson:id}/assets/reorder', [Admin\LessonAssetController::class, 'reorder']);
     Route::get('courses/{course:id}/curriculum', [Admin\CourseStructureController::class, 'show']);
     Route::get('courses/{course:id}/lessons/{lesson:id}/assessments', [Admin\LessonAssessmentController::class, 'show']);
     Route::put('courses/{course:id}/lessons/{lesson:id}/quiz', [Admin\LessonAssessmentController::class, 'quiz']);
@@ -148,6 +159,7 @@ Route::middleware([
     // ------------------------------------------------------- people and support
     Route::get('users', [Admin\UserController::class, 'index']);
     Route::get('users/{user:id}', [Admin\UserController::class, 'show']);
+    Route::get('users/{user:id}/avatar', [AvatarController::class, 'show']);
     Route::patch('users/{user:id}', [Admin\UserController::class, 'update']);
     Route::put('users/{user:id}/roles', [Admin\UserController::class, 'syncRoles'])
         ->middleware('password.confirm');

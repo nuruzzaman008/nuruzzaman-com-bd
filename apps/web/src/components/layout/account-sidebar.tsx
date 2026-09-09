@@ -18,7 +18,7 @@ import { AccountModeSwitcher } from '@/features/account/account-mode-switcher';
  * public site.
  */
 export function AccountSidebar({ user }: { user: User }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   return (
     <aside>
@@ -34,7 +34,7 @@ export function AccountSidebar({ user }: { user: User }) {
       ) : null}
 
       <nav aria-label={t.account.navigation} className="mt-5">
-        <ul className="space-y-1">
+        <ul className="space-y-1"><li><Link className="block rounded-lg px-3 py-2.5 text-sm font-medium text-navy hover:bg-blue-soft" href="/account/profile">{locale === 'bn' ? 'আমার প্রোফাইল / ছবি' : 'My profile / Photo'}</Link></li>
           {accountNav.filter((item) => user.account_mode === 'student' ? ['overview', 'courses', 'support'].includes(item.key) : item.key !== 'courses').map((item) => (
             <li key={item.href}>
               <Link
