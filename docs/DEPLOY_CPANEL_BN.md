@@ -129,7 +129,7 @@ Layout after deployment:
     releases/<release>/apps/web/server.js
     releases/<release>/node_modules/
     node_modules                 # cPanel-managed directory/symlink preserved
-  nb-deploy-backups/<release>/    # private API archive/build/config backups
+  nb-deploy-backups/<release>/    # private repository/API/web/domain archives and build/config backups
 ```
 
 Keep API `storage` and `bootstrap/cache` writable by its PHP user. Use owner permissions, never 777. Confirm Apache can traverse/read public assets according to the hosting handler. `storage:link` runs only when no existing link is present; an existing real public/storage directory blocks deployment for review. Private course assets must remain outside the public link.
@@ -169,7 +169,7 @@ ln -s "$previous" "$rollback_link" && mv -Tf "$rollback_link" "$HOME/nuruzzaman-
 touch "$HOME/nuruzzaman-web/tmp/restart.txt"
 ```
 
-First deployment has no previous release. If a legacy startup file was replaced, its backup is `server.js` inside the printed backup folder; inspect before restoring it. API backup is `api.tar`, including confidential `.env`/uploads. Extract it into a **new private recovery directory**, inspect, then restore only reviewed code compatible with the current database. Never extract it blindly over production, never run `migrate:rollback` blindly, and never restore an old DB over new orders. On API failure maintenance may intentionally remain enabled until recovery is verified.
+First deployment has no previous release. If a legacy startup file was replaced, its backup is `server.js` inside the printed backup folder; inspect before restoring it. API backup is `api.nuruzzaman.com.bd.tar`, including confidential `.env`/uploads. Extract it into a **new private recovery directory**, inspect, then restore only reviewed code compatible with the current database. Never extract it blindly over production, never run `migrate:rollback` blindly, and never restore an old DB over new orders. On API failure maintenance may intentionally remain enabled until recovery is verified.
 
 ## Deploy HEAD troubleshooting
 
@@ -182,3 +182,38 @@ First deployment has no previous release. If a legacy startup file was replaced,
 - API 404: verify `/public` document root and Laravel `.htaccess` without replacing unrelated rules.
 - CSRF 419/404: verify both proxy rewrites, HTTPS cookie domain, Sanctum and CORS settings.
 - Failed API update: inspect maintenance state and the printed backup before retrying. No automatic database rollback occurs.
+
+
+## September 2026 audit changes
+
+Deployment now backs up the entire repository (including Git), API, Node application,
+and existing domain folder before building or modifying live code. It verifies each tar
+archive is readable. These backups contain secrets: keep them outside document roots
+and never upload them to GitHub. Full backups and staged dependencies can consume
+substantial quota; check cPanel disk/inode usage before each deployment. No backups or
+old releases are deleted automatically.
+
+The selected CLI PHP must support `proc_open` for Composer. Do not attempt to bypass
+this with `--ignore-platform-reqs`. The host must provide a compatible CLI runtime.
+Composer runs with `--no-scripts`; framework/cache directories are prepared first,
+and Laravel package discovery runs explicitly after installation. Stale generated
+configuration/provider/route/event caches are moved into the private backup before
+rebuilding caches. Queue workers receive `queue:restart` after code/cache changes;
+a host-supported worker/cron configuration is still required to resume processing.
+
+Use `bash infra/cpanel/audit-server.sh` for a read-only inventory and tracked API drift
+report. It does not print environment values or source diffs. A difference does not
+establish which file is correct. Reconcile intentional server changes locally before
+replacing code. Untracked extra deployed files must also be reviewed privately.
+
+After deployment run `bash infra/cpanel/verify-live.sh`. HTTP 200 alone is insufficient:
+the check rejects the CloudLinux placeholder, checks for Next.js assets, and requires
+204 from the same-origin CSRF endpoint. It does not replace real login, payment approval,
+queue, upload, or course-access testing.
+
+Do not configure `PORT=3200` in production. That is the local development port.
+Passenger manages the listening socket; preserve any host-provided PORT. The startup
+file is the deployed root `server.js`, which loads `current/apps/web/server.js`.
+Use the npm lockfile through `npm ci --include=dev`, then `npm run build`; installing
+only within apps/web misses workspace dependencies. This deployment uses the generated
+standalone server rather than invoking `next start` inside the release.

@@ -38,6 +38,7 @@ if [ "$DEPLOY_API" = 1 ]; then
   [ -x "$PHP_BIN" ] || fail 'Set NB_PHP_BIN.'
   "$PHP_BIN" -r 'exit(PHP_VERSION_ID >= 80401 ? 0 : 1);' || fail 'composer.lock requires PHP >=8.4.1.'
   "$PHP_BIN" -r 'echo "PHP ",PHP_VERSION,PHP_EOL; exit(extension_loaded("pdo_mysql") ? 0 : 1);' || fail 'Enable pdo_mysql.'
+  "$PHP_BIN" -r 'exit(is_callable("proc_open") ? 0 : 1);' || fail 'Composer requires proc_open in CLI PHP. Ask the host to enable it for the selected CLI runtime; do not bypass platform checks.'
   COMPOSER_FILE="${NB_COMPOSER_PHAR:-}"
   if [ -z "$COMPOSER_FILE" ]; then
     if [ -f "$HOME/composer.phar" ]; then COMPOSER_FILE="$HOME/composer.phar"; else COMPOSER_FILE="$(command -v composer || true)"; fi
@@ -93,6 +94,16 @@ BACKUP="$HOME/nb-deploy-backups/$RELEASE"
 mkdir -p "$BACKUP"
 chmod 700 "$HOME/nb-deploy-backups" "$BACKUP"
 trap 'printf "Deployment failed. Backup: %s. Inspect maintenance state; never roll back migrations blindly.\n" "$BACKUP"' ERR
+# Complete backups precede builds, staging, and live changes. No automatic pruning.
+tar -C "$SOURCE" -cpf "$BACKUP/repository.tar" .
+cp -p "$CONFIG" "$BACKUP/deploy.conf"
+for folder in "$NB_API_ROOT" "$NB_WEB_ROOT" "$HOME/nuruzzaman.com.bd"; do
+  if [ -d "$folder" ]; then
+    tar -C "$folder" -cpf "$BACKUP/$(basename "$folder").tar" .
+  fi
+done
+for archive in "$BACKUP"/*.tar; do tar -tf "$archive" >/dev/null; done
+printf '%s\n' "$COMMIT" > "$BACKUP/source-commit"
 # Prepare and validate the frontend before touching either live application.
 if [ "$DEPLOY_WEB" = 1 ]; then
   if [ "$BUILD_WEB" = 1 ]; then
@@ -113,11 +124,10 @@ if [ "$DEPLOY_WEB" = 1 ]; then
   chmod -R u+rwX "$WEB_RELEASE"
 fi
 if [ "$DEPLOY_API" = 1 ]; then
-  tar -C "$NB_API_ROOT" -cpf "$BACKUP/api.tar" .
   API_STAGE="$BACKUP/api-stage"
   mkdir "$API_STAGE"
   git -C "$SOURCE" archive HEAD apps/api | tar -x -C "$API_STAGE" --strip-components=2
-  mkdir -p "$API_STAGE/bootstrap/cache"
+  mkdir -p "$API_STAGE/bootstrap/cache" "$API_STAGE/storage/framework/"{cache/data,sessions,views} "$API_STAGE/storage/logs"
   "$PHP_BIN" "$COMPOSER_FILE" install --working-dir="$API_STAGE" --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
   mkdir -p "$API_STAGE/storage/framework/"{cache/data,sessions,views} "$API_STAGE/storage/logs"
   "$PHP_BIN" "$SOURCE/infra/cpanel/check-api.php" "$API_STAGE" "$NB_API_ROOT" "$RUN_MIGRATIONS"
@@ -129,7 +139,7 @@ if [ "$DEPLOY_API" = 1 ]; then
   chmod u+rwx,go+x "$NB_API_ROOT/storage" "$NB_API_ROOT/storage/app"
   chmod u+rwx,go+rx "$NB_API_ROOT/storage/app/public"
   # Retire cached provider manifests so removed development providers cannot boot.
-  for cache in packages.php services.php; do
+  for cache in config.php packages.php services.php events.php routes-v7.php; do
     if [ -f "$NB_API_ROOT/bootstrap/cache/$cache" ]; then mv "$NB_API_ROOT/bootstrap/cache/$cache" "$BACKUP/$cache"; fi
   done
   "$PHP_BIN" "$NB_API_ROOT/artisan" config:clear
@@ -137,6 +147,7 @@ if [ "$DEPLOY_API" = 1 ]; then
   if [ "$RUN_MIGRATIONS" = 1 ]; then "$PHP_BIN" "$NB_API_ROOT/artisan" migrate --force --step; fi
   for command in config:cache route:cache view:cache event:cache; do "$PHP_BIN" "$NB_API_ROOT/artisan" "$command"; done
   [ -L "$NB_API_ROOT/public/storage" ] || "$PHP_BIN" "$NB_API_ROOT/artisan" storage:link
+  "$PHP_BIN" "$NB_API_ROOT/artisan" queue:restart
   "$PHP_BIN" "$NB_API_ROOT/artisan" up
 fi
 if [ "$DEPLOY_WEB" = 1 ]; then
@@ -157,4 +168,4 @@ ENTRY
   touch "$NB_WEB_ROOT/tmp/restart.txt"
 fi
 printf 'Files deployed. Backup: %s\n' "$BACKUP"
-echo 'Verify https://api.nuruzzaman.com.bd/up and frontend /, /en, /sanctum/csrf-cookie.'
+echo 'Run: bash infra/cpanel/verify-live.sh. A restart signal alone does not prove deployment health.'
