@@ -153,13 +153,7 @@ fi
 if [ "$DEPLOY_WEB" = 1 ]; then
   [ ! -e "$NB_WEB_ROOT/server.js" ] || cp -p "$NB_WEB_ROOT/server.js" "$BACKUP/server.js"
   if [ -L "$NB_WEB_ROOT/current" ]; then readlink "$NB_WEB_ROOT/current" > "$BACKUP/previous-web-release"; fi
-  cat > "$NB_WEB_ROOT/server.js.$RELEASE" <<'ENTRY'
-// Keep release dependencies separate from cPanel-managed node_modules.
-const path = require('node:path');
-const root = require('node:fs').realpathSync(path.join(__dirname, 'current'));
-process.chdir(path.join(root, 'apps/web'));
-require(path.join(root, 'apps/web/server.js'));
-ENTRY
+  cp "$SOURCE/infra/cpanel/server.cjs" "$NB_WEB_ROOT/server.js.$RELEASE"
   "$NODE_BIN" --check "$NB_WEB_ROOT/server.js.$RELEASE"
   ln -s "$WEB_RELEASE" "$NB_WEB_ROOT/current.$RELEASE"
   mv -Tf "$NB_WEB_ROOT/current.$RELEASE" "$NB_WEB_ROOT/current"
