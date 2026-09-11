@@ -171,8 +171,10 @@ fi
 if [ "$DEPLOY_WEB" = 1 ]; then
   [ ! -e "$NB_WEB_ROOT/server.js" ] || cp -p "$NB_WEB_ROOT/server.js" "$BACKUP/server.js"
   if [ -L "$NB_WEB_ROOT/current" ]; then readlink "$NB_WEB_ROOT/current" > "$BACKUP/previous-web-release"; fi
+  # Checked at its own path: node infers the module format from the extension,
+  # and the staged copy is named server.js.<release>, which it cannot classify.
+  "$NODE_BIN" --check "$SOURCE/infra/cpanel/server.cjs"
   cp "$SOURCE/infra/cpanel/server.cjs" "$NB_WEB_ROOT/server.js.$RELEASE"
-  "$NODE_BIN" --check "$NB_WEB_ROOT/server.js.$RELEASE"
   # Passenger starts the app with a bare environment. These are host settings,
   # so they come from the deploy config rather than the repository; the entry
   # script reads them back and refuses to start without INTERNAL_API_URL.
