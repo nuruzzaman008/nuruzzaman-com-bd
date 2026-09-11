@@ -73,14 +73,38 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           # A missing secret otherwise surfaces as an unreadable scp error, so
-          # each one is named here. Values are never printed - only whether
-          # they are set, and how long the key is.
+          # each one is named here. The result also goes to the run summary,
+          # which is readable from the run page without opening the log.
+          # Values are never printed - only whether they are set.
           missing=0
+          {
+            echo '### Deployment secrets'
+            echo
+            echo '| Secret | Status |'
+            echo '|---|---|'
+          } >> "$GITHUB_STEP_SUMMARY"
+
           for name in DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS DEPLOY_HOST DEPLOY_PORT DEPLOY_USER; do
             eval "value=\${$name}"
-            if [ -z "$value" ]; then echo "MISSING secret: $name"; missing=1; fi
+            if [ -z "$value" ]; then
+              echo "MISSING secret: $name"
+              echo "| \`$name\` | **MISSING** |" >> "$GITHUB_STEP_SUMMARY"
+              missing=1
+            else
+              echo "present: $name"
+              echo "| \`$name\` | set |" >> "$GITHUB_STEP_SUMMARY"
+            fi
           done
-          [ "$missing" = 0 ] || { echo; echo 'Add the missing secrets under Settings -> Secrets and variables -> Actions.'; exit 1; }
+
+          if [ "$missing" != 0 ]; then
+            {
+              echo
+              echo 'Add the missing ones under **Settings -> Secrets and variables -> Actions**,'
+              echo 'on the **Secrets** tab. The Variables tab sits beside it and looks the same,'
+              echo 'but a value stored there is not readable as a secret.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           # Carriage returns are stripped. A key copied from a file on Windows
