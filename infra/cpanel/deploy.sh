@@ -152,6 +152,10 @@ if [ "$DEPLOY_API" = 1 ]; then
   if [ -f "$NB_API_ROOT/artisan" ]; then "$PHP_BIN" "$NB_API_ROOT/artisan" down; fi
   sync_tree "$API_STAGE/" "$NB_API_ROOT/" --exclude='.env' --exclude='.env.*' --exclude='storage/' --exclude='public/storage' --exclude='bootstrap/cache/' --exclude='tests/' --exclude='public/.htaccess'
   if [ ! -e "$NB_API_ROOT/public/.htaccess" ]; then cp "$API_STAGE/public/.htaccess" "$NB_API_ROOT/public/.htaccess"; fi
+  # The seed bundles live at the repository root, outside apps/api. Without
+  # them a deployed server cannot be seeded at all, because the repository
+  # relative path resolves outside the account.
+  git -C "$SOURCE" archive HEAD content | tar -x -C "$NB_API_ROOT"
   mkdir -p "$NB_API_ROOT/bootstrap/cache" "$NB_API_ROOT/storage/framework/"{cache/data,sessions,views} "$NB_API_ROOT/storage/logs" "$NB_API_ROOT/storage/app/"{public,private-assets}
   # Apache must traverse the public upload link; private-assets stays private.
   chmod u+rwx,go+x "$NB_API_ROOT/storage" "$NB_API_ROOT/storage/app"

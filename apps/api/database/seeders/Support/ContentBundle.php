@@ -16,10 +16,23 @@ final class ContentBundle
     /** @return array<int, array{meta: array<string, string>, body: string}> */
     public static function load(string $filename): array
     {
-        $path = base_path('../../content/'.$filename);
+        /*
+         * Two layouts have to work. In the repository the API sits at
+         * apps/api, so the bundle is two levels up; on a deployed server the
+         * API is its own directory and the content is copied in beside it.
+         * Looking in both is what lets a deployed site be seeded at all - the
+         * first form alone resolves to a path outside the account.
+         */
+        $path = collect([
+            base_path('../../content/'.$filename),
+            base_path('content/'.$filename),
+        ])->first(fn (string $candidate) => is_file($candidate));
 
-        if (! is_file($path)) {
-            throw new RuntimeException("Seed content file not found: {$filename}");
+        if ($path === null) {
+            throw new RuntimeException(
+                "Seed content file not found: {$filename}. Looked in ../../content "
+                .'(repository layout) and ./content (deployed layout).'
+            );
         }
 
         $documents = preg_split('/^@@@\s*$/m', (string) file_get_contents($path)) ?: [];
