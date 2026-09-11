@@ -86,6 +86,28 @@ SESSION_SAME_SITE=lax
 SANCTUM_STATEFUL_DOMAINS=nuruzzaman.com.bd
 CORS_ALLOWED_ORIGINS=https://nuruzzaman.com.bd
 NEXT_REVALIDATE_URL=https://nuruzzaman.com.bd/api/revalidate
+MAIL_MAILER=smtp
+MAIL_HOST=bdix4.ebnhost.com
+MAIL_PORT=25
+MAIL_SCHEME=smtp
+MAIL_FROM_ADDRESS="no-reply@nuruzzaman.com.bd"
+```
+
+Mail must be `smtp`. This PHP disables `proc_open`, which both the `sendmail`
+transport and PHP's `mail()` require, so either of those fails with
+`Call to undefined function proc_open` and no account can verify its address.
+SMTP speaks over a socket and needs neither.
+
+`MAIL_HOST` must be the mail server's certificate name, not `localhost`. Exim
+answers on localhost, but STARTTLS verifies the hostname against the
+certificate and `localhost` fails that check. Addressing it by the certificate
+name keeps the connection encrypted; disabling verification would not.
+
+Confirm delivery before trusting it - an accepted message is not a delivered
+one:
+
+```bash
+php artisan tinker --execute="Mail::raw('test', fn(\$m) => \$m->to('you@example.com')->subject('test'));"
 ```
 
 Use actual cPanel DB host/database/user/password. For a new installation only, generate an APP_KEY securely; never regenerate an existing production key. Choose database session/cache/queue drivers if Redis is unavailable, and ensure their tables are migrated. Configure mail/payment/storage secrets from the owner's accounts. Do not run general `db:seed` on an existing database.
