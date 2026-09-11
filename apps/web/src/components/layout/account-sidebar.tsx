@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { User } from '@nuruzzaman/contracts';
 
 import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switcher';
+import { ResendVerification } from '@/features/account/resend-verification';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { accountNav } from '@/lib/site';
@@ -28,9 +29,11 @@ export function AccountSidebar({ user }: { user: User }) {
       <AccountModeSwitcher mode={user.account_mode} />
 
       {!user.email_verified ? (
-        <p className="mt-3 rounded-lg border border-amber/40 bg-amber-soft p-3 text-xs text-navy">
+        <div className="mt-3 rounded-lg border border-amber/40 bg-amber-soft p-3 text-xs text-navy">
           {t.account.emailUnverified}
-        </p>
+          {/* The notice named a problem and offered no way out of it. */}
+          <ResendVerification className="mt-2" />
+        </div>
       ) : null}
 
       <nav aria-label={t.account.navigation} className="mt-5">

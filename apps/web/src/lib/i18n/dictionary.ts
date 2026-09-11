@@ -78,6 +78,18 @@ const bn = {
     },
     emailUnverified:
       'ইমেইল যাচাই করা হয়নি। ডাউনলোড ও অ্যাক্টিভেশনের জন্য যাচাই করা প্রয়োজন।',
+    verifyTitle: 'ইমেইল যাচাই',
+    verifyWorking: 'ইমেইল যাচাই করা হচ্ছে…',
+    verifySuccess: 'ইমেইল যাচাই হয়েছে। ডাউনলোড ও অ্যাক্টিভেশন এখন খুলে গেছে।',
+    verifyAlready: 'এই ইমেইল আগেই যাচাই করা হয়েছে।',
+    verifyFailed: 'ইমেইল যাচাই করা যায়নি।',
+    verifyLinkInvalid: 'লিংকটি সম্পূর্ণ নয়। ইমেইল থেকে আবার খুলুন।',
+    verifyLinkExpired:
+      'লিংকটির মেয়াদ শেষ (৬০ মিনিট)। নিচের বোতাম থেকে নতুন লিংক নিন।',
+    verifyResend: 'নতুন লিংক পাঠান',
+    verifySending: 'পাঠানো হচ্ছে…',
+    verifySent: 'নতুন যাচাই লিংক পাঠানো হয়েছে। ইনবক্স ও স্প্যাম ফোল্ডার দেখুন।',
+    verifyResendFailed: 'লিংক পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
     signOutFailed:
       'সার্ভারে পৌঁছানো যায়নি, তাই সেশন এখনো বন্ধ নাও হতে পারে। নিরাপত্তার জন্য ব্রাউজার বন্ধ করুন বা আবার চেষ্টা করুন।',
   },
@@ -1562,6 +1574,18 @@ const en: Dictionary = {
     },
     emailUnverified:
       'Your email is not verified. Verification is required for downloads and activation.',
+    verifyTitle: 'Verify your email',
+    verifyWorking: 'Verifying your email\u2026',
+    verifySuccess: 'Your email is verified. Downloads and activation are now open.',
+    verifyAlready: 'This email was already verified.',
+    verifyFailed: 'The email could not be verified.',
+    verifyLinkInvalid: 'That link is incomplete. Open it again from the email.',
+    verifyLinkExpired:
+      'That link has expired (they last 60 minutes). Send yourself a new one below.',
+    verifyResend: 'Send a new link',
+    verifySending: 'Sending\u2026',
+    verifySent: 'A new verification link has been sent. Check your inbox and your spam folder.',
+    verifyResendFailed: 'The link could not be sent. Please try again in a little while.',
     signOutFailed:
       'We could not reach the server, so your session may still be open. Close your browser or try again.',
   },
