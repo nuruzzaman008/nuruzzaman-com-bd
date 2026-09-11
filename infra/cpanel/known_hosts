@@ -1,0 +1,15 @@
+# Host keys for the deployment target, pinned so that a deployment cannot be
+# redirected to another machine without the connection failing.
+#
+# These are public keys. Committing them is deliberate: a host key kept in a
+# secret is one more value to paste correctly, and pasting it wrongly fails in
+# a way that reads like an authentication problem. Here it is reviewable, and
+# a change to it shows up in a diff.
+#
+# Captured 11 September 2026 with:
+#   ssh-keyscan -p 57813 -t ed25519,rsa 115.187.18.57
+#
+# To verify independently, compare against the fingerprints shown by:
+#   ssh-keygen -lf infra/cpanel/known_hosts
+[115.187.18.57]:57813 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICWCqn1ssQNl2KMlwzC8QOvomzvoVIloNKIePYIAFgUe
+[115.187.18.57]:57813 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC0Yk96CG8BRDHNVprXqg1W5Wwgze4A4chhBRzgDew9lhXC+vuwFI2IgOMcHyBTr0b1l/gjRZSRx+kyEN15BlterF0pxBWpWVI4udg288GjAqfSQ16CDfmd17RZMMMEBTyIjnlhNgAC7pBufRLqGCe8+QjDDJiyRdpCf/xCss5SPkyTtyP+pr8NGMBhzYpiQzriPvrH36ctuHxmHRWPKSgjNpYIpGohIg0YSgvxV9H9wFCC5V+MoIeJ3Eq9xozT0SsLsZFD0KgDwWkFexAmaCeGpew2HmBJhL63b5TdKQJtUhbKOUY+OmkwPQud+gHMj+eoxKBfvQTwfnjWkf7Jn6DWCjEmvbJEy00cgOZTMI+c4d94/OPJC7r+yfJprF9+nTHxTSCdw3wNYqK2Oo7Qhy+Y59EZa911cm7stGiU6Q5l6jrf6uUMoSLxfJ5FdEKBOanVQ6Tjmo+m7uvmNp5JjjzZoSatl/XrrKTjQVBWjAzb77drJ4L/9BYluzyTIWpSN5E=

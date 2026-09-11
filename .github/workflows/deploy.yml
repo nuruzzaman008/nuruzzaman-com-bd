@@ -84,7 +84,7 @@ jobs:
             echo '|---|---|'
           } >> "$GITHUB_STEP_SUMMARY"
 
-          for name in DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS DEPLOY_HOST DEPLOY_PORT DEPLOY_USER; do
+          for name in DEPLOY_SSH_KEY DEPLOY_HOST DEPLOY_PORT DEPLOY_USER; do
             eval "value=\${$name}"
             if [ -z "$value" ]; then
               echo "MISSING secret: $name"
@@ -113,8 +113,16 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           # Pinned host key rather than StrictHostKeyChecking=no, so a swapped
-          # server is an error instead of a silent success.
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          # server is an error instead of a silent success. The keys are public
+          # and live in the repository; the secret only exists to override them
+          # without a commit, should the host ever change its keys.
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+            echo 'host keys: from the DEPLOY_KNOWN_HOSTS secret'
+          else
+            tr -d '\r' < infra/cpanel/known_hosts > ~/.ssh/known_hosts
+            echo 'host keys: from infra/cpanel/known_hosts'
+          fi
           chmod 600 ~/.ssh/known_hosts
 
           echo "key lines: $(wc -l < ~/.ssh/id_deploy), known_hosts lines: $(wc -l < ~/.ssh/known_hosts)"
