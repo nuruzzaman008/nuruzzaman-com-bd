@@ -83,16 +83,20 @@ jobs:
           [ "$missing" = 0 ] || { echo; echo 'Add the missing secrets under Settings -> Secrets and variables -> Actions.'; exit 1; }
 
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          # Carriage returns are stripped. A key copied from a file on Windows
+          # carries CRLF line endings; ssh-keygen then rejects it as unreadable
+          # while the secret looks perfectly correct in the GitHub UI.
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           # Pinned host key rather than StrictHostKeyChecking=no, so a swapped
           # server is an error instead of a silent success.
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
           echo "key lines: $(wc -l < ~/.ssh/id_deploy), known_hosts lines: $(wc -l < ~/.ssh/known_hosts)"
+          head -1 ~/.ssh/id_deploy
           ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
-            || { echo 'The private key is not readable. Copy the whole file, BEGIN and END lines included.'; exit 1; }
+            || { echo 'The private key is not readable. Copy the whole file including the BEGIN and END lines, and make sure it is the private key (nb_github_deploy) rather than the .pub one.'; exit 1; }
 
       - name: Check the server accepts the key
         env:
