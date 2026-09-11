@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import type { CourseSummary } from '@nuruzzaman/contracts';
 
 import { CourseCard } from '@/features/courses/course-card';
-import { COURSE_TRACK_SLUGS, TrackFilter } from '@/features/courses/track-filter';
+import { TrackFilter } from '@/features/courses/track-filter';
+import { isCourseTrack } from '@/features/courses/tracks';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
@@ -24,7 +25,7 @@ export async function generateMetadata(
   const { locale, t } = pageDictionary(props.locale);
   const { track } = await props.searchParams;
   const active =
-    track && COURSE_TRACK_SLUGS.includes(track as never)
+    isCourseTrack(track)
       ? { slug: track, name: taxonomyLabel(t, track, null, locale) }
       : null;
 
@@ -52,7 +53,7 @@ export default async function CoursesPage(
   const { locale, t } = pageDictionary(props.locale);
   const searchParams = await props.searchParams;
   const activeTrackName =
-    searchParams.track && COURSE_TRACK_SLUGS.includes(searchParams.track as never)
+    isCourseTrack(searchParams.track)
       ? taxonomyLabel(t, searchParams.track, null, locale)
       : null;
 

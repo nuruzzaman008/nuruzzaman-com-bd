@@ -4,25 +4,8 @@ import { LocaleLink } from '@/components/ui/locale-link';
 import { cn } from '@/lib/cn';
 import { taxonomyLabel } from '@/lib/i18n/labels';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { COURSE_TRACK_SLUGS } from '@/features/courses/tracks';
 
-/**
- * The catalogue's subject tracks. Mirrors CourseTracks on the API side; the
- * slugs are the contract between the two and also key the generated cover
- * artwork. The display names live in the dictionary, so the filter reads in
- * whichever language the visitor is browsing in.
- */
-export const COURSE_TRACK_SLUGS = [
-  'foundation-geotechnical',
-  'rcc-design-detailing',
-  'structural-engineering',
-  'steel-design',
-  'autocad-productivity',
-  'engineering-software',
-  'bnbc-code-application',
-  'construction-quality',
-  'quantity-estimation',
-  'mouza-drawing-workflow',
-] as const;
 
 /**
  * Track filter rendered as links rather than a client-side control, so each
