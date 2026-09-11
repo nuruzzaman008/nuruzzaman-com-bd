@@ -155,6 +155,17 @@ if [ "$DEPLOY_WEB" = 1 ]; then
   if [ -L "$NB_WEB_ROOT/current" ]; then readlink "$NB_WEB_ROOT/current" > "$BACKUP/previous-web-release"; fi
   cp "$SOURCE/infra/cpanel/server.cjs" "$NB_WEB_ROOT/server.js.$RELEASE"
   "$NODE_BIN" --check "$NB_WEB_ROOT/server.js.$RELEASE"
+  # Passenger starts the app with a bare environment. These are host settings,
+  # so they come from the deploy config rather than the repository; the entry
+  # script reads them back and refuses to start without INTERNAL_API_URL.
+  # Written every deploy, so the setting cannot be lost by deploying again.
+  cat > "$NB_WEB_ROOT/runtime.env.json.$RELEASE" <<JSON
+{
+  "INTERNAL_API_URL": "$NB_INTERNAL_API_URL",
+  "NEXT_PUBLIC_SITE_URL": "$NB_PUBLIC_SITE_URL"
+}
+JSON
+  mv -f "$NB_WEB_ROOT/runtime.env.json.$RELEASE" "$NB_WEB_ROOT/runtime.env.json"
   ln -s "$WEB_RELEASE" "$NB_WEB_ROOT/current.$RELEASE"
   mv -Tf "$NB_WEB_ROOT/current.$RELEASE" "$NB_WEB_ROOT/current"
   mv -f "$NB_WEB_ROOT/server.js.$RELEASE" "$NB_WEB_ROOT/server.js"
