@@ -1,0 +1,155 @@
+# Build on GitHub, deploy to cPanel.
+#
+# The server cannot build this site: its glibc is 2.28 and Next.js needs 2.29
+# for the native compiler, so it falls back to WebAssembly and exhausts the
+# account's process allowance mid-build. See docs/HOSTING_REQUEST_EN.md.
+#
+# So the build happens here, on a machine that can do it, and only the finished
+# artefact is shipped. That also makes the platform right by construction: this
+# runner is linux-x64, like the server, so the native modules that end up in the
+# standalone tree are the ones the server can load.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deployment at a time. The server takes a lock too, but queuing here means
+# a second push waits rather than failing on the lock.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  NEXT_PUBLIC_SITE_URL: https://nuruzzaman.com.bd
+  NEXT_PUBLIC_API_BASE: /api/v1
+  NEXT_PUBLIC_SESSION_COOKIE: nuruzzaman_session
+  NEXT_PUBLIC_MEDIA_HOST: api.nuruzzaman.com.bd
+  INTERNAL_API_URL: https://api.nuruzzaman.com.bd/api/v1
+  NB_API_PROXY: https://api.nuruzzaman.com.bd
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The deployment refuses an artefact that cannot be traced to the commit
+      # being deployed, so the build stamps itself.
+      - name: Stamp the build with this commit
+        run: echo "${{ github.sha }}" > apps/web/.next/nb-commit
+
+      - name: Package the build
+        run: |
+          cd apps/web
+          tar -czf "$RUNNER_TEMP/web-build.tar.gz" \
+            .next/standalone .next/static .next/BUILD_ID \
+            .next/routes-manifest.json .next/nb-commit public
+          ls -lh "$RUNNER_TEMP/web-build.tar.gz"
+
+      - name: Authorise SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Pinned host key rather than StrictHostKeyChecking=no, so a swapped
+          # server is an error instead of a silent success.
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Upload the build
+        run: |
+          scp -i ~/.ssh/id_deploy -P "${{ secrets.DEPLOY_PORT }}" \
+            "$RUNNER_TEMP/web-build.tar.gz" \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/nb-incoming.tar.gz"
+
+      - name: Deploy
+        run: |
+          # The commit is passed as an argument, not interpolated into the
+          # script: the heredoc is quoted so that nothing in it is expanded by
+          # the runner's shell before it reaches the server.
+          ssh -i ~/.ssh/id_deploy -p "${{ secrets.DEPLOY_PORT }}" \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "bash -s -- ${{ github.sha }}" <<'REMOTE'
+          set -e
+          SHA="$1"
+          REPO="$HOME/repositories/nuruzzaman-com-bd"
+          BUILD="$HOME/nb-build"
+
+          # Match the server's checkout to the commit being deployed. The
+          # deployment reads the commit from here, and it must agree with the
+          # stamp inside the artefact or the build check rejects it.
+          git -C "$REPO" fetch --quiet origin main
+          git -C "$REPO" reset --quiet --hard "$SHA"
+          git -C "$REPO" clean -qfd
+
+          rm -rf "$BUILD"
+          mkdir -p "$BUILD/apps/web"
+          tar -xzf "$HOME/nb-incoming.tar.gz" -C "$BUILD/apps/web"
+          rm -f "$HOME/nb-incoming.tar.gz"
+
+          # Web only, and no build: the artefact is already here. Written fresh
+          # each run so a stale file cannot change what gets deployed.
+          cat > "$HOME/.nb-deploy.ci.conf" <<CONF
+          . "\$HOME/.nb-deploy.conf"
+          NB_DEPLOY_API=0
+          NB_BUILD_WEB=0
+          NB_WEB_BUILD_ROOT="$BUILD"
+          CONF
+
+          cd "$REPO"
+          NB_DEPLOY_SOURCE="$PWD" NB_DEPLOY_CONFIG="$HOME/.nb-deploy.ci.conf" \
+            bash infra/cpanel/deploy.sh
+
+          # Next caches API responses on disk; without this a content change
+          # can sit invisible behind the old cache after a deploy.
+          rm -rf "$HOME/nuruzzaman-web/current/apps/web/.next/cache"
+          touch "$HOME/nuruzzaman-web/tmp/restart.txt"
+          REMOTE
+
+      - name: Verify the site is actually serving
+        run: |
+          # Passenger starts on the first request, so the first call also warms it.
+          for attempt in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 https://nuruzzaman.com.bd/ || echo 000)
+            [ "$code" = 200 ] && break
+            echo "attempt $attempt: HTTP $code - waiting"
+            sleep 10
+          done
+
+          failed=0
+          check() {
+            actual=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$1" || echo 000)
+            if [ "$actual" = "$2" ]; then
+              printf 'PASS %-55s %s\n' "$1" "$actual"
+            else
+              printf 'FAIL %-55s %s (expected %s)\n' "$1" "$actual" "$2"
+              failed=1
+            fi
+          }
+
+          check https://nuruzzaman.com.bd/                       200
+          check https://nuruzzaman.com.bd/en                     200
+          check https://nuruzzaman.com.bd/courses                200
+          check https://nuruzzaman.com.bd/blog                   200
+          check https://nuruzzaman.com.bd/api/v1/site/settings   200
+          check https://nuruzzaman.com.bd/sanctum/csrf-cookie    204
+
+          exit "$failed"
