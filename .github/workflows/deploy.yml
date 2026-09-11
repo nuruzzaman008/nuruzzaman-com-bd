@@ -65,28 +65,68 @@ jobs:
           ls -lh "$RUNNER_TEMP/web-build.tar.gz"
 
       - name: Authorise SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
+          # A missing secret otherwise surfaces as an unreadable scp error, so
+          # each one is named here. Values are never printed - only whether
+          # they are set, and how long the key is.
+          missing=0
+          for name in DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS DEPLOY_HOST DEPLOY_PORT DEPLOY_USER; do
+            eval "value=\${$name}"
+            if [ -z "$value" ]; then echo "MISSING secret: $name"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || { echo; echo 'Add the missing secrets under Settings -> Secrets and variables -> Actions.'; exit 1; }
+
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           # Pinned host key rather than StrictHostKeyChecking=no, so a swapped
           # server is an error instead of a silent success.
-          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Upload the build
+          echo "key lines: $(wc -l < ~/.ssh/id_deploy), known_hosts lines: $(wc -l < ~/.ssh/known_hosts)"
+          ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
+            || { echo 'The private key is not readable. Copy the whole file, BEGIN and END lines included.'; exit 1; }
+
+      - name: Check the server accepts the key
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          scp -i ~/.ssh/id_deploy -P "${{ secrets.DEPLOY_PORT }}" \
+          # Separated from the upload so an authentication problem is not
+          # reported as a file-transfer problem.
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o BatchMode=yes -o ConnectTimeout=25 \
+            -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" 'echo connected as $(whoami)' \
+            || { echo; echo 'SSH refused. Check that the public key is AUTHORIZED in cPanel (Import and Authorize are two separate steps), and that DEPLOY_KNOWN_HOSTS matches this host and port.'; exit 1; }
+
+      - name: Upload the build
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" -o IdentitiesOnly=yes \
             "$RUNNER_TEMP/web-build.tar.gz" \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/nb-incoming.tar.gz"
+            "$DEPLOY_USER@$DEPLOY_HOST:nb-incoming.tar.gz"
 
       - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           # The commit is passed as an argument, not interpolated into the
           # script: the heredoc is quoted so that nothing in it is expanded by
           # the runner's shell before it reaches the server.
-          ssh -i ~/.ssh/id_deploy -p "${{ secrets.DEPLOY_PORT }}" \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o IdentitiesOnly=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
             "bash -s -- ${{ github.sha }}" <<'REMOTE'
           set -e
           SHA="$1"
