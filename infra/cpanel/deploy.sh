@@ -14,7 +14,25 @@ RUN_MIGRATIONS="${NB_RUN_MIGRATIONS:-0}"
 for flag in "$DRY_RUN" "$DEPLOY_API" "$DEPLOY_WEB" "$BUILD_WEB" "$RUN_MIGRATIONS"; do
   [[ "$flag" = 0 || "$flag" = 1 ]] || fail 'Flags must be 0 or 1.'
 done
-for tool in git realpath tar rsync flock; do command -v "$tool" >/dev/null || fail "Missing $tool"; done
+for tool in git realpath tar flock; do command -v "$tool" >/dev/null || fail "Missing $tool"; done
+# Copies the contents of one directory into another, excluding what it is
+# told to. cPanel accounts often have no rsync, and this is the whole of what
+# the deployment asked rsync for, so tar stands in rather than the deployment
+# refusing to run on an ordinary shared host.
+sync_tree() {
+  sync_src=$1; sync_dest=$2; shift 2
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a "$@" "$sync_src" "$sync_dest"
+    return
+  fi
+  sync_excludes=()
+  for sync_arg in "$@"; do
+    case "$sync_arg" in --exclude=*) sync_excludes+=("--exclude=${sync_arg#--exclude=}") ;; esac
+  done
+  mkdir -p "$sync_dest"
+  (cd "$sync_src" && tar -cf - "${sync_excludes[@]}" .) | (cd "$sync_dest" && tar -xf -)
+}
+
 ACCOUNT="$(realpath "$HOME")"
 check_target() {
   [[ "$(realpath -m "$1")" = "$ACCOUNT/$2" && ! -L "$1" ]] || fail "Unsafe target: $1"
@@ -117,10 +135,10 @@ if [ "$DEPLOY_WEB" = 1 ]; then
   "$NODE_BIN" "$SOURCE/infra/cpanel/verify-web-build.cjs" "$BUILD_ROOT" "$NB_API_PROXY" "$COMMIT"
   WEB_RELEASE="$NB_WEB_ROOT/releases/$RELEASE"
   mkdir -p "$WEB_RELEASE"
-  rsync -a --exclude='.env' --exclude='.env.*' "$BUILD_ROOT/apps/web/.next/standalone/" "$WEB_RELEASE/"
+  sync_tree "$BUILD_ROOT/apps/web/.next/standalone/" "$WEB_RELEASE/" --exclude='.env' --exclude='.env.*'
   mkdir -p "$WEB_RELEASE/apps/web/.next/static" "$WEB_RELEASE/apps/web/public"
-  rsync -a "$BUILD_ROOT/apps/web/.next/static/" "$WEB_RELEASE/apps/web/.next/static/"
-  rsync -a "$BUILD_ROOT/apps/web/public/" "$WEB_RELEASE/apps/web/public/"
+  sync_tree "$BUILD_ROOT/apps/web/.next/static/" "$WEB_RELEASE/apps/web/.next/static/"
+  sync_tree "$BUILD_ROOT/apps/web/public/" "$WEB_RELEASE/apps/web/public/"
   chmod -R u+rwX "$WEB_RELEASE"
 fi
 if [ "$DEPLOY_API" = 1 ]; then
@@ -132,7 +150,7 @@ if [ "$DEPLOY_API" = 1 ]; then
   mkdir -p "$API_STAGE/storage/framework/"{cache/data,sessions,views} "$API_STAGE/storage/logs"
   "$PHP_BIN" "$SOURCE/infra/cpanel/check-api.php" "$API_STAGE" "$NB_API_ROOT" "$RUN_MIGRATIONS"
   if [ -f "$NB_API_ROOT/artisan" ]; then "$PHP_BIN" "$NB_API_ROOT/artisan" down; fi
-  rsync -a --exclude='.env' --exclude='.env.*' --exclude='storage/' --exclude='public/storage' --exclude='bootstrap/cache/' --exclude='tests/' --exclude='public/.htaccess' "$API_STAGE/" "$NB_API_ROOT/"
+  sync_tree "$API_STAGE/" "$NB_API_ROOT/" --exclude='.env' --exclude='.env.*' --exclude='storage/' --exclude='public/storage' --exclude='bootstrap/cache/' --exclude='tests/' --exclude='public/.htaccess'
   if [ ! -e "$NB_API_ROOT/public/.htaccess" ]; then cp "$API_STAGE/public/.htaccess" "$NB_API_ROOT/public/.htaccess"; fi
   mkdir -p "$NB_API_ROOT/bootstrap/cache" "$NB_API_ROOT/storage/framework/"{cache/data,sessions,views} "$NB_API_ROOT/storage/logs" "$NB_API_ROOT/storage/app/"{public,private-assets}
   # Apache must traverse the public upload link; private-assets stays private.
