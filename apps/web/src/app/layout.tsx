@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 import { SkipLink } from '@/components/layout/skip-link';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
+import { LOCALE_HTML_LANG, PATHNAME_HEADER, documentLocale } from '@/lib/i18n/locale';
 import { LocaleProvider } from '@/lib/i18n/locale-provider';
 import { SessionProvider } from '@/lib/session/session-provider';
 import { publicEnv } from '@/lib/env';
@@ -65,8 +66,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   */
   const adminLocale = adminLocaleFrom((await cookies()).get(ADMIN_LOCALE_COOKIE)?.value);
 
+  /*
+    This is the only <html> the site has, so its `lang` is decided here. The
+    path comes from proxy.ts, because a layout is not given one; without it
+    this was hardcoded to Bengali and every English page said so too.
+
+    The rule and its inputs are LocaleProvider's, so the attribute rendered
+    here and the one the client keeps in step after a navigation agree.
+  */
+  const pathname = (await headers()).get(PATHNAME_HEADER) ?? '/';
+  const locale = documentLocale(pathname, adminLocale);
+
   return (
-    <html lang="bn" dir="ltr" className={`${bengali.variable} ${inter.variable}`}>
+    <html
+      lang={LOCALE_HTML_LANG[locale]}
+      dir="ltr"
+      className={`${bengali.variable} ${inter.variable}`}
+    >
       {/* Extensions such as Grammarly inject body attributes before hydration.
           Suppression is limited to this element; child mismatches still warn. */}
       <body suppressHydrationWarning className="flex min-h-dvh flex-col antialiased">

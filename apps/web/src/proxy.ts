@@ -1,68 +1,38 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+import { PATHNAME_HEADER } from '@/lib/i18n/locale';
 
 /**
- * Edge-of-app request handling.
+ * Tells the root layout which path is being rendered.
  *
- * In Next.js 16 this file replaces `middleware.ts`; the runtime is Node.js and
- * cannot be configured.
+ * The root layout renders the single `<html>` element for the whole site, and
+ * a layout is not given the path, so its `lang` was hardcoded to `bn`. Every
+ * English page therefore declared itself Bengali - contradicting the hreflang
+ * and the JSON-LD `inLanguage` sitting beside it in the same document, and
+ * telling a screen reader to pronounce English with Bengali rules.
  *
- * Three jobs:
- *   1. Give every request a correlation id that also reaches Laravel.
- *   2. Send signed-out visitors away from private areas before a page renders.
- *   3. Attach the security headers that only make sense for HTML responses.
+ * LocaleProvider already fixes the attribute on a later client navigation. The
+ * gap was the first server render, which is the only one a crawler sees.
+ *
+ * Named `proxy`, not `middleware`: the middleware convention is deprecated in
+ * Next 16 and this file replaces it.
  */
-
-const PRIVATE_PREFIXES = ['/account', '/dashboard', '/learn', '/checkout'];
-
-/** The Sanctum session cookie name, as configured in the Laravel session config. */
-const SESSION_COOKIE = process.env.NEXT_PUBLIC_SESSION_COOKIE ?? 'nuruzzaman_session';
-
-export function proxy(request: NextRequest): NextResponse {
-  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
-  const { pathname, search } = request.nextUrl;
-
-  const isPrivate = PRIVATE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-
-  // A cookie only means "probably signed in"; the API still authorises every
-  // read and write. This redirect exists to avoid rendering a shell the visitor
-  // cannot use, not as a security boundary.
-  if (isPrivate && !request.cookies.has(SESSION_COOKIE)) {
-    const signIn = new URL('/login', request.url);
-    signIn.searchParams.set('next', `${pathname}${search}`);
-
-    return NextResponse.redirect(signIn);
-  }
-
+export function proxy(request: NextRequest) {
+  // Set on every matched request rather than only the English ones, so a
+  // header of this name arriving from a client is always overwritten instead
+  // of being trusted.
   const headers = new Headers(request.headers);
-  headers.set('x-request-id', requestId);
+  headers.set(PATHNAME_HEADER, request.nextUrl.pathname);
 
-  const response = NextResponse.next({ request: { headers } });
-
-  response.headers.set('x-request-id', requestId);
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  response.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), payment=()',
-  );
-
-  // Private areas must never be stored by a shared cache.
-  if (isPrivate) {
-    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
-  }
-
-  return response;
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Everything except Next's own assets and the files served from /public,
-     * so static delivery stays as cheap as possible.
-     */
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?)$).*)',
-  ],
+  /*
+    Only what renders the shell. Static assets, the image optimiser and the
+    metadata routes never render `<html>`, so they have no reason to pay for
+    this on every request.
+  */
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)'],
 };

@@ -237,7 +237,34 @@ JSON
   mv -Tf "$NB_WEB_ROOT/current.$RELEASE" "$NB_WEB_ROOT/current"
   mv -f "$NB_WEB_ROOT/server.js.$RELEASE" "$NB_WEB_ROOT/server.js"
   mkdir -p "$NB_WEB_ROOT/tmp"
+
+  # Noted before the restart is asked for, so what gets retired below is
+  # exactly the set of app processes that predate this deploy - never the one
+  # Passenger is about to start.
+  STALE_APP_PIDS="$(pgrep -u "$(id -un)" -f 'next-server' 2>/dev/null || true)"
+
   touch "$NB_WEB_ROOT/tmp/restart.txt"
+
+  # Passenger starts the app on the first request, and the new release has to
+  # be serving before the old one is taken away.
+  curl -fsS -o /dev/null --max-time 120 --retry 5 --retry-delay 6 \
+    "$NB_PUBLIC_SITE_URL/" || echo 'Warning: the site did not answer; the previous app is being left alone.'
+
+  # Passenger does not always reap the app it replaced. Seventeen next-server
+  # processes had accumulated across eight deploys, eleven threads each, until
+  # the account could not fork at all: node failed with "pthread_create:
+  # Resource temporarily unavailable" and every route answered 503. Nothing in
+  # the deploy noticed, because a restart signal is not evidence of a restart.
+  #
+  # Only retired once the new app has answered, so a failed deploy leaves the
+  # running site exactly as it was.
+  if curl -fsS -o /dev/null --max-time 60 "$NB_PUBLIC_SITE_URL/" 2>/dev/null; then
+    for stale_pid in $STALE_APP_PIDS; do
+      if kill -TERM "$stale_pid" 2>/dev/null; then
+        printf 'Retired the previous app process %s\n' "$stale_pid"
+      fi
+    done
+  fi
   # Only now that current points at the new release, and never the release it
   # replaced: that one is the rollback target recorded in this backup. These
   # are 65M each and were never pruned, so they grew with every deploy.

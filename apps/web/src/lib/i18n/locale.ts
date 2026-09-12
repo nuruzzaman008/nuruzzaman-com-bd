@@ -98,3 +98,23 @@ export function isPrivatePath(path: string): boolean {
 
   return PRIVATE_PREFIXES.some((prefix) => clean === prefix || clean.startsWith(`${prefix}/`));
 }
+
+/**
+ * Request header carrying the path to the root layout.
+ *
+ * A layout is given no way to see the path, and the root layout has to render
+ * `<html lang>` for the whole site. proxy.ts sets this on every request that
+ * renders the shell.
+ */
+export const PATHNAME_HEADER = 'x-nb-pathname';
+
+/**
+ * The `<html lang>` locale for a server render.
+ *
+ * The same rule LocaleProvider applies on the client, on the same two inputs,
+ * so the first render and every later navigation cannot disagree: a public
+ * page takes its language from the URL, a signed-in one from the preference.
+ */
+export function documentLocale(path: string, adminLocale: Locale): Locale {
+  return isPrivatePath(path) ? adminLocale : localeFromPath(path);
+}

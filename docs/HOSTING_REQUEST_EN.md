@@ -3,7 +3,7 @@
 **Account:** `nbconsultant`
 **Server:** `bdix4.ebnserver.com` (115.187.18.57)
 **Domains on the account:** nuruzzaman.com.bd, api.nuruzzaman.com.bd, productreview.com.bd, nuruzzaman.nbconsultant.com.bd
-**Date:** 11 September 2026
+**Date:** 12 September 2026
 
 Dear Support Team,
 
@@ -11,10 +11,15 @@ The site `nuruzzaman.com.bd` is a Node.js (Next.js) application served through
 Passenger, with a Laravel/PHP API on `api.nuruzzaman.com.bd`. Both are now
 deployed and working.
 
-While deploying I ran into three limitations of the current server. The site is
-live in spite of them, but each one costs us something, and two of them briefly
-took **every site on the account offline**. I would be grateful if you could look
-at the three items below.
+While deploying I ran into two limitations of the current server. The site is
+live in spite of both, but each one costs us something, and I would be grateful
+if you could look at them.
+
+There is also a third item below. It was originally a request to raise the
+account's process limit, after outages that took **every site on the account
+offline**. I have since traced those to a fault in our own application and fixed
+it, so that item now asks you for nothing — it is left in only so the earlier
+request is not left standing.
 
 ---
 
@@ -67,29 +72,32 @@ incrementally or remove files that were deleted upstream.
 
 ---
 
-## 3. The account's process limit (LVE NPROC) is too low
+## 3. The 503 outages — our fault, not yours, and now fixed
 
-This is the one that caused real downtime. During ordinary work — one build, a
-few SSH sessions, a deployment — the account ran out of process slots. At that
-point **nothing on the account could start a process**:
+An earlier draft of this letter asked you to raise the account's process limit.
+**Please disregard that request.** We have since found the cause, and it was
+ours.
+
+The outages were real. The account repeatedly ran out of process slots, and
+while it did, every site on it returned **HTTP 503** — including
+`api.nuruzzaman.com.bd`, which is PHP and has nothing to do with our Node app:
 
 ```
+node: pthread_create: Resource temporarily unavailable
 bash: fork: retry: Resource temporarily unavailable
-/etc/profile.d/cpanel-user-commands.sh: fork: Resource temporarily unavailable
-ssh: Connection closed by remote host
 ```
 
-Every site returned **HTTP 503**, including `api.nuruzzaman.com.bd`, which is a
-PHP application and unrelated to the Node app. It only recovered after the
-Node.js application was restarted manually from cPanel.
+The reason was that our Node application's old instances were not being shut
+down when we redeployed it. Seventeen `next-server` processes had built up, each
+holding about eleven threads — 187 threads for an application that needs roughly
+a dozen — until nothing on the account could fork. Our deployment now retires
+the previous instance once the new one is confirmed to be serving, and the
+process count has stayed normal since.
 
-Note that `ulimit -u` reports `771057`, so the limit being hit is the **LVE
-NPROC limit**, which is not visible through `ulimit` and can only be changed by
-you.
-
-**Request:** please review and raise the **NPROC** (and, if it is also tight,
-**EP** — entry processes) limit for this account, and let us know the values you
-set so we can size our builds accordingly.
+**No action needed.** One thing would help us, if it is easy for you: the
+**NPROC** and **EP (entry processes)** values set for this account. Knowing them
+lets us size our builds and deployments to stay inside them, instead of
+discovering the ceiling by hitting it.
 
 ---
 
@@ -112,10 +120,12 @@ These need no action; listed so you can see the account is otherwise healthy.
 
 1. **glibc 2.29+** (server migration, if available) — so the site can be built on the server
 2. **Install `rsync`** — standard deployment tooling
-3. **Raise the LVE NPROC / entry-process limit** — to stop account-wide 503 outages
+3. *Nothing.* The 503 outages turned out to be our own application not shutting
+   down on redeploy, and are fixed. If it is easy, we would still like to know
+   the account's NPROC and EP values, so we can stay within them.
 
-Items 2 and 3 are small changes. Item 1 is the one that decides whether we can
-use cPanel's own Git deployment, or must keep building elsewhere and uploading.
+Item 2 is a small change. Item 1 is the one that decides whether we can use
+cPanel's own Git deployment, or must keep building elsewhere and uploading.
 
 If a server meeting item 1 is not available on this plan, please tell us — we
 will keep building off-server permanently and will not raise it again.
