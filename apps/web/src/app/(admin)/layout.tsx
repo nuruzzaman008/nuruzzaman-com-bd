@@ -6,6 +6,7 @@ import { ApiError, type User } from '@nuruzzaman/contracts';
 import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switcher';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
+import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { pageDictionary } from '@/lib/i18n/page';
@@ -45,6 +46,26 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const locale = adminLocaleFrom((await cookies()).get(ADMIN_LOCALE_COOKIE)?.value);
   const { t } = pageDictionary(locale);
+
+  /*
+    Every admin endpoint carries the 'verified' middleware (routes/api_admin.php),
+    so without a verified address each page fetches, is refused with 403, and
+    renders a bare "This page couldn't load" with an error digest and nothing
+    else. The shell says what is wrong and offers the way out instead, because
+    the admin shell has no verification notice of its own - that lives in the
+    customer sidebar, which staff never see.
+  */
+  if (!user.email_verified) {
+    return (
+      <main id="main" className="flex min-h-dvh flex-1 items-center justify-center bg-surface p-6">
+        <div className="max-w-md rounded-xl border border-amber/40 bg-amber-soft p-6 text-navy">
+          <h1 className="text-lg font-bold">{t.admin.verifyRequiredTitle}</h1>
+          <p className="mt-2 text-sm">{t.admin.verifyRequired}</p>
+          <ResendVerification className="mt-4" />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-1 flex-col bg-surface lg:flex-row">

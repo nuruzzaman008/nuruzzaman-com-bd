@@ -1121,6 +1121,9 @@ const bn = {
   */
   admin: {
     shellTitle: 'অ্যাডমিন',
+    verifyRequiredTitle: 'আগে ইমেইল যাচাই করুন',
+    verifyRequired:
+      'ড্যাশবোর্ডের সব তথ্যের জন্য যাচাই করা ইমেইল প্রয়োজন। ইমেইলের লিংকে ক্লিক করুন, অথবা নিচ থেকে নতুন লিংক নিন। যাচাই হলে এই পাতাটি আবার খুলুন।',
     navLabel: 'ড্যাশবোর্ড নেভিগেশন',
 
     group: {
@@ -2576,6 +2579,9 @@ const en: Dictionary = {
 
   admin: {
     shellTitle: 'Admin',
+    verifyRequiredTitle: 'Verify your email first',
+    verifyRequired:
+      'The dashboard needs a verified email address before it will load any data. Open the link in your email, or send yourself a new one below, then come back to this page.',
     navLabel: 'Dashboard navigation',
 
     group: {
