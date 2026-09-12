@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
+import { GoogleButton } from '@/features/auth/google-button';
 import { LoginForm } from '@/features/auth/login-form';
 import { LoadingRegion } from '@/components/ui/states';
 import { adminDictionary } from '@/lib/i18n/admin-page';
+import { publicEnv } from '@/lib/env';
 import { privateMetadata } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,6 +29,16 @@ export default async function LoginPage() {
           <LoginForm />
         </Suspense>
       </div>
+
+      {/* Customers only. The staff entrance has no such button, and the API
+          refuses a staff account arriving this way regardless. */}
+      {publicEnv.googleLogin ? (
+        <div className="mt-6">
+          <Suspense fallback={null}>
+            <GoogleButton />
+          </Suspense>
+        </div>
+      ) : null}
 
       <p className="mt-6 text-center text-sm text-muted">
         {t.auth.noAccount}{' '}

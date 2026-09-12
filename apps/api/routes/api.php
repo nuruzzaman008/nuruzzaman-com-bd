@@ -61,7 +61,18 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/login', [Auth\LoginController::class, 'store']);
         Route::post('auth/forgot-password', [Auth\PasswordController::class, 'forgot']);
         Route::post('auth/reset-password', [Auth\PasswordController::class, 'reset']);
+        Route::get('auth/google/redirect', [Auth\GoogleAuthController::class, 'redirect']);
     });
+
+    /*
+      The callback is deliberately outside throttle:auth. Google sends the
+      visitor here exactly once per sign-in, and the limiter in front of the
+      password endpoints counts by address - a household finishing three
+      sign-ins in a minute would find the fourth refused with nothing to
+      explain it. The state check makes a replayed callback useless anyway.
+    */
+    Route::get('auth/google/callback', [Auth\GoogleAuthController::class, 'callback'])
+        ->middleware('throttle:api');
 
     Route::post('auth/logout', [Auth\LoginController::class, 'destroy'])->middleware('auth:sanctum');
 

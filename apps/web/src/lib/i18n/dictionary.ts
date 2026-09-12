@@ -953,6 +953,15 @@ const bn = {
       'রিসেট লিংকটি সম্পূর্ণ নয়। ইমেইল থেকে লিংকটি আবার খুলুন, অথবা নতুন করে অনুরোধ করুন।',
     accountLabel: 'অ্যাকাউন্ট',
     signInIntro: 'অর্ডার, ডাউনলোড ও কোর্স অ্যাক্সেস দেখতে সাইন ইন করুন।',
+    orSeparator: 'অথবা',
+    googleContinue: 'Google দিয়ে চালিয়ে যান',
+    googleStaffRefused:
+      'স্টাফ অ্যাকাউন্ট Google দিয়ে সাইন ইন করা যায় না। পাসওয়ার্ড দিয়ে সাইন ইন করুন।',
+    googleUnverified:
+      'আপনার Google ঠিকানাটি যাচাই করা নেই, তাই এটি দিয়ে সাইন ইন করা যাচ্ছে না।',
+    googleCancelled: 'Google সাইন ইন বাতিল করা হয়েছে।',
+    googleInactive: 'এই অ্যাকাউন্টটি সক্রিয় নয়। সাপোর্টে যোগাযোগ করুন।',
+    googleFailed: 'Google দিয়ে সাইন ইন করা যায়নি। আবার চেষ্টা করুন।',
     registerIntro:
       'একটি অ্যাকাউন্ট দিয়েই ডাউনলোড, কোর্স এবং অ্যাক্টিভেশন রিকোয়েস্ট — সব এক জায়গায়।',
     forgotIntro: 'আপনার ইমেইল দিন। ইমেইলটি নিবন্ধিত থাকলে একটি রিসেট লিংক পাঠানো হবে।',
@@ -2421,6 +2430,15 @@ const en: Dictionary = {
       'The reset link is not complete. Open it again from the email, or ask for a new one.',
     accountLabel: 'Account',
     signInIntro: 'Sign in to see your orders, downloads and course access.',
+    orSeparator: 'or',
+    googleContinue: 'Continue with Google',
+    googleStaffRefused:
+      'Staff accounts cannot sign in with Google. Please use your password.',
+    googleUnverified:
+      'That Google address is not verified, so it cannot be used to sign in.',
+    googleCancelled: 'Google sign-in was cancelled.',
+    googleInactive: 'This account is not active. Please contact support.',
+    googleFailed: 'Signing in with Google did not work. Please try again.',
     registerIntro:
       'One account covers downloads, courses and activation requests together.',
     forgotIntro: 'Enter your email. If it is registered, a reset link will be sent.',
