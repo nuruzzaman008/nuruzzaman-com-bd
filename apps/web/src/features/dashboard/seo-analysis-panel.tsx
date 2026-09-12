@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { analyzeSeo, type CheckStatus, type SeoInput } from '@/lib/seo-analysis/analyze';
+import { api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
 import { number } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -53,11 +54,17 @@ function readField(form: HTMLFormElement, name: string): string {
 export function SeoAnalysisPanel({
   formId,
   kind,
+  recordId,
   fields,
 }: {
   /** The editor form to read from. */
   formId: string;
   kind: SeoInput['kind'];
+  /**
+   * This record's id. Without it the keyword-reuse check is skipped rather
+   * than reporting the record's own keyword back as a clash with itself.
+   */
+  recordId?: number;
   /** Field names in that form, since each editor names them differently. */
   fields: {
     title: string;
@@ -71,6 +78,7 @@ export function SeoAnalysisPanel({
 }) {
   const { locale, t } = useLocale();
   const [values, setValues] = useState<SeoInput | null>(null);
+  const [usedBy, setUsedBy] = useState<{ keyword: string; rows: { title: string }[] } | null>(null);
 
   useEffect(() => {
     const form = document.getElementById(formId);
@@ -97,7 +105,61 @@ export function SeoAnalysisPanel({
     return () => form.removeEventListener('input', read);
   }, [formId, kind, fields]);
 
-  const analysis = useMemo(() => (values ? analyzeSeo(values, t) : null), [values, t]);
+  const keyword = values?.focusKeyword.trim() ?? '';
+
+  /*
+    Whether anything else already targets this keyword is a question only the
+    database can answer, so it is asked here rather than inside analyzeSeo,
+    which stays a pure function of what the author typed.
+
+    Debounced, because the panel re-reads the form on every keystroke and a
+    keyword is typed one letter at a time. An answer is kept alongside the
+    keyword it was for, so a stale reply cannot be shown against a newer word.
+  */
+  useEffect(() => {
+    // Nothing to clear here: the answer is stored with the keyword it was for,
+    // and the memo below ignores it unless the two still match.
+    if (!keyword || recordId === undefined) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await api<{ data: { used_by: { title: string }[] } }>(
+            '/admin/seo/keyword-usage',
+            { query: { keyword, kind, id: recordId }, signal: controller.signal },
+          );
+
+          setUsedBy({ keyword, rows: response.data.used_by });
+        } catch {
+          // The check is skipped when the lookup fails; an author should not be
+          // told their keyword is unique because a request timed out.
+          setUsedBy(null);
+        }
+      })();
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [keyword, kind, recordId]);
+
+  const analysis = useMemo(
+    () =>
+      values
+        ? analyzeSeo(
+            {
+              ...values,
+              keywordUsedBy: usedBy?.keyword === keyword ? usedBy.rows : undefined,
+            },
+            t,
+          )
+        : null,
+    [values, usedBy, keyword, t],
+  );
 
   if (!analysis) {
     return null;

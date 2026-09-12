@@ -46,6 +46,27 @@ class ProductResource extends JsonResource
             'variants' => ProductVariantResource::collection($this->whenLoaded('activeVariants')),
             'published_at' => $this->published_at?->toIso8601String(),
             'seo' => new SeoResource($this->whenLoaded('seo')),
+
+            /*
+              The raw, editable form of what is rendered above, for staff who
+              can change it. A form cannot round-trip description_html: it is
+              Markdown already turned into HTML, so an editor loading it would
+              save the rendering back over the source. cover_media_id is the
+              featured image, which the public payload has no use for because
+              it carries the resolved URL instead.
+            */
+            ...$this->when(
+                (bool) $request->user()?->hasPermission('products.manage'),
+                fn () => [
+                    'description_markdown' => $this->description_markdown,
+                    'description_markdown_en' => $this->description_markdown_en,
+                    'tagline_raw' => $this->tagline,
+                    'name_raw' => $this->name,
+                    'cover_media_id' => $this->cover_media_id,
+                    'is_price_public' => (bool) $this->is_price_public,
+                ],
+                [],
+            ),
         ];
     }
 }

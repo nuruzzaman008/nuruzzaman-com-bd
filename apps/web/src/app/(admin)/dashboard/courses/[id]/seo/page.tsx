@@ -51,6 +51,7 @@ export default async function CourseSeoPage(props: { params: Promise<{ id: strin
         <SeoEditor
           kind="course"
           endpoint={`/admin/courses/${id}`}
+          recordId={course.id}
           title={course.title}
           slug={course.slug}
           // The analysis reads the course description, which the API returns as

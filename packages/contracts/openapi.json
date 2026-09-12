@@ -5843,6 +5843,109 @@
         }
       }
     },
+    "/admin/seo/keyword-usage": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminSeoKeywordUsage",
+        "summary": "Which records already target a focus keyword",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Two pages written for one keyword compete with each other, so the editor\nasks before an author commits to one. Only the titles of the clashing\nrecords are returned - nothing that is not already visible in the admin\nlists. Pass the asking record's own kind and id so it is excluded.\n",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 160
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "post",
+                "page",
+                "product",
+                "course"
+              ]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "used_by"
+                      ],
+                      "properties": {
+                        "used_by": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "type",
+                              "id",
+                              "title"
+                            ],
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "Post"
+                              },
+                              "id": {
+                                "type": "integer"
+                              },
+                              "title": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/admin/settings": {
       "get": {
         "tags": [

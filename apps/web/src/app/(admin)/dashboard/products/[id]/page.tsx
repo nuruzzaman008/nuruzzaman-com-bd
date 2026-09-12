@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ApiError, type Product } from '@nuruzzaman/contracts';
+import { ApiError } from '@nuruzzaman/contracts';
 
-import { SeoEditor } from '@/features/dashboard/seo-editor';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { ProductEditor, type EditableProduct } from '@/features/dashboard/product-editor';
 import { sessionApi } from '@/lib/api/server';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
@@ -11,17 +11,17 @@ import { privateMetadata } from '@/lib/seo';
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await adminDictionary();
 
-  return privateMetadata(t.admin.productSeo);
+  return privateMetadata(t.admin.products.editTitle);
 }
 
-export default async function ProductSeoPage(props: { params: Promise<{ id: string }> }) {
+export default async function ProductEditPage(props: { params: Promise<{ id: string }> }) {
   const { t } = await adminDictionary();
   const { id } = await props.params;
 
-  let product: Product;
+  let product: EditableProduct;
 
   try {
-    const response = await sessionApi<{ data: Product }>(
+    const response = await sessionApi<{ data: EditableProduct }>(
       `/admin/products/${encodeURIComponent(id)}`,
     );
     product = response.data;
@@ -39,27 +39,16 @@ export default async function ProductSeoPage(props: { params: Promise<{ id: stri
         trail={[
           { name: t.admin.nav.dashboard, path: '/dashboard' },
           { name: t.admin.nav.products, path: '/dashboard/products' },
-          { name: product.name, path: `/dashboard/products/${id}/seo` },
+          { name: product.name, path: `/dashboard/products/${id}` },
         ]}
       />
 
-      <h1 className="mt-4 text-[length:var(--step-h1)] font-bold text-navy">
-        SEO — {product.name}
+      <h1 className="mt-4 text-[length:var(--step-h1)] font-bold text-navy" data-authored="true">
+        {product.name}
       </h1>
 
       <div className="mt-6">
-        <SeoEditor
-          kind="product"
-          endpoint={`/admin/products/${id}`}
-          recordId={product.id}
-          title={product.name}
-          slug={product.slug}
-          // The analysis reads the product description, which the API returns as
-          // HTML; the analyser strips tags, so this measures the prose itself.
-          body={product.description_html ?? ''}
-          excerpt={product.tagline ?? ''}
-          seo={product.seo ?? null}
-        />
+        <ProductEditor initial={product} />
       </div>
     </div>
   );

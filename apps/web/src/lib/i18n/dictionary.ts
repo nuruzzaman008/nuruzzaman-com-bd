@@ -679,6 +679,26 @@ const bn = {
     titleNumberHint:
       'ঐচ্ছিক — সংখ্যা থাকলে তালিকা বা ধাপভিত্তিক লেখায় ক্লিক বাড়ে, সব লেখায় নয়।',
 
+    titlePowerWordYes: 'টাইটেলে পাওয়ার ওয়ার্ড আছে — “{word}”।',
+    titlePowerWordNo: 'টাইটেলে কোনো পাওয়ার ওয়ার্ড নেই।',
+    titlePowerWordHint:
+      '“সম্পূর্ণ”, “প্রমাণিত”, “ধাপে ধাপে” — এ ধরনের শব্দ পাঠককে বলে দেয় ভেতরে কী পাবে। জোর করে বসানোর দরকার নেই।',
+
+    titleSentimentYes: 'টাইটেলে অনুভূতিবাচক শব্দ আছে — “{word}”।',
+    titleSentimentNo: 'টাইটেল একদম নিরপেক্ষ — কোনো ইতিবাচক বা নেতিবাচক শব্দ নেই।',
+    titleSentimentHint:
+      'ইতিবাচক (“সেরা”) বা নেতিবাচক (“ভুল”) — যেকোনো একটি দিক থাকলে টাইটেল বেশি ক্লিক পায়। তথ্যভিত্তিক শিরোনামে এটি উপেক্ষা করা যায়।',
+
+    keywordUnique: 'এই ফোকাস কিওয়ার্ড আর কোথাও ব্যবহার করা হয়নি।',
+    keywordReused: 'একই ফোকাস কিওয়ার্ড আরও {count}টি জায়গায় আছে: {titles}',
+    keywordUniqueHint:
+      'একই কিওয়ার্ডে দুটি পাতা থাকলে সেগুলো নিজেরাই একে অপরের সঙ্গে প্রতিযোগিতা করে; সার্চ ইঞ্জিন একটিকে বেছে নেয়, বাকিটির মান নষ্ট হয়।',
+
+    tocYes: 'লেখার ভেতরে সূচিপত্র (অভ্যন্তরীণ লিংক) আছে।',
+    tocNo: 'লেখাটি লম্বা, কিন্তু কোনো সূচিপত্র নেই।',
+    tocHint:
+      '১০০০+ শব্দের লেখায় শুরুতে হেডিংগুলোর লিংক দিলে পাঠক দ্রুত পৌঁছায়, আর সার্চ ফলাফলে অতিরিক্ত লিংক দেখানোর সম্ভাবনা তৈরি হয়।',
+
     noHeadings: 'কোনো সাবহেডিং নেই।',
     headingCount: '{count}টি সাবহেডিং আছে।',
     headingHint: 'সাবহেডিং ছাড়া লম্বা লেখা স্ক্যান করা যায় না।',
@@ -1343,6 +1363,27 @@ const bn = {
       variants: 'ভ্যারিয়েন্ট',
       noPrice: 'দাম প্রকাশ করা হয়নি',
       analysis: 'বিশ্লেষণ',
+      editTitle: 'প্রোডাক্ট সম্পাদনা',
+      slugHint: 'ছোট হাতের ইংরেজি অক্ষর, সংখ্যা ও হাইফেন। স্লাগ বদলালে আগের লিংকগুলো আর কাজ করবে না।',
+      tagline: 'ট্যাগলাইন',
+      taglineHint: 'এক লাইনের সারসংক্ষেপ — তালিকা ও শেয়ার কার্ডে দেখায়।',
+      description: 'বিবরণ (Markdown)',
+      descriptionHint: 'Markdown হিসেবে সংরক্ষিত হয় এবং সাইটে HTML হয়ে দেখায়।',
+      pricePublic: 'দাম প্রকাশ্য রাখুন',
+      featuredImage: 'ফিচার্ড ইমেজ',
+      featuredImageHint:
+        'প্রোডাক্ট পেজ, তালিকা এবং সোশ্যাল শেয়ার কার্ডে এই ছবিটিই ব্যবহৃত হয়।',
+      chooseImage: 'মিডিয়া লাইব্রেরি থেকে বাছুন',
+      noImage: 'কোনো ছবি নেই',
+      mediaUnavailable: 'মিডিয়া লাইব্রেরি পড়া যায়নি — এর জন্য “media.manage” অনুমতি লাগে।',
+      mediaEmpty: 'মিডিয়া লাইব্রেরি খালি — আগে “মিডিয়া” পাতা থেকে ছবি আপলোড করুন।',
+      altMissing: 'এই ছবির alt লেখা নেই। মিডিয়া লাইব্রেরিতে গিয়ে alt যোগ করুন; SEO ও স্ক্রিন রিডার—দুটোতেই এটি দরকার।',
+      seoLink: 'SEO বিশ্লেষণ',
+      viewPublic: 'সাইটে দেখুন',
+      save: 'সংরক্ষণ করুন',
+      saving: 'সংরক্ষণ হচ্ছে…',
+      saved: 'পরিবর্তন সংরক্ষিত হয়েছে।',
+      saveFailed: 'সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
     },
 
     pages: {
@@ -2204,6 +2245,26 @@ const en: Dictionary = {
     titleNumberHint:
       'Optional - a number earns clicks on a list or a step-by-step piece, not on everything.',
 
+    titlePowerWordYes: 'The title carries a power word - “{word}”.',
+    titlePowerWordNo: 'The title carries no power word.',
+    titlePowerWordHint:
+      'Words like “complete”, “proven” or “step-by-step” tell a reader what they are getting. Do not force one in.',
+
+    titleSentimentYes: 'The title carries sentiment - “{word}”.',
+    titleSentimentNo: 'The title is entirely neutral - no positive or negative word.',
+    titleSentimentHint:
+      'A title that leans one way, positive (“best”) or negative (“mistakes”), earns more clicks. Ignore this on a purely factual heading.',
+
+    keywordUnique: 'This focus keyword is not used anywhere else.',
+    keywordReused: 'The same focus keyword is used on {count} other record(s): {titles}',
+    keywordUniqueHint:
+      'Two pages on one keyword compete with each other; the search engine picks one and the other page’s value is wasted.',
+
+    tocYes: 'The piece has a table of contents (links into its own headings).',
+    tocNo: 'The piece is long but has no table of contents.',
+    tocHint:
+      'Past 1,000 words, a list of heading links at the top gets readers where they are going - and can earn extra links in the search result.',
+
     noHeadings: 'There are no subheadings.',
     headingCount: 'There are {count} subheading(s).',
     headingHint: 'A long piece without subheadings cannot be scanned.',
@@ -2851,6 +2912,29 @@ const en: Dictionary = {
       variants: 'Variants',
       noPrice: 'No price published',
       analysis: 'Analysis',
+      editTitle: 'Edit product',
+      slugHint:
+        'Lower-case letters, digits and hyphens. Changing the slug breaks every link that points at the old one.',
+      tagline: 'Tagline',
+      taglineHint: 'One line of summary — it appears in listings and on share cards.',
+      description: 'Description (Markdown)',
+      descriptionHint: 'Stored as Markdown and rendered to HTML on the site.',
+      pricePublic: 'Publish the price',
+      featuredImage: 'Featured image',
+      featuredImageHint:
+        'Used on the product page, in listings and on the social share card.',
+      chooseImage: 'Choose from the media library',
+      noImage: 'No image',
+      mediaUnavailable: 'The media library could not be read — that needs the “media.manage” permission.',
+      mediaEmpty: 'The media library is empty — upload an image on the Media page first.',
+      altMissing:
+        'This image has no alt text. Add it in the media library: both search engines and screen readers need it.',
+      seoLink: 'SEO analysis',
+      viewPublic: 'View on the site',
+      save: 'Save changes',
+      saving: 'Saving…',
+      saved: 'Changes saved.',
+      saveFailed: 'Could not save. Please try again.',
     },
 
     pages: {

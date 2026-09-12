@@ -54,17 +54,24 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $product->update(collect($request->validate($this->rules($product->getKey())))
-            ->except('seo')
-            ->all());
+        $validated = $request->validate($this->rules($product->getKey()));
+
+        $product->update(collect($validated)->except('seo')->all());
 
         // `seo` is a related record, not a column, so it is written separately
         // and only when the caller actually sent it.
-        if ($request->has('seo')) {
-            $product->seo()->updateOrCreate([], $request->validated('seo'));
+        //
+        // Read from $validated rather than $request->validated(): that method
+        // belongs to a FormRequest, and this controller takes a plain Request,
+        // which has no such macro. Every save that carried an seo key - which
+        // is every save the dashboard's SEO panel makes - answered 500.
+        if (array_key_exists('seo', $validated)) {
+            $product->seo()->updateOrCreate([], $validated['seo']);
         }
 
-        return new ProductResource($product->fresh()->load('activeVariants.prices'));
+        Audit::record('product.updated', $product, ['fields' => array_keys($validated)]);
+
+        return new ProductResource($product->fresh()->load(['activeVariants.prices', 'cover', 'seo']));
     }
 
     public function transition(Request $request, Product $product): ProductResource

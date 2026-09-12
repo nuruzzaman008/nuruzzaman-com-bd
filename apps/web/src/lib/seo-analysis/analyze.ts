@@ -22,6 +22,7 @@
  */
 
 import type { Dictionary } from '@/lib/i18n/dictionary';
+import { POWER_WORDS, SENTIMENT_WORDS, findWord } from '@/lib/seo-analysis/word-lists';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail';
 
@@ -63,6 +64,14 @@ export type SeoInput = {
   content: string;
   /** Excerpt/subtitle/tagline, whichever the record has. */
   excerpt?: string;
+  /**
+   * Other records already targeting this focus keyword, from the API.
+   *
+   * `undefined` means the question has not been asked yet — during the first
+   * render, or while the request is in flight — and the check is skipped
+   * rather than reported as a pass, so it never flickers green and back.
+   */
+  keywordUsedBy?: { title: string }[];
 };
 
 /** Strips HTML tags and markdown syntax down to readable prose. */
@@ -141,7 +150,7 @@ function extractImageAlts(content: string): string[] {
   return [...markdown, ...html];
 }
 
-function extractLinks(content: string): { internal: number; external: number } {
+function extractLinks(content: string): { internal: number; external: number; anchors: number } {
   const markdown = [...content.matchAll(/\[[^\]]*\]\(([^)\s]+)/g)].map((match) => match[1]);
   const html = [...content.matchAll(/<a[^>]*\shref=["']([^"']+)["']/gi)].map((m) => m[1]);
   const hrefs = [...markdown, ...html];
@@ -149,6 +158,8 @@ function extractLinks(content: string): { internal: number; external: number } {
   return {
     internal: hrefs.filter((href) => href.startsWith('/') || href.startsWith('#')).length,
     external: hrefs.filter((href) => /^https?:\/\//i.test(href)).length,
+    // Links into the page itself, which is what a table of contents is made of.
+    anchors: hrefs.filter((href) => href.startsWith('#')).length,
   };
 }
 
@@ -308,6 +319,23 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
     hint: say.externalLinksHint,
   });
 
+  // Only when the API has answered. Asking is the panel's job, not this
+  // function's, and an unanswered question is not a pass.
+  if (hasKeyword && input.keywordUsedBy !== undefined) {
+    const clashes = input.keywordUsedBy;
+
+    additional.push({
+      id: 'keyword-unique',
+      status: clashes.length === 0 ? 'pass' : 'fail',
+      message: clashes.length === 0
+        ? say.keywordUnique
+        : say.keywordReused
+            .replace('{count}', String(clashes.length))
+            .replace('{titles}', clashes.map((row) => row.title).join(', ')),
+      hint: say.keywordUniqueHint,
+    });
+  }
+
   /* ------------------------------------------------------ title readability */
 
   const titleLength = countCharacters(effectiveTitle);
@@ -355,6 +383,26 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
     hint: say.titleNumberHint,
   });
 
+  const powerWord = findWord(effectiveTitle, POWER_WORDS);
+  title.push({
+    id: 'title-power-word',
+    status: powerWord ? 'pass' : 'warn',
+    message: powerWord
+      ? say.titlePowerWordYes.replace('{word}', powerWord)
+      : say.titlePowerWordNo,
+    hint: say.titlePowerWordHint,
+  });
+
+  const sentimentWord = findWord(effectiveTitle, SENTIMENT_WORDS);
+  title.push({
+    id: 'title-sentiment',
+    status: sentimentWord ? 'pass' : 'warn',
+    message: sentimentWord
+      ? say.titleSentimentYes.replace('{word}', sentimentWord)
+      : say.titleSentimentNo,
+    hint: say.titleSentimentHint,
+  });
+
   /* ---------------------------------------------------- content readability */
 
   readability.push({
@@ -383,6 +431,17 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
       : say.imagesNo,
     hint: say.imagesHint,
   });
+
+  // A table of contents earns its space on a long page and is clutter on a
+  // short one, so the check applies only where it would actually help.
+  if (words >= 1000) {
+    readability.push({
+      id: 'table-of-contents',
+      status: links.anchors >= 3 ? 'pass' : 'warn',
+      message: links.anchors >= 3 ? say.tocYes : say.tocNo,
+      hint: say.tocHint,
+    });
+  }
 
   const missingAlt = alts.filter((alt) => alt.trim().length === 0).length;
   if (alts.length > 0) {

@@ -94,6 +94,60 @@ describe('analyzeSeo', () => {
     expect(check?.message).toContain('3 অক্ষর');
   });
 
+  it('finds a power word in either language and warns when there is none', () => {
+    expect(find({ ...base, metaTitle: 'ধাপে ধাপে পাঞ্চিং শিয়ার' }, 'title-power-word')?.status)
+      .toBe('pass');
+    expect(find({ ...base, metaTitle: 'The complete punching shear check' }, 'title-power-word')?.status)
+      .toBe('pass');
+    expect(find({ ...base, metaTitle: 'পাঞ্চিং শিয়ার হিসাব' }, 'title-power-word')?.status)
+      .toBe('warn');
+  });
+
+  it('does not find a Latin power word inside a longer word', () => {
+    // "free" must not fire on "freelance", or the check is decoration.
+    expect(find({ ...base, metaTitle: 'A freelance punching shear service' }, 'title-power-word')?.status)
+      .toBe('warn');
+    expect(find({ ...base, metaTitle: 'A free punching shear checklist' }, 'title-power-word')?.status)
+      .toBe('pass');
+  });
+
+  it('reads sentiment in a title from either direction', () => {
+    expect(find({ ...base, metaTitle: 'সেরা পাঞ্চিং শিয়ার পদ্ধতি' }, 'title-sentiment')?.status)
+      .toBe('pass');
+    // Negative counts too: "mistakes" is as clickable as "best".
+    expect(find({ ...base, metaTitle: 'Punching shear mistakes to avoid' }, 'title-sentiment')?.status)
+      .toBe('pass');
+    expect(find({ ...base, metaTitle: 'পাঞ্চিং শিয়ার হিসাবের ধাপ' }, 'title-sentiment')?.status)
+      .toBe('warn');
+  });
+
+  it('skips the keyword-reuse check until the API has answered', () => {
+    // An unanswered question must not read as a pass - that would tell an
+    // author the keyword is theirs alone when nothing has been checked.
+    expect(find(base, 'keyword-unique')).toBeUndefined();
+    expect(find({ ...base, keywordUsedBy: [] }, 'keyword-unique')?.status).toBe('pass');
+
+    const clash = find({ ...base, keywordUsedBy: [{ title: 'পুরোনো লেখা' }] }, 'keyword-unique');
+    expect(clash?.status).toBe('fail');
+    expect(clash?.message).toContain('পুরোনো লেখা');
+  });
+
+  it('asks for a table of contents only once the piece is long', () => {
+    const short = { ...base, content: `${'শব্দ '.repeat(300)}` };
+    const long = { ...base, content: `${'শব্দ '.repeat(1200)}` };
+
+    expect(find(short, 'table-of-contents')).toBeUndefined();
+    expect(find(long, 'table-of-contents')?.status).toBe('warn');
+
+    const withToc = {
+      ...base,
+      content: `[এক](#one) [দুই](#two) [তিন](#three)
+
+${'শব্দ '.repeat(1200)}`,
+    };
+    expect(find(withToc, 'table-of-contents')?.status).toBe('pass');
+  });
+
   it('scores a warning as half a pass, not as a failure', () => {
     const strong = analyzeSeo({
       ...base,

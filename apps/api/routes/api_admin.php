@@ -55,6 +55,8 @@ Route::middleware([
     Route::patch('media/{medium:id}', [Admin\MediaController::class, 'update']);
     Route::delete('media/{medium:id}', [Admin\MediaController::class, 'destroy']);
 
+    Route::get('seo/keyword-usage', Admin\SeoKeywordController::class);
+
     Route::get('redirects', [Admin\RedirectController::class, 'index']);
     Route::post('redirects', [Admin\RedirectController::class, 'store']);
     Route::patch('redirects/{redirect:id}', [Admin\RedirectController::class, 'update']);

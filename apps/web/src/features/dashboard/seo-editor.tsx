@@ -25,6 +25,7 @@ import type { SeoInput } from '@/lib/seo-analysis/analyze';
 export function SeoEditor({
   kind,
   endpoint,
+  recordId,
   title,
   slug,
   body,
@@ -34,6 +35,8 @@ export function SeoEditor({
   kind: SeoInput['kind'];
   /** Admin PATCH endpoint for this record, e.g. `/admin/courses/12`. */
   endpoint: string;
+  /** This record's id, so the keyword-reuse check can exclude it. */
+  recordId?: number;
   title: string;
   slug: string;
   body: string;
@@ -145,6 +148,7 @@ export function SeoEditor({
         <SeoAnalysisPanel
           formId="seo-editor"
           kind={kind}
+          recordId={recordId}
           fields={{
             title: 'title',
             slug: 'slug',

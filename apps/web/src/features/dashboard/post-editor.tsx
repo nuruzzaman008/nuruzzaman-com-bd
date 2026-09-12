@@ -256,6 +256,7 @@ export function PostEditor({ post }: { post: Post }) {
         <SeoAnalysisPanel
           formId="post-editor"
           kind="post"
+          recordId={post.id}
           fields={{
             title: 'title',
             slug: 'slug',
