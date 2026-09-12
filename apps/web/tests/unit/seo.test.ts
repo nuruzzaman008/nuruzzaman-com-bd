@@ -8,6 +8,7 @@ import {
   jsonLd,
   privateMetadata,
   productSchema,
+  websiteSchema,
 } from '@/lib/seo';
 
 describe('buildMetadata', () => {
@@ -138,5 +139,13 @@ describe('structured data', () => {
     expect(
       articleSchema({ title: 'Footing', slug: 'footing', locale: 'en' }).inLanguage,
     ).toBe('en');
+  });
+});
+
+describe('websiteSchema', () => {
+  it('declares both languages, because it describes the site and not a page', () => {
+    // The English homepage renders this same entity. Naming only Bengali told a
+    // crawler the site had no English in it, on the English page itself.
+    expect(websiteSchema().inLanguage).toEqual(['bn-BD', 'en']);
   });
 });

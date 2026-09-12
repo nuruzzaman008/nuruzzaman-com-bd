@@ -151,7 +151,12 @@ export function websiteSchema() {
     '@type': 'WebSite',
     name: brand.owner,
     url: publicEnv.siteUrl,
-    inLanguage: 'bn-BD',
+    /*
+      Both, because this describes the site rather than a page, and the English
+      homepage renders the same entity. Claiming Bengali alone said the site had
+      no English in it, on the very page that is the English one.
+    */
+    inLanguage: ['bn-BD', 'en'],
     potentialAction: {
       '@type': 'SearchAction',
       target: `${publicEnv.siteUrl}/search?q={search_term_string}`,
