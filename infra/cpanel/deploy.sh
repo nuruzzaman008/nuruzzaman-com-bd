@@ -234,7 +234,18 @@ if [ "$DEPLOY_API" = 1 ]; then
   # them a deployed server cannot be seeded at all, because the repository
   # relative path resolves outside the account.
   git -C "$SOURCE" archive HEAD content | tar -x -C "$NB_API_ROOT"
+  # This script runs under umask 077, which is right for the backups it writes
+  # and wrong for an application a web server has to read. The first API
+  # deployment left the root at 700 and public/index.php at 600, and LiteSpeed
+  # answered its own 404 for every route while Laravel sat behind it perfectly
+  # healthy, 217 routes loaded and nothing in its log. Directories have to be
+  # traversable and files readable; vendor is left alone because Composer sets
+  # it, and .env is deliberately not widened.
+  find "$NB_API_ROOT" -path "$NB_API_ROOT/vendor" -prune -o -type d -print0 | xargs -0 chmod 755
+  find "$NB_API_ROOT" -path "$NB_API_ROOT/vendor" -prune -o -type f -print0 | xargs -0 chmod 644
+  chmod 640 "$NB_API_ROOT/.env"
   mkdir -p "$NB_API_ROOT/bootstrap/cache" "$NB_API_ROOT/storage/framework/"{cache/data,sessions,views} "$NB_API_ROOT/storage/logs" "$NB_API_ROOT/storage/app/"{public,private-assets}
+  chmod -R 775 "$NB_API_ROOT/storage" "$NB_API_ROOT/bootstrap/cache"
   # Apache must traverse the public upload link; private-assets stays private.
   chmod u+rwx,go+x "$NB_API_ROOT/storage" "$NB_API_ROOT/storage/app"
   chmod u+rwx,go+rx "$NB_API_ROOT/storage/app/public"
