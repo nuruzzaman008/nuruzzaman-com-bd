@@ -175,7 +175,40 @@ curl --fail --silent --show-error -o /dev/null -w 'English HTTP %{http_code}\n' 
 curl --fail --silent --show-error -o /dev/null -w 'CSRF HTTP %{http_code}\n' https://nuruzzaman.com.bd/sanctum/csrf-cookie
 ```
 
-Do not bypass TLS checks. Then test login/logout, account switching, course pages, paid access, public media and authorized downloads. Configure Laravel scheduler (`schedule:run` each minute) and a queue worker using the verified PHP binary; restart existing workers after code changes. Upload limits must agree across PHP, Apache and the app's 110 MB proxy limit.
+Do not bypass TLS checks. Then test login/logout, account switching, course pages, paid access, public media and authorized downloads. Upload limits must agree across PHP, Apache and the app's 110 MB proxy limit.
+
+## Cron: the scheduler and the queue
+
+**Without these two lines the site takes money and gives nothing back.** An
+order is paid, the customer is charged, and `FulfillOrder` sits in the queue
+for ever - so the course never appears on their account and no receipt is
+sent. Nothing on the site reports it. This happened on 12 September 2026 and
+was only found because a customer said the course was missing.
+
+Add both to the account's crontab (`crontab -e`, or cPanel -> Cron Jobs):
+
+```cron
+* * * * * cd /home/nbconsultant/api.nuruzzaman.com.bd && /opt/cpanel/ea-php84/root/usr/bin/php artisan schedule:run >/dev/null 2>&1
+* * * * * cd /home/nbconsultant/api.nuruzzaman.com.bd && /usr/bin/flock -n /tmp/nb-queue.lock /opt/cpanel/ea-php84/root/usr/bin/php artisan queue:work --stop-when-empty --max-time=55 --tries=3 >/dev/null 2>&1
+```
+
+The queue carries `FulfillOrder` (courses, licences, downloads),
+`SendOrderReceipt`, `IssueCertificate`, `ProcessRefund` and
+`RevalidateFrontend`. The scheduler runs `content:publish-due`,
+`ReconcilePayments` and `platform:housekeeping`.
+
+`flock` stops one minute's run from overlapping the next. `--stop-when-empty`
+lets the worker exit while idle rather than holding a process against the
+account's NPROC limit, at the cost of up to a minute before a job starts.
+
+`deploy.sh` warns when either line is missing. To check by hand:
+
+```bash
+crontab -l | grep -E 'queue:work|schedule:run'
+```
+
+After deploying code, running workers are told to finish and exit
+(`queue:restart`); the cron starts a fresh one within a minute.
 
 ## Rollback without deleting data
 

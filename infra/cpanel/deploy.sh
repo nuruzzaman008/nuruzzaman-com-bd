@@ -97,6 +97,20 @@ if [ "$DEPLOY_API" = 1 ]; then
     [ "${NB_MIGRATIONS_REVIEWED_COMMIT:-}" = "$COMMIT" ] || fail 'Set NB_MIGRATIONS_REVIEWED_COMMIT after reviewing pending migrations.'
     [ -s "${NB_DATABASE_BACKUP:-}" ] || fail 'Set NB_DATABASE_BACKUP to a verified nonempty database backup.'
   fi
+  # Warned about rather than enforced: a host may run workers under systemd or
+  # a process manager this account cannot see. But nothing on the site says
+  # when they are absent, and the failure is silent in the worst way - an order
+  # is paid, the customer is charged, and FulfillOrder sits in the queue so the
+  # course never appears and the receipt is never sent. That happened here.
+  if ! crontab -l 2>/dev/null | grep -q 'queue:work'; then
+    printf 'WARNING: no queue worker found in this account crontab.\n' >&2
+    printf '         Paid orders will not be fulfilled and receipts will not be sent.\n' >&2
+    printf '         See docs/DEPLOY_CPANEL_BN.md for the two cron lines.\n' >&2
+  fi
+  if ! crontab -l 2>/dev/null | grep -q 'schedule:run'; then
+    printf 'WARNING: no scheduler found in this account crontab.\n' >&2
+    printf '         Scheduled publishing, payment reconciliation and housekeeping will not run.\n' >&2
+  fi
 fi
 if [ "$DEPLOY_WEB" = 1 ]; then
   NODE_BIN="${NB_NODE_BIN:-}"
