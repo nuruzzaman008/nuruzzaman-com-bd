@@ -65,8 +65,14 @@ Route::prefix('v1')->group(function () {
 
     Route::post('auth/logout', [Auth\LoginController::class, 'destroy'])->middleware('auth:sanctum');
 
+    // signed:relative, not signed. The link is built with absolute: false,
+    // because the browser follows it at nuruzzaman.com.bd and the API answers
+    // at api.nuruzzaman.com.bd - a signature covering the host could never
+    // match. Plain 'signed' validates as absolute, so every link ever issued
+    // was refused with 403, which the page reported as an expired link: the
+    // remedy it offered was a new link, which failed in exactly the same way.
     Route::get('auth/verify-email/{id}/{hash}', [Auth\EmailVerificationController::class, 'verify'])
-        ->middleware(['auth:sanctum', 'signed', 'throttle:verify-email'])
+        ->middleware(['auth:sanctum', 'signed:relative', 'throttle:verify-email'])
         ->name('verification.verify');
 
     Route::post('auth/verify-email/resend', [Auth\EmailVerificationController::class, 'resend'])
