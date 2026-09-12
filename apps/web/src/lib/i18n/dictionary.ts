@@ -1528,6 +1528,13 @@ const bn = {
     },
 
     seoEditor: {
+      canonical: 'ক্যানোনিকাল URL',
+      canonicalHint:
+        'একই লেখা অন্য কোথাও থাকলে মূল ঠিকানাটি এখানে দিন। ফাঁকা রাখলে এই পাতাটিই মূল ধরা হবে।',
+      noindex: 'সার্চ ইঞ্জিনে দেখাবেন না (noindex)',
+      noindexHint: 'পাতাটি সাইটে থাকবে, কিন্তু Google-এর ফলাফলে আসবে না।',
+      nofollow: 'এই পাতার লিংক অনুসরণ করতে বলবেন না (nofollow)',
+      nofollowHint: 'ভেতরের লিংকগুলোর জন্য সার্চ ইঞ্জিনকে কোনো মূল্য পাঠাতে নিষেধ করে।',
       failed: 'সংরক্ষণ করা যায়নি।',
       saved: 'সংরক্ষিত হয়েছে।',
       focusKeyword: 'ফোকাস কিওয়ার্ড',
@@ -3083,6 +3090,13 @@ const en: Dictionary = {
     },
 
     seoEditor: {
+      canonical: 'Canonical URL',
+      canonicalHint:
+        'If the same piece lives elsewhere, give the original address here. Leave it empty to treat this page as the original.',
+      noindex: 'Keep out of search results (noindex)',
+      noindexHint: 'The page stays on the site but will not appear in Google’s results.',
+      nofollow: 'Do not follow the links on this page (nofollow)',
+      nofollowHint: 'Tells search engines to pass no value through the links inside it.',
       failed: 'That could not be saved.',
       saved: 'Saved.',
       focusKeyword: 'Focus keyword',

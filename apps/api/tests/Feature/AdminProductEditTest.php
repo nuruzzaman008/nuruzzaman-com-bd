@@ -72,6 +72,35 @@ class AdminProductEditTest extends TestCase
         ]);
     }
 
+    public function test_the_indexing_controls_round_trip(): void
+    {
+        $this->seedRoles();
+        $admin = $this->userWithRole(RoleEnum::Admin);
+        $product = Product::factory()->create();
+
+        $this->actingAs($admin)
+            ->patchJson('/api/v1/admin/products/'.$product->id, [
+                'seo' => [
+                    'canonical_url' => 'https://example.org/original',
+                    'noindex' => true,
+                    'nofollow' => true,
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.seo.noindex', true)
+            ->assertJsonPath('data.seo.canonical_url', 'https://example.org/original');
+
+        // Putting a page back into the index has to work as well as taking it
+        // out; a checkbox that only ever travels one way is a trap.
+        $this->actingAs($admin)
+            ->patchJson('/api/v1/admin/products/'.$product->id, [
+                'seo' => ['canonical_url' => null, 'noindex' => false, 'nofollow' => false],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.seo.noindex', false)
+            ->assertJsonPath('data.seo.canonical_url', null);
+    }
+
     public function test_a_featured_image_can_be_attached_and_removed(): void
     {
         $this->seedRoles();

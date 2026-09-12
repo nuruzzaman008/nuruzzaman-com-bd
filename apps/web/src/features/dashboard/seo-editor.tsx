@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
-import { Field, Input, Textarea } from '@/components/ui/form';
+import { Checkbox, Field, Input, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import type { SeoInput } from '@/lib/seo-analysis/analyze';
@@ -45,6 +45,9 @@ export function SeoEditor({
     meta_title?: string | null;
     meta_description?: string | null;
     focus_keyword?: string | null;
+    canonical_url?: string | null;
+    noindex?: boolean;
+    nofollow?: boolean;
   } | null;
 }) {
   const router = useRouter();
@@ -71,6 +74,9 @@ export function SeoEditor({
             meta_title: form.get('meta_title') || null,
             meta_description: form.get('meta_description') || null,
             focus_keyword: form.get('focus_keyword') || null,
+            canonical_url: form.get('canonical_url') || null,
+            noindex: form.get('noindex') === 'on',
+            nofollow: form.get('nofollow') === 'on',
           },
         },
       });
@@ -138,6 +144,57 @@ export function SeoEditor({
             />
           )}
         </Field>
+
+        {/*
+          The indexing controls. The API has accepted all three since the seo
+          table was created, and nothing in the admin could set them: a page
+          that needed to be kept out of the index, or pointed at a canonical
+          elsewhere, could only be changed in the database.
+        */}
+        <Field
+          label={t.admin.seoEditor.canonical}
+          hint={t.admin.seoEditor.canonicalHint}
+          error={errors['seo.canonical_url']?.[0]}
+        >
+          {(props) => (
+            <Input
+              name="canonical_url"
+              type="url"
+              inputMode="url"
+              defaultValue={seo?.canonical_url ?? ''}
+              className="font-latin"
+              {...props}
+            />
+          )}
+        </Field>
+
+        <Checkbox
+          name="noindex"
+          defaultChecked={seo?.noindex ?? false}
+          label={
+            <span>
+              {t.admin.seoEditor.noindex}
+              <span className="mt-0.5 block text-xs text-muted">
+                {t.admin.seoEditor.noindexHint}
+              </span>
+            </span>
+          }
+          error={errors['seo.noindex']?.[0]}
+        />
+
+        <Checkbox
+          name="nofollow"
+          defaultChecked={seo?.nofollow ?? false}
+          label={
+            <span>
+              {t.admin.seoEditor.nofollow}
+              <span className="mt-0.5 block text-xs text-muted">
+                {t.admin.seoEditor.nofollowHint}
+              </span>
+            </span>
+          }
+          error={errors['seo.nofollow']?.[0]}
+        />
 
         <Button type="submit" size="lg" disabled={busy}>
           {busy ? t.admin.common.saving : t.admin.common.save}
