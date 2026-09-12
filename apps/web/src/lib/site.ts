@@ -114,6 +114,7 @@ export const dashboardNav: {
     items: [
       { href: '/dashboard/products', key: 'products' },
       { href: '/dashboard/orders', key: 'orders' },
+      { href: '/dashboard/coupons', key: 'coupons' },
       { href: '/dashboard/releases', key: 'releases' },
     ],
   },
