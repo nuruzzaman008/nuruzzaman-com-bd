@@ -109,39 +109,54 @@ flock -n 9 || fail 'Another deployment is running.'
 RELEASE="$(date -u +%Y%m%dT%H%M%SZ)-${COMMIT:0:12}-$$"
 BACKUP="$HOME/nb-deploy-backups/$RELEASE"
 [ ! -L "$HOME/nb-deploy-backups" ] || fail 'Backup directory must not be a symlink.'
+
+# Deletes all but the newest $retain timestamped directories in $dir. Names
+# given after $retain are kept whatever their age, which is how the live
+# release and the one it would roll back to are protected.
+#
+# Written to survive `set -euo pipefail`: on a first deploy the directory does
+# not exist yet and both ls and grep exit non-zero, which would abort the run
+# at the one moment when there is nothing to prune at all.
+prune_timestamped() {
+  local dir="$1" retain="$2" listing stale target protected
+  shift 2
+  case "$retain" in ''|*[!0-9]*) fail "Retention for $dir must be a whole number." ;; esac
+  [ -d "$dir" ] && [ ! -L "$dir" ] || return 0
+  listing="$(ls -1 "$dir" 2>/dev/null | grep -E '^20[0-9]{6}T[0-9]{6}Z-' |
+    sort -r | tail -n +"$((retain + 1))" || true)"
+  while IFS= read -r stale; do
+    [ -n "$stale" ] || continue
+    for protected in "$@"; do
+      [ "$stale" != "$protected" ] || continue 2
+    done
+    target="$dir/$stale"
+    # Never follow a symlink out of the directory being pruned.
+    [ ! -L "$target" ] && [ -d "$target" ] || continue
+    printf 'Pruning %s\n' "$target"
+    rm -rf -- "$target"
+  done <<< "$listing"
+}
+
+# Complete backups precede builds, staging and live changes, and the old ones
+# go *before* the new one is written. This account is quota-limited: an
+# unpruned run filled it and then died on the tar below, so the space has to
+# be reclaimed before it is needed rather than once the run is over. One slot
+# is left free for the backup this run is about to add.
+NB_BACKUP_KEEP="${NB_BACKUP_KEEP:-3}"
+case "$NB_BACKUP_KEEP" in ''|*[!0-9]*) fail 'NB_BACKUP_KEEP must be a whole number.' ;; esac
+[ "$NB_BACKUP_KEEP" -ge 1 ] || fail 'NB_BACKUP_KEEP must be at least 1.'
+prune_timestamped "$HOME/nb-deploy-backups" "$((NB_BACKUP_KEEP - 1))"
+
 mkdir -p "$BACKUP"
 chmod 700 "$HOME/nb-deploy-backups" "$BACKUP"
 trap 'printf "Deployment failed. Backup: %s. Inspect maintenance state; never roll back migrations blindly.\n" "$BACKUP"' ERR
-# Complete backups precede builds, staging, and live changes.
-#
-# Pruned to the last NB_BACKUP_KEEP releases, and pruned *before* the new
-# backup is written rather than after. This account is quota-limited, and an
-# unpruned run filled it and failed the deploy on the very next line - so the
-# space has to be reclaimed before it is needed, not once the run is over.
-prune_backups() {
-  keep="${NB_BACKUP_KEEP:-3}"
-  case "$keep" in ''|*[!0-9]*) fail 'NB_BACKUP_KEEP must be a whole number.' ;; esac
-  [ "$keep" -ge 1 ] || fail 'NB_BACKUP_KEEP must be at least 1.'
-  # One slot is left for the backup this run is about to write, so the count
-  # after a successful deploy is NB_BACKUP_KEEP, not one more.
-  ls -1 "$HOME/nb-deploy-backups" 2>/dev/null | grep -E '^20[0-9]{6}T[0-9]{6}Z-' |
-    sort -r | tail -n +"$keep" |
-    while IFS= read -r stale; do
-      [ -n "$stale" ] || continue
-      target="$HOME/nb-deploy-backups/$stale"
-      # Never follow a symlink out of the backup directory.
-      [ ! -L "$target" ] && [ -d "$target" ] || continue
-      printf 'Pruning old backup: %s\n' "$stale"
-      rm -rf -- "$target"
-    done
-}
-prune_backups
-# node_modules is excluded. It was 101,147 of the entries here and nearly all
-# of the 2.8G each backup used to take, and it is reproducible from the
-# lockfile - a rollback reinstalls it. Backing it up bought nothing and cost
-# the quota that the deploy itself needed.
+# node_modules and the build scratch under .git are excluded. Together they
+# were 2.7G of the 2.8G each backup took, and neither is worth keeping:
+# node_modules is reproducible from the lockfile, and .git/nb-deploy is
+# leftover staging from the superseded server-side build.
 tar -C "$SOURCE" -cpf "$BACKUP/repository.tar" \
-  --exclude='./node_modules' --exclude='*/node_modules' .
+  --exclude='./node_modules' --exclude='*/node_modules' \
+  --exclude='./.git/nb-deploy' .
 cp -p "$CONFIG" "$BACKUP/deploy.conf"
 for folder in "$NB_API_ROOT" "$NB_WEB_ROOT" "$HOME/nuruzzaman.com.bd"; do
   if [ -d "$folder" ]; then
@@ -223,6 +238,11 @@ JSON
   mv -f "$NB_WEB_ROOT/server.js.$RELEASE" "$NB_WEB_ROOT/server.js"
   mkdir -p "$NB_WEB_ROOT/tmp"
   touch "$NB_WEB_ROOT/tmp/restart.txt"
+  # Only now that current points at the new release, and never the release it
+  # replaced: that one is the rollback target recorded in this backup. These
+  # are 65M each and were never pruned, so they grew with every deploy.
+  prune_timestamped "$NB_WEB_ROOT/releases" "${NB_RELEASE_KEEP:-5}" "$RELEASE" \
+    "$(basename "$(cat "$BACKUP/previous-web-release" 2>/dev/null || echo none)")"
 fi
 printf 'Files deployed. Backup: %s\n' "$BACKUP"
 echo 'Run: bash infra/cpanel/verify-live.sh. A restart signal alone does not prove deployment health.'

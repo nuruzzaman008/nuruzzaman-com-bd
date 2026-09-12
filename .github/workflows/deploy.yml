@@ -228,4 +228,36 @@ jobs:
           check https://nuruzzaman.com.bd/api/v1/site/settings   200
           check https://nuruzzaman.com.bd/sanctum/csrf-cookie    204
 
+          # A status code alone was never proof. The host's bot-protection
+          # interstitial answers 200 with "One moment, please..." for every
+          # path, a burst of requests can come back with an empty body, and an
+          # error page is a 200 too - so these assert what the body contains.
+          #
+          # Spaced out and retried for that same throttling, and matched
+          # against a lowercased body so the needles hold however Next chooses
+          # to case an attribute (it currently emits hrefLang, not hreflang).
+          assert_contains() {
+            for attempt in 1 2 3; do
+              if curl -s --max-time 90 "$1" | tr 'A-Z' 'a-z' | grep -qF "$2"; then
+                printf 'PASS %-46s contains %s\n' "$1" "$2"
+                return 0
+              fi
+              sleep 5
+            done
+            printf 'FAIL %-46s missing %s\n' "$1" "$2"
+            failed=1
+          }
+
+          # Emitted by our own metadata, so an interstitial cannot satisfy it.
+          assert_contains https://nuruzzaman.com.bd/    'rel="canonical"'
+          # The English route really rendering, not the Bengali one behind it.
+          assert_contains https://nuruzzaman.com.bd/en  'hreflang="en"'
+          # Laravel answering through the proxy, rather than HTML with a 200.
+          type=$(curl -s -o /dev/null -w '%{content_type}' --max-time 90 \
+            https://nuruzzaman.com.bd/api/v1/site/settings || echo none)
+          case "$type" in
+            application/json*) printf 'PASS %-46s %s\n' '/api/v1/site/settings' "$type" ;;
+            *) printf 'FAIL %-46s %s (expected JSON)\n' '/api/v1/site/settings' "$type"; failed=1 ;;
+          esac
+
           exit "$failed"
