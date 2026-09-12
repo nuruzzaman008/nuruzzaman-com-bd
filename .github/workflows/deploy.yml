@@ -53,6 +53,17 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      # The deployment script's own tests. They need rsync, which the runner
+      # has and the target host only recently gained - which is exactly why
+      # they exist: sync_tree's two branches are both live now, and they have
+      # to agree about which files an exclude protects.
+      - name: Deployment script tests
+        run: |
+          for test in infra/cpanel/tests/*.test.sh; do
+            echo "--- $test"
+            bash "$test"
+          done
+
       - name: Build
         run: npm run build
 
