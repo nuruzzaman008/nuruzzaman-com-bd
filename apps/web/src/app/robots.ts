@@ -20,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
           '/dashboard',
           '/learn',
           '/login',
+          '/nb-staff',
           '/register',
           '/reset-password',
           '/search',

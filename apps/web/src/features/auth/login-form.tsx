@@ -18,7 +18,7 @@ import { loginDestination } from '@/lib/account-routing';
  * stored; the browser simply receives an HttpOnly session cookie.
  */
 
-export function LoginForm() {
+export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
   const router = useRouter();
   const { t } = useLocale();
   const { refresh: refreshSession } = useSession();
@@ -27,7 +27,9 @@ export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const next = searchParams.get('next');
+  // The staff entrance has a destination of its own, so arriving there
+  // without one still means the dashboard rather than the customer account.
+  const next = searchParams.get('next') ?? defaultNext ?? null;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

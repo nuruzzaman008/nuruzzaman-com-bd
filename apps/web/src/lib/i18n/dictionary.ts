@@ -54,7 +54,6 @@ const bn = {
     signingOut: 'সাইন আউট হচ্ছে…',
     account: 'অ্যাকাউন্ট',
     adminPanel: 'অ্যাডমিন প্যানেল',
-    adminSignIn: 'অ্যাডমিন সাইন ইন',
     myAccount: 'আমার অ্যাকাউন্ট',
     readMore: 'বিস্তারিত',
     viewAll: 'সব দেখুন',
@@ -923,6 +922,9 @@ const bn = {
 
   auth: {
     signInTitle: 'সাইন ইন',
+    staffSignInTitle: 'স্টাফ সাইন ইন',
+    staffSignInIntro:
+      'এটি কর্মীদের প্রবেশপথ। গ্রাহক হলে সাধারণ সাইন ইন পাতাটি ব্যবহার করুন।',
     registerTitle: 'অ্যাকাউন্ট তৈরি করুন',
     forgotTitle: 'পাসওয়ার্ড রিসেট',
     resetTitle: 'নতুন পাসওয়ার্ড',
@@ -1557,7 +1559,6 @@ const en: Dictionary = {
     signingOut: 'Signing out…',
     account: 'Account',
     adminPanel: 'Admin panel',
-    adminSignIn: 'Admin sign in',
     myAccount: 'My account',
     readMore: 'Read more',
     viewAll: 'View all',
@@ -2389,6 +2390,9 @@ const en: Dictionary = {
 
   auth: {
     signInTitle: 'Sign in',
+    staffSignInTitle: 'Staff sign in',
+    staffSignInIntro:
+      'This entrance is for staff. If you are a customer, use the ordinary sign-in page.',
     registerTitle: 'Create an account',
     forgotTitle: 'Reset your password',
     resetTitle: 'New password',

@@ -61,13 +61,13 @@ export function AdminEntrance() {
     );
   }
 
-  return (
-    <Link
-      href="/login?next=%2Fdashboard"
-      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:border-white hover:bg-white/10 hover:text-white"
-    >
-      {ICON}
-      {t.actions.adminSignIn}
-    </Link>
-  );
+  /*
+    Nothing for anyone else.
+
+    This used to render a "staff sign in" link into the footer of every public
+    page, which told every visitor and every crawler where the staff entrance
+    was and that it was worth trying. Staff know their own address; a link
+    saved them one bookmark and cost everyone else the secret.
+  */
+  return null;
 }
