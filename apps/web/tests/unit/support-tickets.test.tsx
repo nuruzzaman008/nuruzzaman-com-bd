@@ -37,3 +37,38 @@ it('keeps the draft when sending fails', async () => {
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Connection failed'));
   expect(screen.getByLabelText('Your reply')).toHaveValue('Keep my draft');
 });
+
+it('shows the admin who wrote in, and what about, on one compact line', async () => {
+  render(<SupportTickets admin />);
+
+  // Everything the customer supplied when creating the ticket: reference,
+  // status and category on one line, name and mobile on the next.
+  expect(await screen.findByText('TKT-TEST · open · installation')).toBeInTheDocument();
+  expect(screen.getByText('Test Buyer · 01712345678')).toBeInTheDocument();
+});
+
+it('does not show a contact line to the customer, only to staff', async () => {
+  render(<SupportTickets />);
+
+  expect(await screen.findByText('TKT-TEST · open · installation')).toBeInTheDocument();
+  expect(screen.queryByText(/Test Buyer/)).not.toBeInTheDocument();
+});
+
+it('leaves no stray separator when the API returns no contact details', async () => {
+  // The deployed API omits name and mobile, and the panel rendered
+  // "{name} · {mobile}" regardless - so it read "· —" and told staff nothing.
+  const bare = { ...ticket, name: '', mobile: null };
+  request.mockImplementation((path: string, options?: { method?: string }) =>
+    Promise.resolve(
+      options?.method || path.endsWith('TKT-TEST')
+        ? { data: bare }
+        : { data: [bare], meta: { last_page: 1 } },
+    ),
+  );
+
+  render(<SupportTickets admin />);
+
+  await screen.findByText('TKT-TEST · open · installation');
+  expect(screen.queryByText(/^\s*·/)).not.toBeInTheDocument();
+  expect(screen.getByText('Mobile not provided on older ticket')).toBeInTheDocument();
+});

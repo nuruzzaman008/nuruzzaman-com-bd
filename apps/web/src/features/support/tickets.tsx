@@ -10,6 +10,17 @@ import { Callout } from '@/components/ui/callout';
 type Ticket = { reference: string; name: string; mobile: string | null; subject: string; category: string; status: string; messages?: { id: number; author_kind: string; body: string; is_internal: boolean; at: string }[] };
 const field = 'mt-1 block w-full rounded border border-line p-3';
 
+/**
+ * Joins the parts that are actually there, separated by a middle dot.
+ *
+ * The admin line rendered `{name}·{mobile}` unconditionally, so a ticket the
+ * API returns without those fields showed a bare leading separator: the panel
+ * read "· —" and said nothing at all about who had written in.
+ */
+function meta(...parts: (string | null | undefined)[]): string {
+  return parts.filter((part) => part && part.trim()).join(' · ');
+}
+
 export function SupportTickets({ admin = false }: { admin?: boolean }) {
   const { locale } = useLocale();
   const en = locale === 'en';
@@ -48,7 +59,7 @@ export function SupportTickets({ admin = false }: { admin?: boolean }) {
     </form></details>}
     <Button variant="secondary" onClick={load}>{en ? 'Refresh tickets' : 'টিকিট রিফ্রেশ করুন'}</Button>
     {tickets.length === 0 && <p>{en ? 'No support tickets yet.' : 'এখনো কোনো সাপোর্ট টিকিট নেই।'}</p>}
-    <div className="grid gap-3">{tickets.map(t => <Card key={t.reference} className="flex flex-wrap items-center justify-between gap-4 p-4"><div><p className="font-bold">{t.subject}</p><p className="text-sm text-muted">{t.reference} · {t.status}</p>{admin && <p className="mt-1 text-sm">{t.name} · {t.mobile || (en ? 'Mobile not provided on older ticket' : 'পুরোনো টিকিটে মোবাইল দেওয়া হয়নি')}</p>}</div><Button variant="secondary" onClick={() => setSelected(t.reference)}>{en ? 'Open / Reply' : 'খুলুন / উত্তর দিন'}</Button></Card>)}</div>
+    <div className="grid gap-3">{tickets.map(t => <Card key={t.reference} className="flex flex-wrap items-center justify-between gap-4 p-4"><div><p className="font-bold">{t.subject}</p><p className="text-sm text-muted">{meta(t.reference, t.status, t.category)}</p>{admin && <p className="mt-1 text-sm font-medium">{meta(t.name, t.mobile || (en ? 'Mobile not provided on older ticket' : 'পুরোনো টিকিটে মোবাইল দেওয়া হয়নি'))}</p>}</div><Button variant="secondary" onClick={() => setSelected(t.reference)}>{en ? 'Open / Reply' : 'খুলুন / উত্তর দিন'}</Button></Card>)}</div>
     {lastPage > 1 && <div className="flex gap-3"><Button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button><span>{page} / {lastPage}</span><Button disabled={page === lastPage} onClick={() => setPage(p => p + 1)}>Next</Button></div>}
     {selected && <TicketConversation key={selected} endpoint={`${endpoint}/${encodeURIComponent(selected)}`} admin={admin} onChanged={load} />}
   </div>;
@@ -87,7 +98,7 @@ function TicketConversation({ endpoint, admin, onChanged }: { endpoint: string; 
     {error && <Callout tone="danger" role="alert">{error}</Callout>}
     {notice && <p role="status">{notice}</p>}
     {!ticket ? <p>{en ? 'Loading conversation…' : 'কথোপকথন লোড হচ্ছে…'}</p> : <>
-      <h2 className="text-xl font-bold">{ticket.subject}</h2><p>{ticket.reference} · {ticket.status}</p><p>{ticket.name} · {ticket.mobile || '—'}</p>
+      <h2 className="text-xl font-bold">{ticket.subject}</h2><p className="text-sm text-muted">{meta(ticket.reference, ticket.status, ticket.category)}</p>{admin && <p className="text-sm font-medium">{meta(ticket.name, ticket.mobile)}</p>}
       <div className="space-y-3" aria-label={en ? 'Conversation' : 'কথোপকথন'}>{ticket.messages?.map(m => <div key={m.id} className={`rounded border p-4 ${m.author_kind === 'staff' ? 'bg-blue-soft' : 'bg-white'}`}><p className="text-sm font-semibold">{m.author_kind === 'staff' ? (en ? 'Support team' : 'সাপোর্ট টিম') : ticket.name}{m.is_internal && ' · Internal note'}<time className="ml-3 text-xs text-muted" dateTime={m.at}>{new Date(m.at).toLocaleString(locale)}</time></p><p className="mt-2 whitespace-pre-wrap break-words">{m.body}</p></div>)}</div>
       <form onSubmit={send} className="space-y-3"><label className="block">{en ? 'Your reply' : 'আপনার উত্তর'}<textarea required minLength={2} maxLength={5000} rows={4} className={field} value={message} onChange={e => setMessage(e.target.value)} /></label>
         {admin && <label className="block"><input type="checkbox" checked={internal} onChange={e => setInternal(e.target.checked)} /> {en ? 'Internal note (hidden from customer)' : 'Internal note (customer দেখতে পাবেন না)'}</label>}
