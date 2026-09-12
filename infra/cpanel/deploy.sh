@@ -197,59 +197,10 @@ case "$NB_BACKUP_KEEP" in ''|*[!0-9]*) fail 'NB_BACKUP_KEEP must be a whole numb
 [ "$NB_BACKUP_KEEP" -ge 1 ] || fail 'NB_BACKUP_KEEP must be at least 1.'
 prune_timestamped "$HOME/nb-deploy-backups" "$((NB_BACKUP_KEEP - 1))"
 
-# ------------------------------------------------------------- account quota
-#
-# Checked after the prune, so the space that was just reclaimed counts, and
-# before the first byte is written, so a run that cannot finish says so instead
-# of dying halfway through a tar and leaving a half-written backup behind. That
-# is not hypothetical: it is how this script learned to prune.
-#
-# `df` is the wrong tool here. CloudLinux gives the account its own quota, and
-# df reports the underlying filesystem - it will cheerfully say there are
-# terabytes free while the account has none left. cPanel's UAPI is the one that
-# knows, so it is asked first; df is only a last resort, and a wrong answer
-# from it must not stop a deployment, so it only ever warns.
-#
-# Inodes are checked as well as megabytes. A Next.js release and a node_modules
-# tree are hundreds of thousands of small files, so this account can run out of
-# inodes with gigabytes still free, and that failure looks like a disk error
-# with plenty of disk left.
-NB_MIN_FREE_MB="${NB_MIN_FREE_MB:-4096}"
-
-quota_number() {
-  # Works against both the plain and the JSON rendering of the UAPI result.
-  printf '%s\n' "$QUOTA_RAW" | sed -n "s/.*$1[^0-9-]*\([0-9][0-9]*\).*/\1/p" | head -1
-}
-
-QUOTA_RAW=''
-if command -v uapi >/dev/null 2>&1; then
-  QUOTA_RAW="$(uapi --output=json Quota get_quota_info 2>/dev/null || true)"
-fi
-
-if [ -n "$QUOTA_RAW" ]; then
-  MB_LIMIT="$(quota_number megabytes_limit)"
-  MB_USED="$(quota_number megabytes_used)"
-  INODES_LIMIT="$(quota_number inodes_limit)"
-  INODES_USED="$(quota_number inodes_used)"
-
-  # An unlimited quota reports zero or nothing; there is no headroom to check.
-  if [ -n "${MB_LIMIT:-}" ] && [ -n "${MB_USED:-}" ] && [ "$MB_LIMIT" -gt 0 ]; then
-    MB_FREE=$((MB_LIMIT - MB_USED))
-    printf 'Disk: %s MB of %s MB used, %s MB free.\n' "$MB_USED" "$MB_LIMIT" "$MB_FREE"
-    [ "$MB_FREE" -ge "$NB_MIN_FREE_MB" ] || fail "Only ${MB_FREE} MB free; this run needs at least ${NB_MIN_FREE_MB} MB. Lower NB_BACKUP_KEEP or NB_RELEASE_KEEP, or clear space, then run again."
-  fi
-
-  if [ -n "${INODES_LIMIT:-}" ] && [ -n "${INODES_USED:-}" ] && [ "$INODES_LIMIT" -gt 0 ]; then
-    printf 'Inodes: %s of %s used.\n' "$INODES_USED" "$INODES_LIMIT"
-    # A warning, not a refusal: the exact cost of a run in inodes is not known
-    # ahead of time, and refusing on a guess would block a deployment that
-    # would have succeeded.
-    [ "$((INODES_USED * 100 / INODES_LIMIT))" -lt 85 ] \
-      || printf 'WARNING: inodes are above 85%%. Keeping fewer releases or backups is the cheapest way down.\n' >&2
-  fi
-else
-  printf 'Note: cPanel UAPI not available; account quota not checked.\n' >&2
-fi
+# The account's own quota, not the filesystem's. Lives in its own script so it
+# can be tested against a host that is nearly full without filling one up:
+# infra/cpanel/tests/quota-parse.test.sh.
+NB_MIN_FREE_MB="${NB_MIN_FREE_MB:-4096}"   bash "$SOURCE/infra/cpanel/check-quota.sh"   || fail 'Not enough room on the account for this deployment.'
 
 mkdir -p "$BACKUP"
 chmod 700 "$HOME/nb-deploy-backups" "$BACKUP"
