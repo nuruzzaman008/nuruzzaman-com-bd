@@ -14,6 +14,14 @@ export type NavItem = {
   titleKey?: keyof Dictionary['pageTitle'];
   /** Key into `Dictionary['navDescription']`, for the mobile menu blurb. */
   descriptionKey?: keyof Dictionary['navDescription'];
+  /**
+   * Kept out of the header, still linked in the footer.
+   *
+   * Dropping a page from `primaryNav` altogether would orphan it: the footer's
+   * "explore" column is built from this same list, so it would lose its only
+   * remaining internal link and become unreachable from anywhere on the site.
+   */
+  footerOnly?: boolean;
 };
 
 /**
@@ -41,11 +49,22 @@ export const primaryNav: NavItem[] = [
   { href: '/', labelKey: 'home' },
   { href: '/courses', labelKey: 'courses', descriptionKey: 'courses' },
   { href: '/engineering-tools', labelKey: 'tools', descriptionKey: 'tools' },
+  // Next to the tools rather than at the end: /shop is where a reader buys,
+  // and the catalogue had no link from the header at all until now.
+  { href: '/shop', labelKey: 'products', descriptionKey: 'products' },
   { href: '/blog', labelKey: 'blog', descriptionKey: 'blog' },
   { href: '/resources', labelKey: 'resources', descriptionKey: 'resources' },
-  { href: '/about', labelKey: 'about' },
   { href: '/support', labelKey: 'support', descriptionKey: 'support' },
+  { href: '/about', labelKey: 'about', footerOnly: true },
 ];
+
+/**
+ * What the header and the mobile menu show.
+ *
+ * The footer keeps the full list, so a page taken out of the header is still
+ * linked from every page of the site.
+ */
+export const headerNav: NavItem[] = primaryNav.filter((item) => !item.footerOnly);
 
 export const supportNav: NavItem[] = [
   { href: '/support/installation', titleKey: 'supportInstallation' },

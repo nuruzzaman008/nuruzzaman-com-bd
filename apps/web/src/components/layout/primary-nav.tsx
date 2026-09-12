@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { localizePath } from '@/lib/i18n/locale';
-import { navItemLabel, primaryNav, type NavItem } from '@/lib/site';
+import { headerNav, navItemLabel, type NavItem } from '@/lib/site';
 
 /**
  * The desktop primary navigation.
@@ -32,7 +32,7 @@ export function PrimaryNav() {
   return (
     <nav aria-label={t.nav.primary} className="hidden lg:block">
       <ul className="flex items-center gap-1">
-        {primaryNav.slice(1).map((item) => (
+        {headerNav.slice(1).map((item) => (
           <li key={item.href}>
             <Link
               href={localizePath(item.href, locale)}

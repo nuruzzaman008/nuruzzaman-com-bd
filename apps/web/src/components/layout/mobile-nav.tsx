@@ -9,7 +9,7 @@ import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { navDescription, navLabel } from '@/components/layout/primary-nav';
 import { localizePath } from '@/lib/i18n/locale';
 import { useLocale } from '@/lib/i18n/locale-provider';
-import { primaryNav, supportNav } from '@/lib/site';
+import { headerNav, supportNav } from '@/lib/site';
 
 /**
  * False while rendering on the server, true once hydrated.
@@ -84,7 +84,7 @@ export function MobileNav() {
     >
       <nav aria-label={t.nav.mobile}>
         <ul className="space-y-1">
-          {primaryNav.map((item) => (
+          {headerNav.map((item) => (
             <li key={item.href}>
               <Link
                 href={localizePath(item.href, locale)}

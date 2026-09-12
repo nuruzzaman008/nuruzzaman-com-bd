@@ -26,6 +26,7 @@ const bn = {
     home: 'হোম',
     courses: 'কোর্স',
     tools: 'ইঞ্জিনিয়ারিং টুলস',
+    products: 'প্রোডাক্ট',
     blog: 'ব্লগ',
     resources: 'রিসোর্স',
     about: 'পরিচিতি',
@@ -41,6 +42,7 @@ const bn = {
   navDescription: {
     courses: 'বাংলায় প্র্যাকটিক্যাল ইঞ্জিনিয়ারিং কোর্স',
     tools: 'AutoCAD-এর জন্য NB Engineering Tools',
+    products: 'সফটওয়্যার লাইসেন্স, ক্রেডিট ও কোর্স',
     blog: 'যাচাই করা টেকনিক্যাল আর্টিকেল',
     resources: 'চেকলিস্ট ও টেমপ্লেট',
     support: 'ইনস্টলেশন, অ্যাক্টিভেশন ও লাইসেন্স',
@@ -1627,6 +1629,7 @@ const en: Dictionary = {
     home: 'Home',
     courses: 'Courses',
     tools: 'Engineering Tools',
+    products: 'Products',
     blog: 'Blog',
     resources: 'Resources',
     about: 'About',
@@ -1641,6 +1644,7 @@ const en: Dictionary = {
   navDescription: {
     courses: 'Practical engineering courses in Bangla',
     tools: 'NB Engineering Tools for AutoCAD',
+    products: 'Software licences, credits and courses',
     blog: 'Reviewed technical articles',
     resources: 'Checklists and templates',
     support: 'Installation, activation and licensing',
