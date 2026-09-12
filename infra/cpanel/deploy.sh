@@ -56,7 +56,31 @@ if [ "$DEPLOY_API" = 1 ]; then
   [ -x "$PHP_BIN" ] || fail 'Set NB_PHP_BIN.'
   "$PHP_BIN" -r 'exit(PHP_VERSION_ID >= 80401 ? 0 : 1);' || fail 'composer.lock requires PHP >=8.4.1.'
   "$PHP_BIN" -r 'echo "PHP ",PHP_VERSION,PHP_EOL; exit(extension_loaded("pdo_mysql") ? 0 : 1);' || fail 'Enable pdo_mysql.'
-  "$PHP_BIN" -r 'exit(is_callable("proc_open") ? 0 : 1);' || fail 'Composer requires proc_open in CLI PHP. Ask the host to enable it for the selected CLI runtime; do not bypass platform checks.'
+  # Whether Composer has to fetch anything at all.
+  #
+  # It installs into a fresh staging tree, so ordinarily it downloads and
+  # unpacks all 56 packages - and for that it needs proc_open, which this host
+  # has in disable_functions. That one fact is why the API had never been
+  # deployed by this script: it refused before it began, and a long run of
+  # application changes sat in the repository undeployed.
+  #
+  # But when the staged lock file matches the one already live, the vendor tree
+  # beside it is by definition exactly what the lock demands - Composer's own
+  # dry run says as much. There is nothing to fetch, and the installed
+  # dependencies can be carried across instead. The autoloader is regenerated
+  # afterwards, which is pure PHP and needs no subprocess.
+  #
+  # proc_open is still required whenever the lock has actually moved, because
+  # then there genuinely is something to download and no way to fake it.
+  REUSE_VENDOR=0
+  if [ -f "$NB_API_ROOT/vendor/autoload.php" ] \
+    && cmp -s "$SOURCE/apps/api/composer.lock" "$NB_API_ROOT/composer.lock"; then
+    REUSE_VENDOR=1
+    printf 'Dependencies unchanged: reusing the installed vendor tree.\n'
+  fi
+  if [ "$REUSE_VENDOR" != 1 ]; then
+    "$PHP_BIN" -r 'exit(is_callable("proc_open") ? 0 : 1);' || fail 'composer.lock has changed and Composer needs proc_open to fetch packages, which this host disables. Install dependencies where proc_open exists and ship the vendor tree, or ask the host to enable it.'
+  fi
   COMPOSER_FILE="${NB_COMPOSER_PHAR:-}"
   if [ -z "$COMPOSER_FILE" ]; then
     if [ -f "$HOME/composer.phar" ]; then COMPOSER_FILE="$HOME/composer.phar"; else COMPOSER_FILE="$(command -v composer || true)"; fi
@@ -189,7 +213,14 @@ if [ "$DEPLOY_API" = 1 ]; then
   mkdir "$API_STAGE"
   git -C "$SOURCE" archive HEAD apps/api | tar -x -C "$API_STAGE" --strip-components=2
   mkdir -p "$API_STAGE/bootstrap/cache" "$API_STAGE/storage/framework/"{cache/data,sessions,views} "$API_STAGE/storage/logs"
-  "$PHP_BIN" "$COMPOSER_FILE" install --working-dir="$API_STAGE" --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
+  if [ "$REUSE_VENDOR" = 1 ]; then
+    # Carried across rather than refetched; then the classmap is rebuilt so the
+    # application files this deploy adds are found by it.
+    cp -a "$NB_API_ROOT/vendor" "$API_STAGE/vendor"
+    "$PHP_BIN" "$COMPOSER_FILE" dump-autoload --working-dir="$API_STAGE" --no-dev --no-interaction --optimize
+  else
+    "$PHP_BIN" "$COMPOSER_FILE" install --working-dir="$API_STAGE" --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
+  fi
   mkdir -p "$API_STAGE/storage/framework/"{cache/data,sessions,views} "$API_STAGE/storage/logs"
   "$PHP_BIN" "$SOURCE/infra/cpanel/check-api.php" "$API_STAGE" "$NB_API_ROOT" "$RUN_MIGRATIONS"
   if [ -f "$NB_API_ROOT/artisan" ]; then "$PHP_BIN" "$NB_API_ROOT/artisan" down; fi
