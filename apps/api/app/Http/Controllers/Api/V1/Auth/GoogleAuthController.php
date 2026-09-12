@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
- * Sign in with Google, for customers.
+ * Sign in with Google.
  *
  * Written against Google's endpoints directly rather than through Socialite:
  * this host has proc_open in disable_functions, so Composer cannot install a
@@ -28,14 +28,20 @@ use Illuminate\Support\Str;
  * were just handed. Nothing arrives via the browser that is trusted, so there
  * is no ID token signature to verify and no JWT library to carry.
  *
- * STAFF MAY NOT USE THIS. A staff account reached through Google is only as
- * safe as that Google account, and it would walk straight past the three-strike
- * lock on the password path. Staff sign in at /nb-staff with a password. The
- * refusal is here, on the server, rather than in whether a button is drawn.
+ * Staff may use it too, by the owner's decision. Worth knowing what that
+ * means: a staff account reachable this way is exactly as safe as the Google
+ * account behind it, and this path does not pass the three-strike lock that
+ * guards the password one. It is a reasonable trade when the Google account
+ * carries two-factor, and a poor one when it does not.
+ *
+ * What remains true either way: nothing here can produce a staff account. A
+ * new arrival is created with the customer role, the same as registration
+ * grants, so the only staff accounts that can sign in this way are ones an
+ * administrator made deliberately.
  */
 class GoogleAuthController extends Controller
 {
-    /** Any of these on an account means the password page, not this one. */
+    /** Holding any of these decides where the sign-in lands. */
     private const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'instructor', 'support'];
 
     private const STATE_KEY = 'google_oauth_state';
@@ -111,12 +117,6 @@ class GoogleAuthController extends Controller
         $user = User::query()->where('google_id', $googleId)->first()
             ?? User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
 
-        if ($user && $user->roles()->whereIn('name', self::STAFF_ROLES)->exists()) {
-            Audit::record('auth.google_refused_staff', $user, [], $user->getKey());
-
-            return $this->back('staff_password_only');
-        }
-
         if ($user && ! $user->isActive()) {
             return $this->back('account_inactive');
         }
@@ -141,9 +141,13 @@ class GoogleAuthController extends Controller
             $this->carts->merge($this->carts->forToken($cart), $user);
         }
 
-        Audit::record('auth.login', $user, ['via' => 'google'], $user->getKey());
+        $staff = $user->roles()->whereIn('name', self::STAFF_ROLES)->exists();
 
-        return redirect()->away($this->frontend().'/account');
+        // Recorded distinctly: a staff sign-in that skipped the password is
+        // worth being able to find in the audit log later.
+        Audit::record('auth.login', $user, ['via' => 'google', 'staff' => $staff], $user->getKey());
+
+        return redirect()->away($this->frontend().($staff ? '/dashboard' : '/account'));
     }
 
     private function register(string $email, string $googleId, string $name): User

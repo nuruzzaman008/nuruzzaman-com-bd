@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
+import { GoogleButton } from '@/features/auth/google-button';
 import { LoginForm } from '@/features/auth/login-form';
 import { LoadingRegion } from '@/components/ui/states';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
+import { publicEnv } from '@/lib/env';
 
 /**
  * The staff entrance.
@@ -22,7 +24,9 @@ import { privateMetadata } from '@/lib/seo';
  * or by an administrator who already has the permission.
  *
  * There is deliberately no "create an account" link here. The customer page
- * has one; staff accounts are not self-service and never have been.
+ * has one; staff accounts are not self-service and never have been - and the
+ * Google button below cannot make one either, since an account arriving that
+ * way is created with the customer role.
  */
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await adminDictionary();
@@ -45,6 +49,14 @@ export default async function StaffLoginPage() {
           <LoginForm defaultNext="/dashboard" />
         </Suspense>
       </div>
+
+      {publicEnv.googleLogin ? (
+        <div className="mt-6">
+          <Suspense fallback={null}>
+            <GoogleButton />
+          </Suspense>
+        </div>
+      ) : null}
     </>
   );
 }

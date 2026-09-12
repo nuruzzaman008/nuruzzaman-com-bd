@@ -27,14 +27,15 @@ describe('GoogleButton', () => {
     expect(link).toHaveAttribute('href', '/api/v1/auth/google/redirect');
   });
 
-  it('explains the refusal when a staff account tries Google', () => {
+  it('no longer refuses staff, so that message is gone entirely', () => {
+    // Staff may sign in with Google by the owner's decision, and the API sends
+    // them to the dashboard. Nothing should still be carrying the old refusal.
     params.current = new URLSearchParams('error=staff_password_only');
 
     render(<GoogleButton />);
 
-    expect(
-      screen.getByText('Staff accounts cannot sign in with Google. Please use your password.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByText(/cannot sign in with Google/)).not.toBeInTheDocument();
   });
 
   it.each([

@@ -955,8 +955,6 @@ const bn = {
     signInIntro: 'অর্ডার, ডাউনলোড ও কোর্স অ্যাক্সেস দেখতে সাইন ইন করুন।',
     orSeparator: 'অথবা',
     googleContinue: 'Google দিয়ে চালিয়ে যান',
-    googleStaffRefused:
-      'স্টাফ অ্যাকাউন্ট Google দিয়ে সাইন ইন করা যায় না। পাসওয়ার্ড দিয়ে সাইন ইন করুন।',
     googleUnverified:
       'আপনার Google ঠিকানাটি যাচাই করা নেই, তাই এটি দিয়ে সাইন ইন করা যাচ্ছে না।',
     googleCancelled: 'Google সাইন ইন বাতিল করা হয়েছে।',
@@ -2432,8 +2430,6 @@ const en: Dictionary = {
     signInIntro: 'Sign in to see your orders, downloads and course access.',
     orSeparator: 'or',
     googleContinue: 'Continue with Google',
-    googleStaffRefused:
-      'Staff accounts cannot sign in with Google. Please use your password.',
     googleUnverified:
       'That Google address is not verified, so it cannot be used to sign in.',
     googleCancelled: 'Google sign-in was cancelled.',

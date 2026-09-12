@@ -36,6 +36,8 @@ describe('documentLocale', () => {
     ['/dashboard', 'bn'],
     ['/learn/some-course', 'bn'],
     ['/login', 'en'],
+    ['/nb-staff', 'en'],
+    ['/nb-staff', 'bn'],
     ['/checkout', 'bn'],
   ])('takes %s from the signed-in preference, giving %s', (path, preference) => {
     expect(documentLocale(path, preference as 'bn' | 'en')).toBe(preference);

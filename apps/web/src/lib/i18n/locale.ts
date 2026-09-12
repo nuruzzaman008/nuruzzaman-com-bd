@@ -88,6 +88,10 @@ const PRIVATE_PREFIXES = [
   // The sign-in screens belong to the same application and have no English
   // URL either, so a link to one is left exactly as it is.
   '/login',
+  // The staff entrance. Without it here the shell rendered its heading from
+  // the staff language preference while the client components on the same
+  // page fell back to the URL and rendered Bengali beside it.
+  '/nb-staff',
   '/register',
   '/forgot-password',
   '/reset-password',

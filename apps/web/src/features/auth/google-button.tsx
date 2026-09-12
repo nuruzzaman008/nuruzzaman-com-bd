@@ -7,16 +7,16 @@ import { publicEnv } from '@/lib/env';
 import { useLocale } from '@/lib/i18n/locale-provider';
 
 /**
- * Sign in with Google, for customers.
+ * Sign in with Google.
  *
  * A plain link, not a fetch: this begins a redirect to Google and comes back to
  * a callback that has to arrive at this origin, so that the session cookie the
  * API sets is one the browser will send back here. Going through the site's own
  * /api rewrite is what makes that true.
  *
- * Deliberately not on /nb-staff. Staff sign in with a password, and the API
- * refuses a staff account that arrives this way whether or not a button exists
- * to send it - hiding this is tidiness, not the control.
+ * Offered at both entrances. Staff may sign in this way by the owner's
+ * decision, and the API sends them on to the dashboard rather than the
+ * customer account page.
  */
 export function GoogleButton() {
   const { t } = useLocale();
@@ -24,7 +24,6 @@ export function GoogleButton() {
   const error = params.get('error');
 
   const reasons: Record<string, string> = {
-    staff_password_only: t.auth.googleStaffRefused,
     google_unverified: t.auth.googleUnverified,
     google_cancelled: t.auth.googleCancelled,
     account_inactive: t.auth.googleInactive,
