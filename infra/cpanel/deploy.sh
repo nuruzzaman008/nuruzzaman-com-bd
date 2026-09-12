@@ -112,8 +112,36 @@ BACKUP="$HOME/nb-deploy-backups/$RELEASE"
 mkdir -p "$BACKUP"
 chmod 700 "$HOME/nb-deploy-backups" "$BACKUP"
 trap 'printf "Deployment failed. Backup: %s. Inspect maintenance state; never roll back migrations blindly.\n" "$BACKUP"' ERR
-# Complete backups precede builds, staging, and live changes. No automatic pruning.
-tar -C "$SOURCE" -cpf "$BACKUP/repository.tar" .
+# Complete backups precede builds, staging, and live changes.
+#
+# Pruned to the last NB_BACKUP_KEEP releases, and pruned *before* the new
+# backup is written rather than after. This account is quota-limited, and an
+# unpruned run filled it and failed the deploy on the very next line - so the
+# space has to be reclaimed before it is needed, not once the run is over.
+prune_backups() {
+  keep="${NB_BACKUP_KEEP:-3}"
+  case "$keep" in ''|*[!0-9]*) fail 'NB_BACKUP_KEEP must be a whole number.' ;; esac
+  [ "$keep" -ge 1 ] || fail 'NB_BACKUP_KEEP must be at least 1.'
+  # One slot is left for the backup this run is about to write, so the count
+  # after a successful deploy is NB_BACKUP_KEEP, not one more.
+  ls -1 "$HOME/nb-deploy-backups" 2>/dev/null | grep -E '^20[0-9]{6}T[0-9]{6}Z-' |
+    sort -r | tail -n +"$keep" |
+    while IFS= read -r stale; do
+      [ -n "$stale" ] || continue
+      target="$HOME/nb-deploy-backups/$stale"
+      # Never follow a symlink out of the backup directory.
+      [ ! -L "$target" ] && [ -d "$target" ] || continue
+      printf 'Pruning old backup: %s\n' "$stale"
+      rm -rf -- "$target"
+    done
+}
+prune_backups
+# node_modules is excluded. It was 101,147 of the entries here and nearly all
+# of the 2.8G each backup used to take, and it is reproducible from the
+# lockfile - a rollback reinstalls it. Backing it up bought nothing and cost
+# the quota that the deploy itself needed.
+tar -C "$SOURCE" -cpf "$BACKUP/repository.tar" \
+  --exclude='./node_modules' --exclude='*/node_modules' .
 cp -p "$CONFIG" "$BACKUP/deploy.conf"
 for folder in "$NB_API_ROOT" "$NB_WEB_ROOT" "$HOME/nuruzzaman.com.bd"; do
   if [ -d "$folder" ]; then
