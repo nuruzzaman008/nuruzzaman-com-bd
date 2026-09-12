@@ -32,6 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ForgetHostOnlySessionCookies::class,
         ]);
 
+        // Sanctum's /sanctum/csrf-cookie is a web-group route, and it is the
+        // first thing a browser asks for - so the cleanup has to be here too
+        // or it would only ever reach client-side API calls.
+        $middleware->web(prepend: [
+            ForgetHostOnlySessionCookies::class,
+        ]);
+
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
             'role' => EnsureUserHasRole::class,
