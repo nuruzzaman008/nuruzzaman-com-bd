@@ -7,7 +7,6 @@
  */
 import Link from 'next/link';
 
-import { AdminEntrance } from '@/components/layout/admin-entrance';
 import type { SiteSettings } from '@nuruzzaman/contracts';
 
 import { Container } from '@/components/ui/container';
@@ -98,10 +97,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings | null }) {
         </div>
 
         <div className="mt-10 border-t border-white/15 pt-6">
-          {/* Rendered only for signed-in staff; see AdminEntrance. */}
-          <AdminEntrance />
-
-          <nav aria-label={t.footer.legal} className="mt-6">
+          <nav aria-label={t.footer.legal}>
             <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
               {legalNav.map((item) => (
                 <li key={item.href}>
