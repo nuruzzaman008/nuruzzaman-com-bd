@@ -217,7 +217,11 @@ if [ "$DEPLOY_API" = 1 ]; then
     # Carried across rather than refetched; then the classmap is rebuilt so the
     # application files this deploy adds are found by it.
     cp -a "$NB_API_ROOT/vendor" "$API_STAGE/vendor"
-    "$PHP_BIN" "$COMPOSER_FILE" dump-autoload --working-dir="$API_STAGE" --no-dev --no-interaction --optimize
+    # --no-scripts for the same reason the install below carries it: Composer's
+    # post-autoload-dump hook runs artisan package:discover through Process,
+    # which needs proc_open. The deploy runs package:discover itself against
+    # the live application a few lines further down, where it belongs.
+    "$PHP_BIN" "$COMPOSER_FILE" dump-autoload --working-dir="$API_STAGE" --no-dev --no-interaction --no-scripts --optimize
   else
     "$PHP_BIN" "$COMPOSER_FILE" install --working-dir="$API_STAGE" --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader
   fi

@@ -62,3 +62,8 @@ apps/web/.next/.serve-ports
 
 # A stray empty git repo was created here once by a mistyped path.
 nuruzzaman.com.bd/
+
+# Dropped into whatever directory cPanel's PHP runs in. Untracked files
+# make the tree dirty, and infra/cpanel/deploy.sh refuses a dirty tree -
+# so without this one stray log blocks the next API deployment.
+error_log
