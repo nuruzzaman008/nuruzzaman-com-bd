@@ -264,6 +264,20 @@ JSON
         printf 'Retired the previous app process %s\n' "$stale_pid"
       fi
     done
+
+    # Long enough for those processes to write their exit lines, which are
+    # always "Error: Server is not running." (ERR_SERVER_NOT_RUNNING): Next's
+    # SIGTERM handler closing a listener Passenger owns. Expected, not a fault.
+    sleep 5
+
+    # The log is kept with the backup and then started empty, but only on a
+    # deploy that served - a failed one must keep its evidence. Afterwards
+    # "stderr.log is empty" means "this release has logged no error", which is
+    # worth having as a health check, and the file stops growing for ever.
+    if [ -s "$NB_WEB_ROOT/stderr.log" ]; then
+      cp -p "$NB_WEB_ROOT/stderr.log" "$BACKUP/stderr.log" 2>/dev/null || true
+    fi
+    : > "$NB_WEB_ROOT/stderr.log" 2>/dev/null || true
   fi
   # Only now that current points at the new release, and never the release it
   # replaced: that one is the rollback target recorded in this backup. These
