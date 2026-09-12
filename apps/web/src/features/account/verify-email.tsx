@@ -59,6 +59,9 @@ export function VerifyEmail() {
   );
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  // A refusal for being too quick is the one failure a new link cannot fix,
+  // and asking for one spends more of the same budget.
+  const [throttled, setThrottled] = useState(false);
 
   useEffect(() => {
     // Nothing is spent on a request that is already known to fail, or on one
@@ -88,12 +91,19 @@ export function VerifyEmail() {
         }
 
         setState('failed');
-        // An expired link is the common case and has its own remedy, so it is
-        // named rather than folded into a generic failure.
+
+        const status = caught instanceof ApiError ? caught.status : null;
+
+        // Each of these has a different remedy, and offering the wrong one
+        // wastes the visitor's time: a new link does not help a refusal for
+        // being too quick, and waiting does not help an expired signature.
+        setThrottled(status === 429);
         setMessage(
-          caught instanceof ApiError && (caught.status === 403 || caught.status === 401)
-            ? t.account.verifyLinkExpired
-            : t.account.verifyFailed,
+          status === 429
+            ? t.account.verifyTooMany
+            : status === 403 || status === 401
+              ? t.account.verifyLinkExpired
+              : t.account.verifyFailed,
         );
       }
     })();
@@ -173,7 +183,7 @@ export function VerifyEmail() {
         <Callout tone="success" role="status">
           {t.account.verifySent}
         </Callout>
-      ) : (
+      ) : throttled ? null : (
         <Button type="button" onClick={resend} disabled={resending}>
           {resending ? t.account.verifySending : t.account.verifyResend}
         </Button>

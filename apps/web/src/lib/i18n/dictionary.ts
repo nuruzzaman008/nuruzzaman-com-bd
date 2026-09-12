@@ -92,6 +92,8 @@ const bn = {
     verifyResendFailed: 'লিংক পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
     verifyWrongAccount:
       'এই লিংকটি অন্য একটি অ্যাকাউন্টের জন্য পাঠানো হয়েছিল। সাইন আউট করে ইমেইল থেকে লিংকটি আবার খুলুন।',
+    verifyTooMany:
+      'অল্প সময়ে অনেকবার চেষ্টা হয়েছে। এক মিনিট অপেক্ষা করে লিংকটি আবার খুলুন — নতুন লিংকের দরকার নেই।',
     signOutFailed:
       'সার্ভারে পৌঁছানো যায়নি, তাই সেশন এখনো বন্ধ নাও হতে পারে। নিরাপত্তার জন্য ব্রাউজার বন্ধ করুন বা আবার চেষ্টা করুন।',
   },
@@ -1590,6 +1592,8 @@ const en: Dictionary = {
     verifyResendFailed: 'The link could not be sent. Please try again in a little while.',
     verifyWrongAccount:
       'This link was sent to a different account. Sign out, then open the link from your email again.',
+    verifyTooMany:
+      'Too many attempts in a short time. Wait a minute and open the link again - you do not need a new one.',
     signOutFailed:
       'We could not reach the server, so your session may still be open. Close your browser or try again.',
   },

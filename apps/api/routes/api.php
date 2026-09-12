@@ -66,7 +66,7 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/logout', [Auth\LoginController::class, 'destroy'])->middleware('auth:sanctum');
 
     Route::get('auth/verify-email/{id}/{hash}', [Auth\EmailVerificationController::class, 'verify'])
-        ->middleware(['auth:sanctum', 'signed', 'throttle:auth'])
+        ->middleware(['auth:sanctum', 'signed', 'throttle:verify-email'])
         ->name('verification.verify');
 
     Route::post('auth/verify-email/resend', [Auth\EmailVerificationController::class, 'resend'])

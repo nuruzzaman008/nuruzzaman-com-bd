@@ -52,10 +52,27 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)
             ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
 
-        RateLimiter::for('auth', fn (Request $request) => [
-            Limit::perMinute(5)->by('ip:'.$request->ip()),
-            Limit::perMinute(5)->by('email:'.strtolower((string) $request->input('email'))),
-        ]);
+        RateLimiter::for('auth', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email')));
+
+            return array_values(array_filter([
+                Limit::perMinute(5)->by('ip:'.$request->ip()),
+                // Only when the request actually carries an address. Keyed on
+                // an absent field this became the single bucket 'email:',
+                // shared by every auth request that has no email at all - so
+                // five verification clicks, from anyone anywhere, locked the
+                // endpoint for everybody until the minute was out.
+                $email === '' ? null : Limit::perMinute(5)->by('email:'.$email),
+            ]));
+        });
+
+        // Following a link out of an email is not a credential guess, and the
+        // signature already proves it came from us. Sharing the login budget
+        // meant an office behind one address could exhaust it between them, so
+        // this is keyed per account - which the route has, since it needs a
+        // session to reach at all.
+        RateLimiter::for('verify-email', fn (Request $request) => Limit::perMinute(10)
+            ->by('verify:'.($request->user()?->getAuthIdentifier() ?: $request->ip())));
 
         RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute(10)
             ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));

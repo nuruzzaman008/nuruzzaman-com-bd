@@ -123,6 +123,22 @@ describe('VerifyEmail', () => {
     );
   });
 
+  it('does not offer a new link when the refusal was for being too quick', async () => {
+    // 429. A new link cannot help - the old one is fine - and asking for one
+    // spends more of the same budget, so the button must not be there.
+    withTarget('/api/v1/auth/verify-email/8/abc123');
+    request.mockRejectedValue(new FakeApiError(429));
+
+    render(<VerifyEmail />);
+
+    expect(
+      await screen.findByText(
+        'Too many attempts in a short time. Wait a minute and open the link again - you do not need a new one.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Send a new link' })).not.toBeInTheDocument();
+  });
+
   it('says whose link it is when someone else is signed in, and does not send it', async () => {
     // Two people on one computer, or a second account in the same browser. The
     // API answers this with the same 403 as an expired signature, and a new
