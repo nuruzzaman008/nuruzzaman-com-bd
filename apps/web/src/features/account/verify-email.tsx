@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { SignOutButton } from '@/features/auth/sign-out-button';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { ApiError, api } from '@/lib/api/browser';
@@ -22,10 +23,14 @@ type State = 'working' | 'verified' | 'already' | 'failed';
  * Only same-origin API paths are followed. The value arrives from a URL, and a
  * page that will fetch whatever a query parameter names is a page that can be
  * pointed at someone else's server.
+ *
+ * The API requires a session for this route, so a visitor arriving without one
+ * is sent to sign in and back again by the account layout, which keeps the
+ * query string. Nothing is requested here until the session has settled.
  */
 export function VerifyEmail() {
   const { t } = useLocale();
-  const { refresh: refreshSession } = useSession();
+  const { user, isLoading: sessionLoading, refresh: refreshSession } = useSession();
   const router = useRouter();
   const params = useSearchParams();
   const target = params.get('target');
@@ -35,6 +40,19 @@ export function VerifyEmail() {
   // to be verifying something it has already rejected.
   const usable = Boolean(target && target.startsWith('/api/v1/auth/verify-email/'));
 
+  /*
+    Whether this link belongs to whoever is signed in.
+
+    Laravel refuses a mismatch with 403, which is indistinguishable from an
+    expired signature - and "send a new link" is no remedy for it, because the
+    link was never the problem. Both values are known here, so the mismatch is
+    recognised before anything is requested and answered with the instruction
+    that actually works.
+  */
+  const linkUserId = usable && target ? (/\/verify-email\/(\d+)\//.exec(target)?.[1] ?? null) : null;
+  const wrongAccount = Boolean(user && linkUserId && String(user.id) !== linkUserId);
+  const alreadyVerified = Boolean(user?.email_verified);
+
   const [state, setState] = useState<State>(usable ? 'working' : 'failed');
   const [message, setMessage] = useState<string | null>(
     usable ? null : t.account.verifyLinkInvalid,
@@ -43,7 +61,9 @@ export function VerifyEmail() {
   const [resent, setResent] = useState(false);
 
   useEffect(() => {
-    if (!usable || !target) {
+    // Nothing is spent on a request that is already known to fail, or on one
+    // whose answer the session has given us.
+    if (!usable || !target || sessionLoading || wrongAccount || alreadyVerified) {
       return;
     }
 
@@ -81,7 +101,16 @@ export function VerifyEmail() {
     return () => {
       cancelled = true;
     };
-  }, [usable, target, t, refreshSession, router]);
+  }, [
+    usable,
+    target,
+    sessionLoading,
+    wrongAccount,
+    alreadyVerified,
+    t,
+    refreshSession,
+    router,
+  ]);
 
   async function resend() {
     setResending(true);
@@ -96,18 +125,40 @@ export function VerifyEmail() {
     }
   }
 
-  if (state === 'working') {
+  if (usable && wrongAccount) {
     return (
-      <Callout tone="info" role="status">
-        {t.account.verifyWorking}
+      <div className="space-y-4">
+        <Callout tone="danger" role="alert">
+          {t.account.verifyWrongAccount}
+        </Callout>
+
+        <SignOutButton className="max-w-xs" />
+      </div>
+    );
+  }
+
+  if (state === 'verified') {
+    return (
+      <Callout tone="success" role="status">
+        {t.account.verifySuccess}
       </Callout>
     );
   }
 
-  if (state === 'verified' || state === 'already') {
+  // The session already knowing the address is verified is the same news as
+  // the API saying so, and arrives without asking.
+  if (state === 'already' || (state === 'working' && alreadyVerified)) {
     return (
       <Callout tone="success" role="status">
-        {state === 'verified' ? t.account.verifySuccess : t.account.verifyAlready}
+        {t.account.verifyAlready}
+      </Callout>
+    );
+  }
+
+  if (state === 'working') {
+    return (
+      <Callout tone="info" role="status">
+        {t.account.verifyWorking}
       </Callout>
     );
   }

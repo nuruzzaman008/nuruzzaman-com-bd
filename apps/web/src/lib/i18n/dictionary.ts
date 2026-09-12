@@ -90,6 +90,8 @@ const bn = {
     verifySending: 'পাঠানো হচ্ছে…',
     verifySent: 'নতুন যাচাই লিংক পাঠানো হয়েছে। ইনবক্স ও স্প্যাম ফোল্ডার দেখুন।',
     verifyResendFailed: 'লিংক পাঠানো যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+    verifyWrongAccount:
+      'এই লিংকটি অন্য একটি অ্যাকাউন্টের জন্য পাঠানো হয়েছিল। সাইন আউট করে ইমেইল থেকে লিংকটি আবার খুলুন।',
     signOutFailed:
       'সার্ভারে পৌঁছানো যায়নি, তাই সেশন এখনো বন্ধ নাও হতে পারে। নিরাপত্তার জন্য ব্রাউজার বন্ধ করুন বা আবার চেষ্টা করুন।',
   },
@@ -1586,6 +1588,8 @@ const en: Dictionary = {
     verifySending: 'Sending\u2026',
     verifySent: 'A new verification link has been sent. Check your inbox and your spam folder.',
     verifyResendFailed: 'The link could not be sent. Please try again in a little while.',
+    verifyWrongAccount:
+      'This link was sent to a different account. Sign out, then open the link from your email again.',
     signOutFailed:
       'We could not reach the server, so your session may still be open. Close your browser or try again.',
   },

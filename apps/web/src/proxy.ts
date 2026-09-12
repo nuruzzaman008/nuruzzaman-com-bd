@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-import { PATHNAME_HEADER } from '@/lib/i18n/locale';
+import { PATHNAME_HEADER, REQUEST_PATH_HEADER } from '@/lib/request-path';
 
 /**
  * Tells the root layout which path is being rendered.
@@ -24,6 +24,10 @@ export function proxy(request: NextRequest) {
   // of being trusted.
   const headers = new Headers(request.headers);
   headers.set(PATHNAME_HEADER, request.nextUrl.pathname);
+  // With the query, because the account shell has to be able to return a
+  // signed-out visitor to the exact URL they asked for - a verification link
+  // is nothing but its query string.
+  headers.set(REQUEST_PATH_HEADER, `${request.nextUrl.pathname}${request.nextUrl.search}`);
 
   return NextResponse.next({ request: { headers } });
 }

@@ -1,6 +1,9 @@
 import type { SiteSettings, User } from '@nuruzzaman/contracts';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ApiError } from '@nuruzzaman/contracts';
+
+import { PATHNAME_HEADER, REQUEST_PATH_HEADER, loginRedirect } from '@/lib/request-path';
 
 import { AccountSidebar } from '@/components/layout/account-sidebar';
 import { isAdministrator } from '@/lib/account-routing';
@@ -24,13 +27,28 @@ export default async function AccountLayout({ children }: { children: React.Reac
     user = response.data;
   } catch (error) {
     if (error instanceof ApiError && (error.isUnauthenticated || error.isForbidden)) {
-      redirect('/login?next=/account');
+      /*
+        Back to the URL that was asked for, not a fixed `/account`. The
+        verification link is the case that made this matter: its whole payload
+        is the query string, so signing in and landing on the account home
+        threw the verification away, and the visitor was left with the same
+        "not verified" notice that sent them to their email in the first place.
+      */
+      redirect(loginRedirect((await headers()).get(REQUEST_PATH_HEADER), '/account'));
     }
 
     throw error;
   }
 
-  if (isAdministrator(user.roles)) redirect('/dashboard');
+  /*
+    Staff belong in /dashboard, with one exception: the page their own
+    verification email links to. There is no verification page in the admin
+    shell, so bouncing them made that link a dead end they could never get
+    past - resend, click, bounce, repeat.
+  */
+  const isVerifying = (await headers()).get(PATHNAME_HEADER) === '/account/verify-email';
+
+  if (isAdministrator(user.roles) && !isVerifying) redirect('/dashboard');
 
   const settings = await tryPublicApi<{ data: SiteSettings }>('/site/settings', {
     tags: ['settings'],
@@ -44,7 +62,9 @@ export default async function AccountLayout({ children }: { children: React.Reac
       <main id="main" className="flex-1">
         <Container className="py-10">
           <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)]">
-            <AccountSidebar user={user} />
+            {/* Staff are only ever here to verify an address, and the customer
+                navigation would be no use to them. */}
+            {isAdministrator(user.roles) ? <div /> : <AccountSidebar user={user} />}
 
             <div>{children}</div>
           </div>

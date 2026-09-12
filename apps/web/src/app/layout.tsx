@@ -5,7 +5,8 @@ import { cookies, headers } from 'next/headers';
 
 import { SkipLink } from '@/components/layout/skip-link';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
-import { LOCALE_HTML_LANG, PATHNAME_HEADER, documentLocale } from '@/lib/i18n/locale';
+import { LOCALE_HTML_LANG, documentLocale } from '@/lib/i18n/locale';
+import { PATHNAME_HEADER } from '@/lib/request-path';
 import { LocaleProvider } from '@/lib/i18n/locale-provider';
 import { SessionProvider } from '@/lib/session/session-provider';
 import { publicEnv } from '@/lib/env';

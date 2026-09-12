@@ -6,6 +6,9 @@ import { VerifyEmail } from '@/features/account/verify-email';
 const request = vi.hoisted(() => vi.fn());
 const refreshSession = vi.hoisted(() => vi.fn());
 const params = vi.hoisted(() => ({ current: new URLSearchParams() }));
+const session = vi.hoisted(() => ({
+  current: { user: null as unknown, isLoading: false },
+}));
 
 // Declared through vi.hoisted: vi.mock is lifted above the file, so a plain
 // class declaration here is not yet initialised when the factory runs.
@@ -23,10 +26,10 @@ const FakeApiError = vi.hoisted(
 
 vi.mock('@/lib/api/browser', () => ({ api: request, ApiError: FakeApiError }));
 vi.mock('@/lib/session/session-provider', () => ({
-  useSession: () => ({ refresh: refreshSession }),
+  useSession: () => ({ ...session.current, refresh: refreshSession }),
 }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => params.current,
 }));
 vi.mock('@/lib/i18n/locale-provider', async () => {
@@ -39,9 +42,16 @@ function withTarget(target: string | null) {
   params.current = new URLSearchParams(target === null ? '' : `target=${encodeURIComponent(target)}`);
 }
 
+function signedInAs(id: number, emailVerified = false) {
+  session.current = { user: { id, email_verified: emailVerified, roles: [] }, isLoading: false };
+}
+
 beforeEach(() => {
   request.mockReset();
   refreshSession.mockReset();
+  // The account layout guarantees a session before this page renders, so a
+  // signed-in visitor whose address is unverified is the ordinary case.
+  signedInAs(8);
 });
 
 describe('VerifyEmail', () => {
@@ -111,5 +121,48 @@ describe('VerifyEmail', () => {
     await waitFor(() =>
       expect(screen.getByText('The email could not be verified.')).toBeInTheDocument(),
     );
+  });
+
+  it('says whose link it is when someone else is signed in, and does not send it', async () => {
+    // Two people on one computer, or a second account in the same browser. The
+    // API answers this with the same 403 as an expired signature, and a new
+    // link would not help - so it must not be offered as the remedy.
+    withTarget('/api/v1/auth/verify-email/8/abc123');
+    signedInAs(42);
+
+    render(<VerifyEmail />);
+
+    expect(
+      await screen.findByText(
+        'This link was sent to a different account. Sign out, then open the link from your email again.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Send a new link' })).not.toBeInTheDocument();
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('waits for the session rather than sending a request that cannot succeed', async () => {
+    withTarget('/api/v1/auth/verify-email/8/abc123');
+    session.current = { user: null, isLoading: true };
+
+    render(<VerifyEmail />);
+
+    // The route needs a session, so asking before there is one earns a 401 and
+    // reports an expired link for a link that is perfectly good.
+    await screen.findByText('Verifying your email…');
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('trusts the session when it already says the address is verified', async () => {
+    // Re-opening the link from the email after it worked. The session carries
+    // the answer, so there is nothing to ask.
+    withTarget('/api/v1/auth/verify-email/8/abc123');
+    signedInAs(8, true);
+
+    render(<VerifyEmail />);
+
+    expect(await screen.findByText('This email was already verified.')).toBeInTheDocument();
+    expect(request).not.toHaveBeenCalled();
   });
 });
