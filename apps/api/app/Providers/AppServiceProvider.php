@@ -100,7 +100,9 @@ class AppServiceProvider extends ServiceProvider
         $frontend = rtrim((string) env('FRONTEND_URL', config('nb.site.url')), '/');
 
         VerifyEmail::createUrlUsing(function ($notifiable) use ($frontend) {
-            $signed = URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), [
+            $lifetime = (int) config('auth.verification.expire', 1440);
+
+            $signed = URL::temporarySignedRoute('verification.verify', now()->addMinutes($lifetime), [
                 'id' => $notifiable->getKey(),
                 'hash' => sha1($notifiable->getEmailForVerification()),
             ], absolute: false);

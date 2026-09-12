@@ -85,7 +85,7 @@ const bn = {
     verifyFailed: 'ইমেইল যাচাই করা যায়নি।',
     verifyLinkInvalid: 'লিংকটি সম্পূর্ণ নয়। ইমেইল থেকে আবার খুলুন।',
     verifyLinkExpired:
-      'লিংকটির মেয়াদ শেষ (৬০ মিনিট)। নিচের বোতাম থেকে নতুন লিংক নিন।',
+      'লিংকটির মেয়াদ শেষ হয়ে গেছে। নিচের বোতাম থেকে নতুন লিংক নিন।',
     verifyResend: 'নতুন লিংক পাঠান',
     verifySending: 'পাঠানো হচ্ছে…',
     verifySent: 'নতুন যাচাই লিংক পাঠানো হয়েছে। ইনবক্স ও স্প্যাম ফোল্ডার দেখুন।',
@@ -1585,7 +1585,7 @@ const en: Dictionary = {
     verifyFailed: 'The email could not be verified.',
     verifyLinkInvalid: 'That link is incomplete. Open it again from the email.',
     verifyLinkExpired:
-      'That link has expired (they last 60 minutes). Send yourself a new one below.',
+      'That link has expired. Send yourself a new one below.',
     verifyResend: 'Send a new link',
     verifySending: 'Sending\u2026',
     verifySent: 'A new verification link has been sent. Check your inbox and your spam folder.',

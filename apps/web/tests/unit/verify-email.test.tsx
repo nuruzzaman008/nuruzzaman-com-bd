@@ -106,9 +106,7 @@ describe('VerifyEmail', () => {
 
     render(<VerifyEmail />);
 
-    await screen.findByText(
-      'That link has expired (they last 60 minutes). Send yourself a new one below.',
-    );
+    await screen.findByText('That link has expired. Send yourself a new one below.');
     expect(screen.getByRole('button', { name: 'Send a new link' })).toBeInTheDocument();
   });
 

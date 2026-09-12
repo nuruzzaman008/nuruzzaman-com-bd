@@ -114,4 +114,22 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Email Verification Link Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | Minutes a verification link stays valid. Laravel's own default is 60,
+    | which is shorter than the gap between an email arriving and somebody
+    | reading it - a link that has expired by the time it is opened teaches
+    | people that the button does not work. A day is long enough to be opened
+    | on a phone that evening, and the link only confirms an address: it
+    | grants no session and carries no password.
+    |
+    */
+
+    'verification' => [
+        'expire' => (int) env('AUTH_VERIFICATION_EXPIRE', 1440),
+    ],
+
 ];
