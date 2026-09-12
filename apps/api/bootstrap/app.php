@@ -5,6 +5,7 @@ use App\Http\Middleware\EnforceIdempotency;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ForgetHostOnlySessionCookies;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\ApiExceptionRenderer;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             AttachRequestId::class,
             SecurityHeaders::class,
+            // Outermost, so it can add to the finished response. Temporary -
+            // see the class for when it can go.
+            ForgetHostOnlySessionCookies::class,
         ]);
 
         $middleware->alias([
