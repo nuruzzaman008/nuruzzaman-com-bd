@@ -1287,6 +1287,19 @@ const bn = {
       roleRule:
         'রোল পরিবর্তন শুধু super admin করতে পারেন এবং নিজের অ্যাকাউন্টে নয়। পরিবর্তনের আগে পাসওয়ার্ড নিশ্চিতকরণ লাগে।',
       searchLabel: 'নাম বা ইমেইল দিয়ে খুঁজুন',
+      roleHeading: 'রোল',
+      roleSave: 'রোল সংরক্ষণ করুন',
+      roleSaving: 'সংরক্ষণ হচ্ছে…',
+      roleSaved: 'রোল পরিবর্তন হয়েছে।',
+      roleOwnAccount: 'নিজের রোল নিজে বদলানো যায় না।',
+      roleNotAllowed: 'রোল পরিবর্তন শুধু super admin করতে পারেন।',
+      rolePasswordNeeded:
+        'নিশ্চিত করতে আপনার পাসওয়ার্ড দিন। এটি শুধু রোল পরিবর্তনের জন্য।',
+      rolePasswordLabel: 'আপনার পাসওয়ার্ড',
+      rolePasswordSubmit: 'নিশ্চিত করুন',
+      roleFailed: 'রোল পরিবর্তন করা যায়নি।',
+      roleSuperAdminLocked:
+        'super admin অ্যাকাউন্ট অন্য কেউ পরিবর্তন করতে পারে না — কেবল আরেকজন super admin।',
       searchPlaceholder: 'নাম বা ইমেইল',
       caption: 'ব্যবহারকারীর তালিকা',
       empty: 'কোনো ব্যবহারকারী পাওয়া যায়নি',
@@ -2755,6 +2768,19 @@ const en: Dictionary = {
       roleRule:
         'Only a super admin can change a role, and never their own. The change needs a password confirmation first.',
       searchLabel: 'Search by name or email',
+      roleHeading: 'Role',
+      roleSave: 'Save roles',
+      roleSaving: 'Saving…',
+      roleSaved: 'Roles changed.',
+      roleOwnAccount: 'You cannot change your own role.',
+      roleNotAllowed: 'Only a super admin can change a role.',
+      rolePasswordNeeded:
+        'Confirm with your password. This is only for changing a role.',
+      rolePasswordLabel: 'Your password',
+      rolePasswordSubmit: 'Confirm',
+      roleFailed: 'The role could not be changed.',
+      roleSuperAdminLocked:
+        'A super admin account can only be changed by another super admin.',
       searchPlaceholder: 'Name or email',
       caption: 'List of users',
       empty: 'No users found',

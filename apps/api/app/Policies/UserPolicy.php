@@ -19,7 +19,28 @@ class UserPolicy
 
     public function update(User $user, User $target): bool
     {
-        return $user->is($target) || $user->hasPermission('users.manage');
+        if ($user->is($target)) {
+            return true;
+        }
+
+        if (! $user->hasPermission('users.manage')) {
+            return false;
+        }
+
+        /*
+          A super admin is out of reach of anyone who is not one.
+
+          The admin role carries every permission, users.manage included, so
+          without this an administrator could suspend the owner's account -
+          locking them out of their own site entirely, since EnsureUserIsActive
+          then refuses every request. Changing their role was already
+          impossible; this closes the other way round to the same result.
+        */
+        if ($target->hasRole(RoleEnum::SuperAdmin)) {
+            return $user->hasRole(RoleEnum::SuperAdmin);
+        }
+
+        return true;
     }
 
     /** Only a super admin may change role assignments, and never their own. */
