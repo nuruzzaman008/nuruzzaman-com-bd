@@ -31,7 +31,8 @@ made = []
 
 for page in sorted(public.rglob('page.tsx')):
     rel = page.relative_to(public).parent
-    source = page.read_text(encoding='utf-8')
+    component = page.with_name('view.tsx') if page.with_name('view.tsx').exists() else page
+    source = component.read_text(encoding='utf-8')
 
     def exports(name):
         return re.search(rf'export (?:const|async function|function) {name}\b', source)
@@ -40,7 +41,7 @@ for page in sorted(public.rglob('page.tsx')):
     target_dir.mkdir(parents=True, exist_ok=True)
 
     depth = len(rel.parts)
-    src_import = ('../' * (depth + 1)) + '(public)/' + ('/'.join(rel.parts) + '/' if rel.parts else '') + 'page'
+    src_import = ('../' * (depth + 1)) + '(public)/' + ('/'.join(rel.parts) + '/' if rel.parts else '') + component.stem
     bengali_path = '/' + '/'.join(rel.parts)
 
     header = [

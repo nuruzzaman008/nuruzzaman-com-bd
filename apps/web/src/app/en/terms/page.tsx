@@ -4,8 +4,8 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import BengaliPage from '../../(public)/terms/page';
-import { generateMetadata as bengaliMeta } from '../../(public)/terms/page';
+import BengaliPage from '../../(public)/terms/view';
+import { generateMetadata as bengaliMeta } from '../../(public)/terms/view';
 import { englishMetadata } from '@/lib/i18n/metadata';
 
 export async function generateMetadata(props: any) {

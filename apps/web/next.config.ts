@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 
 /**
  * Next.js 16 configuration.
@@ -10,9 +11,14 @@ import type { NextConfig } from 'next';
  */
 const nextConfig: NextConfig = {
   output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../..'),
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: { proxyClientMaxBodySize: '110mb' },
+  experimental: {
+    proxyClientMaxBodySize: '110mb',
+    // Shared hosting exposes host CPUs, not the account's process allowance.
+    ...(process.env.NB_CPANEL_BUILD === '1' ? { cpus: 1 } : {}),
+  },
 
   images: {
     // Media is served from the API host or from object storage; both are
