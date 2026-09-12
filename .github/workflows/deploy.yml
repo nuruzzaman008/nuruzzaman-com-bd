@@ -32,7 +32,7 @@ env:
   # API needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in its own .env
   # before it will answer, and 404s the route until it has them. Turn
   # both on together, or the button leads nowhere.
-  NEXT_PUBLIC_GOOGLE_LOGIN: '0'
+  NEXT_PUBLIC_GOOGLE_LOGIN: '1'
 
 jobs:
   deploy:

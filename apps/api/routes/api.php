@@ -4,7 +4,11 @@ use App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Api\V1\Commerce;
 use App\Http\Controllers\Api\V1\LessonVideoController;
 use App\Http\Controllers\Api\V1\PublicApi;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,18 +65,38 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/login', [Auth\LoginController::class, 'store']);
         Route::post('auth/forgot-password', [Auth\PasswordController::class, 'forgot']);
         Route::post('auth/reset-password', [Auth\PasswordController::class, 'reset']);
-        Route::get('auth/google/redirect', [Auth\GoogleAuthController::class, 'redirect']);
     });
 
     /*
-      The callback is deliberately outside throttle:auth. Google sends the
-      visitor here exactly once per sign-in, and the limiter in front of the
-      password endpoints counts by address - a household finishing three
-      sign-ins in a minute would find the fourth refused with nothing to
-      explain it. The state check makes a replayed callback useless anyway.
+      Sessions, named outright.
+
+      These two are the only browser navigations this API serves. Every other
+      route here is called by the site with an Origin that Sanctum recognises,
+      which is the only reason any of them has a session at all - and Google's
+      redirect back carries no such header, so the callback arrived with no
+      session to read the state from and nowhere to sign anybody in. It failed
+      with "Session store not set on request".
+
+      So Sanctum's stateful wrapper comes off these two and the session
+      middleware is listed instead. Both halves then use the same session
+      whether or not a browser feels like sending a Referer.
+
+      The callback sits outside throttle:auth on purpose: Google sends the
+      visitor here once per sign-in, and the limiter in front of the password
+      endpoints counts by address, so a household finishing three sign-ins in a
+      minute would find the fourth refused with nothing to explain it. A
+      replayed callback is useless anyway - the state is single use and
+      Google's code is too.
     */
-    Route::get('auth/google/callback', [Auth\GoogleAuthController::class, 'callback'])
-        ->middleware('throttle:api');
+    Route::middleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class])
+        ->withoutMiddleware([EnsureFrontendRequestsAreStateful::class])
+        ->group(function () {
+            Route::get('auth/google/redirect', [Auth\GoogleAuthController::class, 'redirect'])
+                ->middleware('throttle:auth');
+
+            Route::get('auth/google/callback', [Auth\GoogleAuthController::class, 'callback'])
+                ->middleware('throttle:api');
+        });
 
     Route::post('auth/logout', [Auth\LoginController::class, 'destroy'])->middleware('auth:sanctum');
 
