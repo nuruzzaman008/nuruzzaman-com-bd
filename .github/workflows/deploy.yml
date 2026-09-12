@@ -201,63 +201,93 @@ jobs:
           REMOTE
 
       - name: Verify the site is actually serving
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          # Passenger starts on the first request, so the first call also warms it.
+          # Checked from the server, not from this runner.
+          #
+          # The host answers addresses it does not recognise with a
+          # bot-protection interstitial: "One moment, please...", HTTP 200,
+          # HTML, for every path - the JSON API included. Seen from a runner
+          # that is being challenged, a healthy site and a broken one are
+          # identical, and this step failed a deploy that was perfectly fine.
+          #
+          # An outside prober would be the better vantage point, but only if it
+          # can tell the site's answer from the challenge, and from here it
+          # cannot. The server's own address is not challenged, so the checks
+          # run there, over the connection the deploy already uses.
+          #
+          # The commit is passed as an argument rather than interpolated: the
+          # heredoc is quoted so nothing in it is expanded before it lands.
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o IdentitiesOnly=yes \
+            -o BatchMode=yes -o ConnectTimeout=25 "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- ${{ github.sha }}" <<'REMOTE'
+          set -u
+          SHA="$1"
+          SHORT=$(printf '%s' "$SHA" | cut -c1-12)
+          SITE=https://nuruzzaman.com.bd
+          failed=0
+
+          # Passenger starts the app on the first request, so this warms it too.
           for attempt in 1 2 3 4 5 6; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 https://nuruzzaman.com.bd/ || echo 000)
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "$SITE/" || echo 000)
             [ "$code" = 200 ] && break
             echo "attempt $attempt: HTTP $code - waiting"
             sleep 10
           done
 
-          failed=0
           check() {
             actual=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$1" || echo 000)
             if [ "$actual" = "$2" ]; then
-              printf 'PASS %-55s %s\n' "$1" "$actual"
+              printf 'PASS %-44s %s\n' "${1#$SITE}" "$actual"
             else
-              printf 'FAIL %-55s %s (expected %s)\n' "$1" "$actual" "$2"
+              printf 'FAIL %-44s %s (expected %s)\n' "${1#$SITE}" "$actual" "$2"
               failed=1
             fi
+            sleep 2
           }
 
-          check https://nuruzzaman.com.bd/                       200
-          check https://nuruzzaman.com.bd/en                     200
-          check https://nuruzzaman.com.bd/courses                200
-          check https://nuruzzaman.com.bd/blog                   200
-          check https://nuruzzaman.com.bd/api/v1/site/settings   200
-          check https://nuruzzaman.com.bd/sanctum/csrf-cookie    204
-
-          # A status code alone was never proof. The host's bot-protection
-          # interstitial answers 200 with "One moment, please..." for every
-          # path, a burst of requests can come back with an empty body, and an
-          # error page is a 200 too - so these assert what the body contains.
-          #
-          # Spaced out and retried for that same throttling, and matched
-          # against a lowercased body so the needles hold however Next chooses
-          # to case an attribute (it currently emits hrefLang, not hreflang).
+          # Matched against a lowercased body, so the needles hold however Next
+          # chooses to case an attribute (it emits hrefLang, not hreflang).
           assert_contains() {
             for attempt in 1 2 3; do
               if curl -s --max-time 90 "$1" | tr 'A-Z' 'a-z' | grep -qF "$2"; then
-                printf 'PASS %-46s contains %s\n' "$1" "$2"
+                printf 'PASS %-44s contains %s\n' "${1#$SITE}" "$2"
                 return 0
               fi
               sleep 5
             done
-            printf 'FAIL %-46s missing %s\n' "$1" "$2"
+            printf 'FAIL %-44s missing %s\n' "${1#$SITE}" "$2"
             failed=1
           }
 
-          # Emitted by our own metadata, so an interstitial cannot satisfy it.
-          assert_contains https://nuruzzaman.com.bd/    'rel="canonical"'
-          # The English route really rendering, not the Bengali one behind it.
-          assert_contains https://nuruzzaman.com.bd/en  'hreflang="en"'
+          check "$SITE/"                      200
+          check "$SITE/en"                    200
+          check "$SITE/courses"               200
+          check "$SITE/blog"                  200
+          check "$SITE/api/v1/site/settings"  200
+          check "$SITE/sanctum/csrf-cookie"   204
+
+          # Rendered by our own metadata, so an interstitial cannot satisfy them.
+          assert_contains "$SITE/"   'rel="canonical"'
+          assert_contains "$SITE/en" 'hreflang="en"'
+
           # Laravel answering through the proxy, rather than HTML with a 200.
-          type=$(curl -s -o /dev/null -w '%{content_type}' --max-time 90 \
-            https://nuruzzaman.com.bd/api/v1/site/settings || echo none)
+          type=$(curl -s -o /dev/null -w '%{content_type}' --max-time 90 "$SITE/api/v1/site/settings" || echo none)
           case "$type" in
-            application/json*) printf 'PASS %-46s %s\n' '/api/v1/site/settings' "$type" ;;
-            *) printf 'FAIL %-46s %s (expected JSON)\n' '/api/v1/site/settings' "$type"; failed=1 ;;
+            application/json*) printf 'PASS %-44s %s\n' '/api/v1/site/settings' "$type" ;;
+            *) printf 'FAIL %-44s %s (expected JSON)\n' '/api/v1/site/settings' "$type"; failed=1 ;;
+          esac
+
+          # And that the site serving all that is this commit - not the previous
+          # release still answering happily while the new one failed to take.
+          live=$(basename "$(readlink "$HOME/nuruzzaman-web/current" || echo none)")
+          case "$live" in
+            *"$SHORT"*) printf 'PASS %-44s %s\n' 'live release is this commit' "$live" ;;
+            *) printf 'FAIL %-44s %s\n' "live release is not $SHORT" "$live"; failed=1 ;;
           esac
 
           exit "$failed"
+          REMOTE
