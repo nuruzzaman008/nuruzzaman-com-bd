@@ -12,13 +12,13 @@ import { buildMetadata, itemListSchema, jsonLd } from '@/lib/seo';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 export const metadata: Metadata = buildMetadata({
-  title: 'শপ — সফটওয়্যার, ক্রেডিট ও কোর্স',
+  title: 'প্রোডাক্ট — সফটওয়্যার, ক্রেডিট ও কোর্স',
   description:
     'NB Engineering Tools লাইসেন্স, NB Credit রিফিল এবং কোর্স — সবকিছু এক জায়গায়।',
-  path: '/shop',
+  path: '/products',
 });
 
-export default async function ShopPage(
+export default async function ProductsPage(
   props: LocalizedPageProps & {
     searchParams: Promise<{ page?: string; type?: string }>;
   },
@@ -44,7 +44,7 @@ export default async function ShopPage(
               itemListSchema(
                 products.data.map((product) => ({
                   name: product.name,
-                  path: `/shop/${product.slug}`,
+                  path: `/products/${product.slug}`,
                 })),
               ),
             ),
@@ -56,7 +56,7 @@ export default async function ShopPage(
         <Breadcrumbs
           trail={[
             { name: t.common.home, path: '/' },
-            { name: t.shop.heading, path: '/shop' },
+            { name: t.shop.heading, path: '/products' },
           ]}
         />
 
@@ -89,7 +89,7 @@ export default async function ShopPage(
 
         <Pagination
           meta={products.meta}
-          basePath="/shop"
+          basePath="/products"
           searchParams={searchParams as Record<string, string | undefined>}
         />
       </Container>

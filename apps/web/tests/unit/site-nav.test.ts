@@ -5,7 +5,7 @@ import { headerNav, navItemLabel, primaryNav } from '@/lib/site';
 
 describe('site navigation', () => {
   it('offers the catalogue from the header', () => {
-    expect(headerNav.map((item) => item.href)).toContain('/shop');
+    expect(headerNav.map((item) => item.href)).toContain('/products');
   });
 
   it('keeps the About page out of the header', () => {

@@ -49,9 +49,9 @@ export const primaryNav: NavItem[] = [
   { href: '/', labelKey: 'home' },
   { href: '/courses', labelKey: 'courses', descriptionKey: 'courses' },
   { href: '/engineering-tools', labelKey: 'tools', descriptionKey: 'tools' },
-  // Next to the tools rather than at the end: /shop is where a reader buys,
+  // Next to the tools rather than at the end: /products is where a reader buys,
   // and the catalogue had no link from the header at all until now.
-  { href: '/shop', labelKey: 'products', descriptionKey: 'products' },
+  { href: '/products', labelKey: 'products', descriptionKey: 'products' },
   { href: '/blog', labelKey: 'blog', descriptionKey: 'blog' },
   { href: '/resources', labelKey: 'resources', descriptionKey: 'resources' },
   { href: '/support', labelKey: 'support', descriptionKey: 'support' },

@@ -264,7 +264,7 @@ export function productSchema(product: {
     ...(product.tagline ? { description: product.tagline } : {}),
     ...(product.cover_url ? { image: [product.cover_url] } : {}),
     brand: { '@type': 'Brand', name: 'NB Engineering Tools' },
-    url: absoluteUrl(`/shop/${product.slug}`),
+    url: absoluteUrl(`/products/${product.slug}`),
     ...(product.price
       ? {
           offers: {
@@ -272,7 +272,7 @@ export function productSchema(product: {
             price: (product.price.amount_minor / 100).toFixed(2),
             priceCurrency: product.price.currency,
             availability: 'https://schema.org/InStock',
-            url: absoluteUrl(`/shop/${product.slug}`),
+            url: absoluteUrl(`/products/${product.slug}`),
           },
         }
       : {}),

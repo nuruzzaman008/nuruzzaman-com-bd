@@ -73,7 +73,7 @@ export function CartView() {
       <EmptyState
         title={t.cart.emptyTitle}
         description={t.cart.emptyBody}
-        action={<ButtonLink href="/shop">{t.customer.goToShop}</ButtonLink>}
+        action={<ButtonLink href="/products">{t.customer.goToShop}</ButtonLink>}
       />
     );
   }
@@ -105,7 +105,7 @@ export function CartView() {
                   <div className="min-w-0">
                     <h2 className="font-bold text-navy">
                       {line.product_slug ? (
-                        <Link href={`/shop/${line.product_slug}`} className="hover:text-blue">
+                        <Link href={`/products/${line.product_slug}`} className="hover:text-blue">
                           {line.product_name ?? line.variant_name}
                         </Link>
                       ) : (

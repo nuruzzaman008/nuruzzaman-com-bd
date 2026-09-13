@@ -22,7 +22,7 @@ const GROUP_KEYS: {
 }[] = [
   { key: 'posts', label: 'articles', base: '/blog' },
   { key: 'courses', label: 'courses', base: '/courses' },
-  { key: 'products', label: 'products', base: '/shop' },
+  { key: 'products', label: 'products', base: '/products' },
 ];
 
 export default async function SearchPage(

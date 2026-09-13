@@ -40,7 +40,7 @@ export default async function DashboardProductsPage() {
               render: (product) => (
                 <span>
                   <Link
-                    href={product.id ? `/dashboard/products/${product.id}` : `/shop/${product.slug}`}
+                    href={product.id ? `/dashboard/products/${product.id}` : `/products/${product.slug}`}
                     data-authored="true"
                     className="block font-medium text-blue hover:underline"
                   >

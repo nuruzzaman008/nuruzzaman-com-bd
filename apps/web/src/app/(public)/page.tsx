@@ -208,7 +208,7 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/engineering-tools">{t.home.toolsCta}</ButtonLink>
-            <ButtonLink href="/shop" variant="secondary">
+            <ButtonLink href="/products" variant="secondary">
               {t.home.productsAll}
             </ButtonLink>
           </div>

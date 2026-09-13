@@ -49,7 +49,7 @@ export default async function AccountOrdersPage() {
             <EmptyState
               title={t.customer.orders.emptyTitle}
               description={t.customer.orders.emptyBody}
-              action={<ButtonLink href="/shop">{t.customer.goToShop}</ButtonLink>}
+              action={<ButtonLink href="/products">{t.customer.goToShop}</ButtonLink>}
             />
           }
           columns={[

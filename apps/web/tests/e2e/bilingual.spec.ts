@@ -41,7 +41,7 @@ async function interfaceText(page: import('@playwright/test').Page): Promise<str
   });
 }
 
-const ENGLISH_ROUTES = ['/en', '/en/blog', '/en/courses', '/en/engineering-tools', '/en/shop'];
+const ENGLISH_ROUTES = ['/en', '/en/blog', '/en/courses', '/en/engineering-tools', '/en/products'];
 
 test.describe('the English site', () => {
   for (const route of ENGLISH_ROUTES) {

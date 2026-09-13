@@ -20,7 +20,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
   { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/courses', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/engineering-tools', priority: 0.9, changeFrequency: 'weekly' },
-  { path: '/shop', priority: 0.8, changeFrequency: 'weekly' },
+  { path: '/products', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/blog', priority: 0.9, changeFrequency: 'daily' },
   { path: '/resources', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/support', priority: 0.7, changeFrequency: 'monthly' },
@@ -75,7 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamic: [keyof SitemapFeed, string, number, MetadataRoute.Sitemap[number]['changeFrequency']][] = [
     ['posts', '/blog', 0.8, 'monthly'],
     ['pages', '', 0.5, 'monthly'],
-    ['products', '/shop', 0.8, 'weekly'],
+    ['products', '/products', 0.8, 'weekly'],
     ['courses', '/courses', 0.8, 'weekly'],
   ];
 

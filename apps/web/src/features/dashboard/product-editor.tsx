@@ -415,7 +415,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
         </Link>
 
         <Link
-          href={`/shop/${initial.slug}`}
+          href={`/products/${initial.slug}`}
           className="text-sm font-medium text-blue hover:underline"
         >
           {t.admin.products.viewPublic}

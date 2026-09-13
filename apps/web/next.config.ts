@@ -108,6 +108,14 @@ const nextConfig: NextConfig = {
         destination: '/engineering-tools',
         permanent: true,
       },
+      // The catalogue lived at /shop until it took the name the header, the
+      // dashboard and its schema.org type already used. Anything indexed or
+      // linked at the old address follows it here; the query string (a page
+      // number, a type filter) travels with the redirect.
+      { source: '/shop', destination: '/products', permanent: true },
+      { source: '/shop/:slug', destination: '/products/:slug', permanent: true },
+      { source: '/en/shop', destination: '/en/products', permanent: true },
+      { source: '/en/shop/:slug', destination: '/en/products/:slug', permanent: true },
     ];
   },
 

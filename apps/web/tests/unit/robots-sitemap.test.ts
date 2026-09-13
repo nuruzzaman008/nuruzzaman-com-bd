@@ -41,7 +41,7 @@ describe('sitemap.xml', () => {
     const urls = entries.map((entry) => entry.url);
 
     expect(urls.some((url) => url.endsWith('/blog/published-article'))).toBe(true);
-    expect(urls.some((url) => url.endsWith('/shop/nb-engineering-tools'))).toBe(true);
+    expect(urls.some((url) => url.endsWith('/products/nb-engineering-tools'))).toBe(true);
 
     for (const path of PRIVATE_PATHS) {
       expect(urls.some((url) => url.includes(path))).toBe(false);

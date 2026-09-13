@@ -80,7 +80,7 @@ Breadcrumb-এর দৃশ্যমান তালিকা ও JSON-LD এক
 1. `/` → WebSite, Organization, Person
 2. `/about` → ProfilePage + Person
 3. `/blog/{slug}` → BlogPosting; headline পাতার `h1`-এর সমান কি না মিলিয়ে দেখুন
-4. `/shop/{slug}` → Product; দাম দেখানো হলে Offer আছে, না দেখালে নেই
+4. `/products/{slug}` → Product; দাম দেখানো হলে Offer আছে, না দেখালে নেই
 5. `/courses/{slug}` → Course; রিভিউ না থাকলে rating নেই
 5ক. `/blog/{slug}` → মন্তব্য থাকলে `comment`-এর সংখ্যা পাতার তালিকার সমান,
     আর `aggregateRating` নেই

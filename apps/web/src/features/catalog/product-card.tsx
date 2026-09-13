@@ -36,7 +36,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
 
         <h3 data-authored="true" className="mt-3 text-lg leading-snug font-bold text-navy">
           <LocaleLink
-            href={`/shop/${product.slug}`}
+            href={`/products/${product.slug}`}
             className="after:absolute after:inset-0 hover:text-blue"
           >
             {product.name}

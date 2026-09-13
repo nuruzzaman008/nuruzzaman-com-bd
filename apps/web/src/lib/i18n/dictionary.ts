@@ -172,7 +172,7 @@ const bn = {
       description:
         'Footing, pile cap, beam, slab, column ও grid workflow-এর জন্য ২৬টি compiled VLX মডিউল।',
     },
-    '/shop': {
+    '/products': {
       title: 'প্রোডাক্ট',
       description: 'NB Engineering Tools লাইসেন্স, NB Credit ও কোর্স।',
     },
@@ -357,9 +357,9 @@ const bn = {
     filterLabel: 'বিষয় অনুযায়ী ফিল্টার',
   },
 
-  /* ---- Shop ---- */
+  /* ---- Products: the /products catalogue ---- */
   shop: {
-    heading: 'শপ',
+    heading: 'প্রোডাক্ট',
     intro:
       'সব পণ্য ডিজিটাল। ক্রয়ের পরে ডাউনলোড ও কোর্স অ্যাক্সেস আপনার অ্যাকাউন্টের সঙ্গে যুক্ত থাকে।',
     priceNotice:
@@ -793,13 +793,13 @@ const bn = {
     view: 'দেখুন',
     latestOrder: 'সর্বশেষ অর্ডার',
     orderDetails: 'অর্ডারের বিস্তারিত',
-    goToShop: 'শপে যান',
+    goToShop: 'প্রোডাক্ট দেখুন',
 
     orders: {
       title: 'আমার অর্ডার',
       caption: 'আপনার অর্ডারের তালিকা',
       emptyTitle: 'এখনো কোনো অর্ডার নেই',
-      emptyBody: 'শপ থেকে একটি পণ্য বা কোর্স কিনলে সেটি এখানে দেখা যাবে।',
+      emptyBody: 'প্রোডাক্ট পাতা থেকে একটি পণ্য বা কোর্স কিনলে সেটি এখানে দেখা যাবে।',
       order: 'অর্ডার',
       date: 'তারিখ',
       status: 'অবস্থা',
@@ -1013,7 +1013,7 @@ const bn = {
     loadFailed: 'কার্ট লোড করা যায়নি।',
     updateFailed: 'পরিবর্তন সংরক্ষণ করা যায়নি।',
     emptyTitle: 'আপনার কার্ট খালি',
-    emptyBody: 'শপ থেকে একটি পণ্য বা কোর্স যোগ করুন।',
+    emptyBody: 'প্রোডাক্ট পাতা থেকে একটি পণ্য বা কোর্স যোগ করুন।',
     blockedTitle: 'চেকআউটের আগে ঠিক করতে হবে',
     quantity: 'পরিমাণ',
     remove: 'সরান',
@@ -1783,7 +1783,7 @@ const en: Dictionary = {
       description:
         '26 compiled VLX modules for footing, pile cap, beam, slab, column and grid workflows.',
     },
-    '/shop': {
+    '/products': {
       title: 'Products',
       description: 'NB Engineering Tools licences, NB Credit and courses.',
     },
@@ -1956,7 +1956,7 @@ const en: Dictionary = {
   },
 
   shop: {
-    heading: 'Shop',
+    heading: 'Products',
     intro:
       'Everything here is digital. After purchase, downloads and course access are tied to your account.',
     priceNotice:
@@ -2374,13 +2374,13 @@ const en: Dictionary = {
     view: 'View',
     latestOrder: 'Latest order',
     orderDetails: 'Order details',
-    goToShop: 'Go to the shop',
+    goToShop: 'Browse products',
 
     orders: {
       title: 'My orders',
       caption: 'Your orders',
       emptyTitle: 'No orders yet',
-      emptyBody: 'Anything you buy from the shop appears here.',
+      emptyBody: 'Anything you buy from the products page appears here.',
       order: 'Order',
       date: 'Date',
       status: 'Status',
@@ -2595,7 +2595,7 @@ const en: Dictionary = {
     loadFailed: 'The cart could not be loaded.',
     updateFailed: 'The change could not be saved.',
     emptyTitle: 'Your cart is empty',
-    emptyBody: 'Add a product or a course from the shop.',
+    emptyBody: 'Add a product or a course from the products page.',
     blockedTitle: 'Something needs fixing before checkout',
     quantity: 'Quantity',
     remove: 'Remove',

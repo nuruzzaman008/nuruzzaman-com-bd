@@ -41,7 +41,7 @@ export async function generateMetadata(props: {
   return buildMetadata({
     title: product.name,
     description: product.tagline,
-    path: `/shop/${product.slug}`,
+    path: `/products/${product.slug}`,
     image: product.cover_url,
     seo: product.seo,
   });
@@ -82,8 +82,8 @@ export default async function ProductPage(
         <Breadcrumbs
           trail={[
             { name: t.common.home, path: '/' },
-            { name: t.shop.heading, path: '/shop' },
-            { name: product.name, path: `/shop/${product.slug}`, authored: true },
+            { name: t.shop.heading, path: '/products' },
+            { name: product.name, path: `/products/${product.slug}`, authored: true },
           ]}
         />
 
