@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api/browser';
 import { classLabel } from '@/lib/learn/class-label';
 import { MAX_FILE_BYTES, uploadInParts } from '@/lib/uploads/chunked-upload';
+import { slugify } from '@/lib/slug';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { taxonomyLabel } from '@/lib/i18n/labels';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,19 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
   const [assessmentLesson, setAssessmentLesson] = useState<number | null>(null);
   // The file being sent in parts, and how much of it has arrived.
   const [progress, setProgress] = useState<{ name: string; fraction: number } | null>(null);
+  // Set by "Save and publish" just before the form submits.
+  const publishAfterSave = useRef(false);
+
+  /** Tidies a slug field when it is left: "Basic English Sound" → "basic-english-sound". */
+  function tidySlug(event: React.FocusEvent<HTMLInputElement>) {
+    event.currentTarget.value = slugify(event.currentTarget.value);
+  }
+
+  /** Leaving a title while the slug beside it is still empty fills the slug in. */
+  function slugFromTitle(event: React.FocusEvent<HTMLInputElement>) {
+    const slug = event.currentTarget.form?.elements.namedItem('slug');
+    if (slug instanceof HTMLInputElement && !slug.value.trim()) slug.value = slugify(event.currentTarget.value);
+  }
   const base = `/admin/courses/${course?.id}`;
 
   // The featured image, shared with the product and article editors. Laid out
@@ -84,10 +98,15 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       ...Object.fromEntries(['meta_title', 'meta_title_en', 'meta_description', 'meta_description_en', 'focus_keyword', 'canonical_url'].map(key => [key, String(data.get(key) ?? '').trim() || null])),
       noindex: data.get('noindex') === 'on', nofollow: data.get('nofollow') === 'on',
     };
+    const publish = publishAfterSave.current;
+    publishAfterSave.current = false;
+    // Whatever was typed becomes a URL slug; an empty slug takes the title's.
+    const slug = slugify(String(data.get('slug') || data.get('title') || ''));
     void action(async () => {
+      if (!slug) throw new Error(bn ? 'URL slug ইংরেজি অক্ষরে লিখুন, যেমন basic-english-sound।' : 'Write the URL slug in English letters, for example basic-english-sound.');
       await image.persistAlt();
       const response = await api<{ data: { id: number } }>(course ? base : '/admin/courses', { method: course ? 'PATCH' : 'POST', body: {
-        title: data.get('title'), slug: data.get('slug'), subtitle: String(data.get('subtitle') ?? '').trim() || null,
+        title: data.get('title'), slug, subtitle: String(data.get('subtitle') ?? '').trim() || null,
         description_markdown: data.get('description_markdown'), pricing: pricingFromForm(data), sequential: data.get('sequential') === 'on', issues_certificate: data.get('issues_certificate') === 'on',
         // Sent only when the image was actually changed. Left out, the course
         // keeps exactly what it has, so saving the words can never lose it.
@@ -95,7 +114,11 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
         seo,
       } });
       if (!course) router.replace(`/dashboard/courses/${response.data.id}`);
-      else await reload();
+      else {
+        // "Save and publish": the course goes live with what was just saved.
+        if (publish) await api(`${base}/transition`, { method: 'POST', body: { status: 'published' } });
+        await reload();
+      }
     });
   }
   function saveSection(event: React.FormEvent<HTMLFormElement>, section?: Section) {
@@ -126,9 +149,11 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
+    const lessonSlug = slugify(String(data.get('slug') || data.get('title') || ''));
     void action(async () => {
+      if (!lessonSlug) throw new Error(bn ? 'পাঠের URL slug ইংরেজি অক্ষরে লিখুন, যেমন lesson-01।' : 'Write the lesson URL slug in English letters, for example lesson-01.');
       await api(`${base}/lessons${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: {
-        title: data.get('title'), slug: data.get('slug'), type: data.get('type'), course_section_id: Number(data.get('course_section_id')),
+        title: data.get('title'), slug: lessonSlug, type: data.get('type'), course_section_id: Number(data.get('course_section_id')),
         body_markdown: data.get('body_markdown') || null, video_url: data.get('video_url') || null,
         duration_seconds: data.get('duration_seconds') ? Number(data.get('duration_seconds')) : null,
         drip_days: data.get('drip_days') ? Number(data.get('drip_days')) : null,
@@ -178,7 +203,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       />
       <div className="space-y-4 rounded-xl border border-line bg-white p-5">
       <h2 className="text-lg font-bold text-navy">{bn ? 'কোর্সের তথ্য' : 'Course details'}</h2><CoursePricingFields initial={course?.pricing} fallbackMinor={course?.price_minor} />
-      <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'কোর্সের নাম' : 'Course title'}<input required name="title" defaultValue={course?.title} className={input} /></label><label>URL slug<input required name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" defaultValue={course?.slug} placeholder="autocad-basics" className={input} /></label></div>
+      <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'কোর্সের নাম' : 'Course title'}<input required name="title" defaultValue={course?.title} onBlur={slugFromTitle} className={input} /></label><label>URL slug<input required name="slug" maxLength={180} defaultValue={course?.slug} onBlur={tidySlug} placeholder="basic-english-sound" className={`${input} font-latin`} /><span className="text-xs text-muted">{bn ? 'যেভাবে খুশি লিখুন — "Basic English Sound" লিখলে নিজে থেকেই basic-english-sound হয়ে যাবে। প্রকাশের পরে বদলালে পুরনো লিংক কাজ করবে না।' : 'Type it any way — "Basic English Sound" becomes basic-english-sound by itself. Changing it after publishing breaks the old link.'}</span></label></div>
       <label className="block">{bn ? 'সাবটাইটেল' : 'Subtitle'}<input name="subtitle" maxLength={255} defaultValue={course?.subtitle ?? ''} className={input} /><span className="text-xs text-muted">{bn ? 'এক লাইনের সারসংক্ষেপ — কোর্সের কার্ডে দেখায়, আর meta description না থাকলে সার্চ ফলাফলেও।' : 'One line of summary — shown on the course card, and in search results when there is no meta description.'}</span></label>
       <div><label htmlFor="course-description" className="block">{bn ? 'বিস্তারিত (Markdown)' : 'Description (Markdown)'}</label><MarkdownTextarea id="course-description" name="description_markdown" rows={12} defaultValue={course?.description_markdown ?? ''} className="min-h-72 text-navy" /></div>
       <fieldset className="space-y-4 rounded-lg border border-line p-4">
@@ -199,8 +224,13 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       </fieldset>
       <label className="block"><input type="checkbox" name="sequential" defaultChecked={course?.sequential ?? true} /> {bn ? 'আগের পাঠ শেষ হলে পরের পাঠ খুলবে' : 'Require completing previous lessons in order'}</label>
       <label className="block"><input type="checkbox" name="issues_certificate" defaultChecked={course?.issues_certificate ?? false} /> {bn ? 'সফলভাবে শেষ করলে সার্টিফিকেট' : 'Issue certificate on successful completion'}</label>
-      <Button disabled={busy} type="submit">{bn ? 'কোর্স সংরক্ষণ' : 'Save course'}</Button>
-      {course ? <span className="ms-4 text-sm text-muted">{course.status}</span> : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button disabled={busy} type="submit" onClick={() => { publishAfterSave.current = false; }}>{bn ? 'কোর্স সংরক্ষণ' : 'Save course'}</Button>
+        {/* One click from a finished draft to a live course. Publishing needs a
+            lesson, so the button only appears once there is one. */}
+        {course && course.status !== 'published' && course.sections.some((section) => section.lessons.length > 0) ? <Button disabled={busy} type="submit" variant="secondary" onClick={() => { publishAfterSave.current = true; }}>{bn ? 'সংরক্ষণ করে প্রকাশ করুন' : 'Save and publish'}</Button> : null}
+        {course ? (course.status === 'published' ? <Link href={`/courses/${course.slug}`} className="text-sm font-semibold text-blue hover:underline">{bn ? 'প্রকাশিত — সাইটে দেখুন ↗' : 'Published — view on the site ↗'}</Link> : <span className="text-sm text-muted">{course.status}</span>) : null}
+      </div>
       </div>
     </form>
     {/* Sticky and scrollable on its own, so the score stays in view while the
@@ -245,7 +275,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       <details className="rounded-xl border border-line bg-white p-5"><summary className="cursor-pointer font-bold text-navy">{bn ? 'কোর্সের ঘোষণা দিন' : 'Post course announcement'}</summary><form className="mt-4 space-y-3" onSubmit={(event) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); void action(async () => { await api(`${base}/announcements`, { method: 'POST', body: { title: data.get('title'), body_markdown: data.get('body_markdown'), is_published: true } }); form.reset(); }); }}><label className="block">{bn ? 'শিরোনাম' : 'Title'}<input required name="title" className={input} /></label><div><label htmlFor="announcement-body" className="block">{bn ? 'ঘোষণা' : 'Announcement'}</label><MarkdownTextarea id="announcement-body" required name="body_markdown" rows={4} className="text-navy" /></div><Button type="submit" disabled={busy}>{bn ? 'ঘোষণা প্রকাশ করুন' : 'Publish announcement'}</Button></form></details>
       {course.sections.length ? <form key={editing?.id ?? 'new'} id="lesson-editor" onSubmit={saveLesson} className="space-y-4 rounded-xl border border-line bg-white p-5">
         <h2 className="text-xl font-bold text-navy">{editing ? (bn ? 'পাঠ সম্পাদনা' : 'Edit lesson') : (bn ? 'নতুন পাঠ যোগ করুন' : 'Add lesson')}</h2>
-        <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'পাঠের নাম' : 'Lesson title'}<input required name="title" defaultValue={editing?.title} className={input} /></label><label>URL slug<input required name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" defaultValue={editing?.slug} placeholder="lesson-01" className={input} /></label>
+        <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'পাঠের নাম' : 'Lesson title'}<input required name="title" defaultValue={editing?.title} onBlur={slugFromTitle} className={input} /></label><label>URL slug<input required name="slug" maxLength={180} defaultValue={editing?.slug} onBlur={tidySlug} placeholder="lesson-01" className={`${input} font-latin`} /></label>
           <label>{bn ? 'অধ্যায়' : 'Section'}<select name="course_section_id" defaultValue={editing?.course_section_id ?? course.sections[0].id} className={input}>{course.sections.map((section) => <option key={section.id} value={section.id}>{section.title}</option>)}</select></label>
           <label>{bn ? 'পাঠের ধরন' : 'Lesson type'}<select name="type" defaultValue={editing?.type ?? 'video'} className={input}><option value="video">{bn ? 'ভিডিও + ফাইল' : 'Video + files'}</option><option value="text">{bn ? 'লেখা + ফাইল' : 'Text + files'}</option><option value="download">{bn ? 'ফাইল / রিসোর্স' : 'Download / resources'}</option>{editing && ['quiz', 'assignment'].includes(editing.type) ? <option value={editing.type}>{editing.type}</option> : null}</select></label>
         </div>

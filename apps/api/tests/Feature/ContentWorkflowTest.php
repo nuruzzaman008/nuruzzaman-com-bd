@@ -121,4 +121,35 @@ class ContentWorkflowTest extends TestCase
             ->postJson('/api/v1/admin/courses/'.$course->id.'/transition', ['status' => 'published'])
             ->assertStatus(422);
     }
+
+    /**
+     * Courses have no content_updated_at column. Publishing used to set one on
+     * every kind of content, so no course could ever be published: the save
+     * failed with "Unknown column" and the dashboard showed a bare 500.
+     */
+    public function test_a_course_with_a_lesson_is_published_with_its_product(): void
+    {
+        Bus::fake();
+        $this->seedRoles();
+        $admin = $this->userWithRole(RoleEnum::Admin);
+        $course = Course::factory()->create();
+        $section = $course->sections()->create(['title' => 'IPA']);
+        $course->lessons()->create([
+            'course_section_id' => $section->id,
+            'title' => 'Video 01',
+            'slug' => 'video01',
+            'type' => 'video',
+        ]);
+        app(\App\Services\Lms\CoursePricingService::class)->set($course, 100000);
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/courses/'.$course->id.'/transition', ['status' => 'published'])
+            ->assertOk();
+
+        $fresh = $course->fresh();
+        $this->assertSame(ContentStatus::Published, $fresh->status);
+        $this->assertNotNull($fresh->published_at);
+        $this->assertDatabaseHas('products', ['slug' => 'course-access-'.$course->id, 'status' => 'published']);
+        $this->getJson('/api/v1/courses/'.$course->slug)->assertOk();
+    }
 }

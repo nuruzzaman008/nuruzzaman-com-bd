@@ -38,7 +38,13 @@ class PublishingService
 
             if ($to === ContentStatus::Published) {
                 $content->published_at = $content->published_at ?? now();
-                $content->content_updated_at = now();
+
+                // Only articles keep a separate "content last changed" date.
+                // Courses, pages and products have no such column, and setting
+                // it made every one of them fail to publish with a 500.
+                if ($content->isFillable('content_updated_at')) {
+                    $content->content_updated_at = now();
+                }
             }
 
             $content->save();
