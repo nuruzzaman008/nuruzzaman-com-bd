@@ -158,6 +158,10 @@ ${'শব্দ '.repeat(1200)}`,
     expect(
       find({ ...base, kind: 'product', featuredImage: null }, 'featured-image')?.status,
     ).toBe('fail');
+    // A course page shows no image either; its generated art is only on cards.
+    expect(
+      find({ ...base, kind: 'course', featuredImage: null }, 'featured-image')?.status,
+    ).toBe('fail');
     expect(find({ ...base, featuredImage: { alt: null } }, 'featured-image')?.status).toBe('warn');
     expect(find({ ...base, featuredImage: { alt: '   ' } }, 'featured-image')?.status).toBe('warn');
     expect(

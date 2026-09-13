@@ -61,7 +61,7 @@ export default async function DashboardCoursesPage() {
               render: (course) =>
                 course.id ? (
                   <Link
-                    href={`/dashboard/courses/${course.id}/seo`}
+                    href={`/dashboard/courses/${course.id}`}
                     className="text-blue hover:underline"
                   >
                     {t.admin.courses.analysis}

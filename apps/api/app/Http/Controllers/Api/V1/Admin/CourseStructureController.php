@@ -28,13 +28,21 @@ class CourseStructureController extends Controller
     public function show(Course $course): JsonResponse
     {
         $this->authorize('update', $course);
-        $course->load('sections.lessons.assets', 'seo');
+        $course->load('sections.lessons.assets', 'seo', 'cover');
 
         return response()->json(['data' => [
             'id' => $course->id, 'title' => $course->title, 'slug' => $course->slug,
             'status' => $course->status->value, 'sequential' => (bool) $course->sequential,
             'issues_certificate' => (bool) $course->issues_certificate,
             'description_markdown' => $course->description_markdown,
+            // The editor fills its fields from this payload, so anything it can
+            // save has to be here: a field that loaded empty would be saved
+            // back empty and clear what the course already had.
+            'subtitle' => $course->subtitle,
+            'track' => $course->track,
+            'cover_media_id' => $course->cover_media_id,
+            'cover_url' => $course->cover?->url(),
+            'cover_alt' => $course->cover?->alt_text,
             'seo' => $course->seo?->only(['meta_title', 'meta_title_en', 'meta_description', 'meta_description_en', 'focus_keyword', 'canonical_url', 'noindex', 'nofollow']),
             'price_minor' => $course->purchasableVariants()->with('prices')->get()->map(fn ($variant) => $variant->currentPrice()?->amount_minor)->filter(fn ($amount) => $amount !== null)->min(),
             'sections' => $course->sections->map(function ($section) {

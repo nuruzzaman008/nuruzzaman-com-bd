@@ -3,7 +3,13 @@ import { expect, it, vi } from 'vitest';
 import { CourseEditor, type Curriculum } from '@/features/admin/course-editor';
 const request = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api/browser', () => ({ api: request, ApiError: class extends Error {} }));
-vi.mock('@/lib/i18n/locale-provider', () => ({ useLocale: () => ({ locale: 'en' }) }));
+// The editor now renders the shared featured-image card and SEO panel, which
+// read interface words from the dictionary, so the mock carries one.
+vi.mock('@/lib/i18n/locale-provider', async () => {
+  const { getDictionary } = await import('@/lib/i18n/dictionary');
+
+  return { useLocale: () => ({ locale: 'en' as const, t: getDictionary('en') }) };
+});
 vi.mock('@/features/admin/lesson-assessments', () => ({ LessonAssessments: () => null }));
 it('loads saved SEO and submits both languages with the course', async () => {
   const initial: Curriculum = { id: 3, title: 'Course', slug: 'course', status: 'draft', sequential: true, issues_certificate: false, description_markdown: '', sections: [], seo: { meta_title: 'Existing Bengali', meta_title_en: 'Existing English', noindex: true } };
