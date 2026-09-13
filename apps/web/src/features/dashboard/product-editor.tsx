@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Checkbox, ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
+import { MarkdownTextarea } from '@/components/ui/markdown-editor';
 import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { ApiError, api } from '@/lib/api/browser';
@@ -240,7 +241,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
             className="sm:col-span-2"
           >
             {(props) => (
-              <Textarea
+              <MarkdownTextarea
                 {...props}
                 name="description_markdown"
                 rows={18}

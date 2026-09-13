@@ -704,6 +704,10 @@ const bn = {
     featuredImageHint:
       'সোশ্যাল শেয়ার কার্ড, সার্চ ফলাফলের থাম্বনেইল আর তালিকায় এই ছবিটিই দেখানো হয়; না থাকলে সাইটের সাধারণ ছবি চলে যায়। এডিটর থেকে আপলোড করুন।',
 
+    bodyH1: 'লেখার ভেতরে একটি H1 আছে — পাতার শিরোনামই আগে থেকে H1।',
+    bodyH1Hint:
+      'একটি পাতায় একটিই H1 থাকা ভালো; লেখার অংশগুলোর জন্য H2 ব্যবহার করুন, তাহলে সার্চ ইঞ্জিন পাতার কাঠামো ঠিকভাবে পড়তে পারে।',
+
     tocYes: 'লেখার ভেতরে সূচিপত্র (অভ্যন্তরীণ লিংক) আছে।',
     tocNo: 'লেখাটি লম্বা, কিন্তু কোনো সূচিপত্র নেই।',
     tocHint:
@@ -1527,6 +1531,40 @@ const bn = {
       update: 'হালনাগাদ করুন',
     },
 
+    markdownEditor: {
+      toolbar: 'লেখা সাজানোর টুলবার',
+      heading: 'শিরোনাম {level}',
+      bold: 'বোল্ড',
+      italic: 'ইটালিক',
+      underline: 'আন্ডারলাইন',
+      color: 'রং',
+      size: 'আকার',
+      font: 'ফন্ট',
+      placeholder: 'লেখা',
+      write: 'লিখুন',
+      preview: 'প্রিভিউ',
+      previewLoading: 'প্রিভিউ তৈরি হচ্ছে…',
+      previewFailed: 'প্রিভিউ দেখানো যায়নি।',
+      previewEmpty: 'এখনো কিছু লেখা হয়নি।',
+      h1Hint: 'পাতার শিরোনামই H1; লেখার ভেতরের অংশের জন্য H2 ব্যবহার করুন।',
+      colors: {
+        blue: 'নীল',
+        teal: 'টিল',
+        green: 'সবুজ',
+        red: 'লাল',
+        orange: 'কমলা',
+        navy: 'গাঢ় নীল',
+        gray: 'ধূসর',
+      },
+      sizes: { sm: 'ছোট', lg: 'বড়', xl: 'আরও বড়', '2xl': 'সবচেয়ে বড়' },
+      fonts: {
+        bangla: 'বাংলা (Noto Sans Bengali)',
+        english: 'ইংরেজি (Inter)',
+        serif: 'সেরিফ',
+        mono: 'মনোস্পেস',
+      },
+    },
+
     seoPanel: {
       title: 'SEO বিশ্লেষণ',
       pass: 'ঠিক আছে',
@@ -2301,6 +2339,10 @@ const en: Dictionary = {
       'No image uploaded — the page shows generated cover art, but share cards and search results get no picture of this article.',
     featuredImageHint:
       'It is the picture on social share cards, search result thumbnails and listings; without one, the site’s generic image goes out instead. Upload one in the editor.',
+
+    bodyH1: 'The text contains an H1 — the page title is already the H1.',
+    bodyH1Hint:
+      'One H1 per page reads best; use H2 for the sections of the text, so search engines see the page structure the way readers do.',
 
     tocYes: 'The piece has a table of contents (links into its own headings).',
     tocNo: 'The piece is long but has no table of contents.',
@@ -3112,6 +3154,40 @@ const en: Dictionary = {
       historyNote: 'Note for the history',
       notifyCustomer: 'Email the customer',
       update: 'Update',
+    },
+
+    markdownEditor: {
+      toolbar: 'Formatting toolbar',
+      heading: 'Heading {level}',
+      bold: 'Bold',
+      italic: 'Italic',
+      underline: 'Underline',
+      color: 'Colour',
+      size: 'Size',
+      font: 'Font',
+      placeholder: 'text',
+      write: 'Write',
+      preview: 'Preview',
+      previewLoading: 'Rendering the preview…',
+      previewFailed: 'The preview could not be shown.',
+      previewEmpty: 'Nothing written yet.',
+      h1Hint: 'the page title is already the H1; use H2 for sections inside the text.',
+      colors: {
+        blue: 'Blue',
+        teal: 'Teal',
+        green: 'Green',
+        red: 'Red',
+        orange: 'Orange',
+        navy: 'Navy',
+        gray: 'Grey',
+      },
+      sizes: { sm: 'Small', lg: 'Large', xl: 'Larger', '2xl': 'Largest' },
+      fonts: {
+        bangla: 'Bangla (Noto Sans Bengali)',
+        english: 'English (Inter)',
+        serif: 'Serif',
+        mono: 'Monospace',
+      },
     },
 
     seoPanel: {

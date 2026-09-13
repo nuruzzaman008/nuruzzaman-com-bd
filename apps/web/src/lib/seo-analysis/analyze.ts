@@ -452,6 +452,19 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
     hint: say.headingHint,
   });
 
+  // The page renders its title as the H1, so one typed into the body makes a
+  // second. Reported only when present: a body without one has nothing to
+  // fix, and a check that always passed would only pad the score.
+  const withoutCode = input.content.replace(/```[\s\S]*?```/g, '');
+  if (/^#[ \t]+\S/m.test(withoutCode) || /<h1[\s>]/i.test(withoutCode)) {
+    readability.push({
+      id: 'body-h1',
+      status: 'warn',
+      message: say.bodyH1,
+      hint: say.bodyH1Hint,
+    });
+  }
+
   const longBlocks = blocks.filter((block) => countWords(block) > 150).length;
   readability.push({
     id: 'paragraph-length',

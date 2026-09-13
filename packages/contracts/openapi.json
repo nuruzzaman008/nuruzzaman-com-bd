@@ -5946,6 +5946,74 @@
         }
       }
     },
+    "/admin/markdown/preview": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminMarkdownPreview",
+        "summary": "Render Markdown exactly as the site will",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "The editor's preview. Rendered by the same code the public pages use,\nso what an author sees is what readers get - including which formatting\ntags the renderer keeps and which raw HTML it strips.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "markdown": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 200000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "html"
+                      ],
+                      "properties": {
+                        "html": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/admin/settings": {
       "get": {
         "tags": [

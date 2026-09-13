@@ -56,6 +56,7 @@ Route::middleware([
     Route::delete('media/{medium:id}', [Admin\MediaController::class, 'destroy']);
 
     Route::get('seo/keyword-usage', Admin\SeoKeywordController::class);
+    Route::post('markdown/preview', Admin\MarkdownPreviewController::class);
 
     Route::get('redirects', [Admin\RedirectController::class, 'index']);
     Route::post('redirects', [Admin\RedirectController::class, 'store']);

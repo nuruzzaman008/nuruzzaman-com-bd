@@ -185,8 +185,8 @@ describe('ProductEditor', () => {
     render(<ProductEditor initial={product} />);
 
     expect(screen.queryByText(/media library/i)).not.toBeInTheDocument();
-    // The only select left in the form is the product type.
-    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    // The product type, plus the formatting toolbar's colour, size and font.
+    expect(screen.getAllByRole('combobox')).toHaveLength(4);
     expect(screen.queryByRole('link', { name: 'SEO analysis' })).not.toBeInTheDocument();
   });
 

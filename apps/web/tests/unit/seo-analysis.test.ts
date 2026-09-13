@@ -190,6 +190,14 @@ ${'শব্দ '.repeat(1200)}`,
     expect(withImage.score).toBeGreaterThan(without.score);
   });
 
+  it('warns about an H1 typed into the body, and only then', () => {
+    expect(find({ ...base, content: '# A second title\n\nText.' }, 'body-h1')?.status).toBe('warn');
+    expect(find({ ...base, content: '<h1>Another</h1>' }, 'body-h1')?.status).toBe('warn');
+    expect(find({ ...base, content: '## A section\n\nText.' }, 'body-h1')).toBeUndefined();
+    // A comment line inside a code block is not a heading.
+    expect(find({ ...base, content: '```\n# not a heading\n```' }, 'body-h1')).toBeUndefined();
+  });
+
   it('scores a warning as half a pass, not as a failure', () => {
     const strong = analyzeSeo({
       ...base,

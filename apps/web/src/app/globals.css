@@ -144,6 +144,57 @@
     color: var(--color-navy);
   }
 
+  .prose-nb h1 {
+    font-size: var(--step-h1);
+    font-weight: 700;
+    line-height: 1.25;
+    margin-top: 2em;
+    color: var(--color-navy);
+    scroll-margin-top: 6rem;
+  }
+
+  .prose-nb h5 {
+    font-weight: 650;
+    margin-top: 1.3em;
+    color: var(--color-navy);
+  }
+
+  .prose-nb h6 {
+    font-size: 0.95em;
+    font-weight: 650;
+    margin-top: 1.2em;
+    color: var(--color-muted);
+  }
+
+  .prose-nb u {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  /*
+    The formatting the editor toolbar offers, which the API renders as these
+    classes and nothing else (MarkdownFormatting in the API). The colours are
+    the site's own, checked for contrast on white; the fonts are the two the
+    site already loads, plus system stacks that cost no download.
+  */
+  .prose-nb .nb-color-blue { color: var(--color-blue); }
+  .prose-nb .nb-color-teal { color: var(--color-teal); }
+  .prose-nb .nb-color-green { color: var(--color-success); }
+  .prose-nb .nb-color-red { color: var(--color-danger); }
+  .prose-nb .nb-color-orange { color: var(--color-warning); }
+  .prose-nb .nb-color-navy { color: var(--color-navy); }
+  .prose-nb .nb-color-gray { color: var(--color-muted); }
+
+  .prose-nb .nb-size-sm { font-size: 0.875em; }
+  .prose-nb .nb-size-lg { font-size: 1.2em; }
+  .prose-nb .nb-size-xl { font-size: 1.4em; line-height: 1.45; }
+  .prose-nb .nb-size-2xl { font-size: 1.75em; line-height: 1.35; }
+
+  .prose-nb .nb-font-bangla { font-family: var(--font-bangla); }
+  .prose-nb .nb-font-english { font-family: var(--font-sans); }
+  .prose-nb .nb-font-serif { font-family: ui-serif, Georgia, 'Times New Roman', serif; }
+  .prose-nb .nb-font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
   .prose-nb a {
     color: var(--color-blue);
     text-decoration: underline;

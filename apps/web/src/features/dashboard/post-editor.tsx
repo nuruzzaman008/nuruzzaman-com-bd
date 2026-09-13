@@ -13,6 +13,7 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { CoverArt } from '@/components/ui/cover-art';
 import { ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
+import { MarkdownTextarea } from '@/components/ui/markdown-editor';
 import { ApiError, api } from '@/lib/api/browser';
 import type { Dictionary } from '@/lib/i18n/dictionary';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -215,7 +216,7 @@ export function PostEditor({ post }: { post: EditablePost }) {
           error={errors.body_markdown?.[0]}
         >
           {(props) => (
-            <Textarea
+            <MarkdownTextarea
               name="body_markdown"
               defaultValue={post.body_markdown ?? ''}
               className="font-latin min-h-96 text-sm"

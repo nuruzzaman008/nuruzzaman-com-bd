@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api/browser';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { Button } from '@/components/ui/button';
+import { MarkdownTextarea } from '@/components/ui/markdown-editor';
 
 type Question = { prompt: string; options: { label: string; is_correct: boolean }[] };
 type Submission = { id: number; user_id: number; notes: string | null; original_filename: string | null; score_percent: number | null; feedback: string | null; status: string };
@@ -37,7 +38,7 @@ export function LessonAssessments({ courseId, lessonId }: { courseId: number; le
     </details>
     <details><summary className="cursor-pointer font-semibold text-blue">{bn ? 'অ্যাসাইনমেন্ট ও মূল্যায়ন' : 'Assignment & grading'}</summary>
       <form className="mt-4 space-y-3" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); void save('assignment', { title: form.get('title'), brief_markdown: form.get('brief_markdown'), pass_percentage: Number(form.get('pass_percentage')), max_file_size_kb: Number(form.get('max_file_size_kb')) }); }}>
-        <label className="block">{bn ? 'অ্যাসাইনমেন্টের নাম' : 'Assignment title'}<input required name="title" defaultValue={data.assignment?.title} className={field} /></label><label className="block">{bn ? 'কাজের নির্দেশনা (Markdown)' : 'Instructions (Markdown)'}<textarea required rows={4} name="brief_markdown" defaultValue={data.assignment?.brief_markdown} className={field} /></label>
+        <label className="block">{bn ? 'অ্যাসাইনমেন্টের নাম' : 'Assignment title'}<input required name="title" defaultValue={data.assignment?.title} className={field} /></label><div><label htmlFor={`assignment-brief-${lessonId}`} className="block">{bn ? 'কাজের নির্দেশনা (Markdown)' : 'Instructions (Markdown)'}</label><MarkdownTextarea id={`assignment-brief-${lessonId}`} required rows={4} name="brief_markdown" defaultValue={data.assignment?.brief_markdown} className="text-navy" /></div>
         <div className="grid grid-cols-2 gap-3"><label>{bn ? 'পাস নম্বর (%)' : 'Pass (%)'}<input required type="number" min="1" max="100" name="pass_percentage" defaultValue={data.assignment?.pass_percentage ?? 60} className={field} /></label><label>{bn ? 'ফাইল সীমা (KB)' : 'File limit (KB)'}<input required type="number" min="1" max="102400" name="max_file_size_kb" defaultValue={data.assignment?.max_file_size_kb ?? 10240} className={field} /></label></div><Button type="submit" disabled={busy}>{bn ? 'অ্যাসাইনমেন্ট সংরক্ষণ' : 'Save assignment'}</Button>
       </form>
       <h4 className="mt-5 font-semibold">{bn ? 'জমা দেওয়া কাজ' : 'Student submissions'}</h4>

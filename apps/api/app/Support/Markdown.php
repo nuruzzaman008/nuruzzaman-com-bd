@@ -23,7 +23,11 @@ final class Markdown
             return '';
         }
 
-        return Str::markdown($markdown, self::OPTIONS);
+        // Underline, colour, size and font survive as a closed list of our own
+        // tags; every other piece of raw HTML is still stripped.
+        return MarkdownFormatting::restore(
+            Str::markdown(MarkdownFormatting::protect($markdown), self::OPTIONS),
+        );
     }
 
     public static function toPlainText(?string $markdown): string
@@ -55,8 +59,9 @@ final class Markdown
 
         return array_map(fn (array $match) => [
             'level' => strlen($match[1]),
-            'text' => trim($match[2]),
-            'id' => Str::slug(trim($match[2])) ?: Str::random(6),
+            // A heading may carry formatting tags; the contents list wants its words.
+            'text' => trim(strip_tags($match[2])),
+            'id' => Str::slug(trim(strip_tags($match[2]))) ?: Str::random(6),
         ], $matches);
     }
 }
