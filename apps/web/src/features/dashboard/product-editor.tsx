@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox, ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { ACCEPTED_TYPES, prepareImageForUpload } from '@/lib/media/prepare-upload';
 
 export type EditableProduct = {
   id: number;
@@ -69,6 +70,16 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
+  // Uploading from the computer. The alt text starts as the product's name so
+  // an upload is never anonymous, and can be rewritten to describe the image.
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [altText, setAltText] = useState(initial.name_raw ?? initial.name);
+  const [uploading, setUploading] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<{
+    tone: 'success' | 'danger';
+    text: string;
+  } | null>(null);
+
   const loadMedia = useCallback(async () => {
     try {
       // The admin media index answers with a paginator, so the list is at the
@@ -93,6 +104,69 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
 
   const chosen = media.find((item) => item.id === coverId);
   const preview = chosen?.url ?? (coverId === initial.cover_media_id ? initial.cover_url : null);
+
+  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const picked = input.files?.[0];
+    // Cleared at once, so choosing the same file again still fires a change.
+    input.value = '';
+
+    if (!picked) {
+      return;
+    }
+
+    setUploading(true);
+    setUploadNotice(null);
+
+    try {
+      const prepared = await prepareImageForUpload(picked);
+
+      if (!prepared.ok) {
+        const reasons = {
+          type: t.admin.products.uploadWrongType,
+          'too-large': t.admin.products.uploadTooLarge,
+          unreadable: t.admin.products.uploadUnreadable,
+        };
+        setUploadNotice({ tone: 'danger', text: reasons[prepared.reason] });
+
+        return;
+      }
+
+      const body = new FormData();
+      body.set('file', prepared.file);
+
+      const alt = altText.trim();
+      if (alt) {
+        body.set('alt_text', alt);
+      }
+
+      const response = await api<{ data: Medium }>('/admin/media', { method: 'POST', body });
+      const uploaded = response.data;
+
+      setMedia((current) => [uploaded, ...current.filter((item) => item.id !== uploaded.id)]);
+      setMediaState('ready');
+      // Selected, not saved: the form is saved as a whole, and saving behind
+      // the admin's back would also write any half-finished edits above.
+      setCoverId(uploaded.id);
+      setUploadNotice({ tone: 'success', text: t.admin.products.uploadDone });
+    } catch (caught) {
+      // The server's own reason is worth showing: "The file failed to upload"
+      // from PHP reads very differently from a validation message about type.
+      const reason =
+        caught instanceof ApiError
+          ? (caught.fields?.file?.[0] ?? caught.message)
+          : caught instanceof Error
+            ? caught.message
+            : null;
+
+      setUploadNotice({
+        tone: 'danger',
+        text: reason ? `${t.admin.products.uploadFailed} ${reason}` : t.admin.products.uploadFailed,
+      });
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -242,8 +316,9 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
 
         <div className="mt-4 flex flex-wrap items-start gap-5">
           {preview ? (
-            /* Not next/image: these are admin-uploaded files on the public
-               disk, and the loader is configured for the site's own assets. */
+            /* Not next/image: next/image only allows the media host when
+               NEXT_PUBLIC_MEDIA_HOST was set at build time, and a plain img
+               shows a just-uploaded file in every environment. */
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={preview}
@@ -286,6 +361,61 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
             )}
           </Field>
         </div>
+
+        {/* Uploading needs media.manage too; without it the API would refuse,
+            so the control is not offered rather than offered and then failed. */}
+        {mediaState !== 'denied' ? (
+          <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+            <Field label={t.admin.products.uploadAlt} hint={t.admin.products.uploadAltHint}>
+              {(props) => (
+                <Input
+                  {...props}
+                  value={altText}
+                  maxLength={255}
+                  onChange={(event) => setAltText(event.target.value)}
+                  // Enter here would submit the whole product form.
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                    }
+                  }}
+                />
+              )}
+            </Field>
+
+            <div className="sm:pt-7">
+              <input
+                ref={fileInput}
+                type="file"
+                accept={ACCEPTED_TYPES.join(',')}
+                aria-label={t.admin.products.uploadImage}
+                tabIndex={-1}
+                className="sr-only"
+                onChange={(event) => void upload(event)}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={uploading}
+                onClick={() => fileInput.current?.click()}
+              >
+                {uploading ? t.admin.products.uploading : t.admin.products.uploadImage}
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted sm:col-span-2">{t.admin.products.uploadHint}</p>
+          </div>
+        ) : null}
+
+        {uploadNotice ? (
+          <Callout
+            tone={uploadNotice.tone}
+            role={uploadNotice.tone === 'danger' ? 'alert' : 'status'}
+            className="mt-4"
+          >
+            {uploadNotice.text}
+          </Callout>
+        ) : null}
 
         {chosen && !chosen.alt_text ? (
           <Callout tone="warning" className="mt-4">
