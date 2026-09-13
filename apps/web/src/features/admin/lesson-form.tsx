@@ -337,7 +337,10 @@ export function LessonForm({
           </p>
         ) : null}
 
-        <div>
+        <div className="rounded-lg border-2 border-blue/30 bg-blue/5 p-4">
+          <h3 className="mb-2 text-base font-bold text-navy">
+            {bn ? 'হোস্টিংয়ে সরাসরি ফাইল আপলোড' : 'Upload files to hosting'}
+          </h3>
           <label htmlFor={fileInputId} className="text-sm font-medium text-navy">
             {bn
               ? 'কম্পিউটার থেকে ফাইল বেছে নিন (একাধিক)'
@@ -352,8 +355,14 @@ export function LessonForm({
               addFiles(Array.from(event.target.files ?? []));
               event.target.value = '';
             }}
-            className="mt-2 block w-full text-sm"
+            className="mt-3 block w-full cursor-pointer text-sm text-navy file:me-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue file:px-5 file:py-3 file:font-semibold file:text-white disabled:opacity-50"
+            aria-describedby={`${fileInputId}-help`}
           />
+          <p id={`${fileInputId}-help`} className="mt-3 text-sm text-muted">
+            {bn
+              ? 'Choose Files চাপুন, কম্পিউটার বা মোবাইল থেকে ফাইল বাছুন, তারপর Save lesson চাপুন। ফাইল সরাসরি আমাদের হোস্টিংয়ে সংরক্ষিত হবে। প্রতি ফাইল সর্বোচ্চ ১০০ MB।'
+              : 'Click Choose Files, select files from your computer or phone, then click Save lesson. Files are stored directly on our hosting. Up to 100 MB per file.'}
+          </p>
         </div>
 
         <DocumentLinkAdder
