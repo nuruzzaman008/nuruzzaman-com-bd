@@ -137,6 +137,8 @@ Route::middleware([
     Route::patch('courses/{course:id}/lessons/{lesson:id}/submissions/{submission}', [Admin\LessonAssessmentController::class, 'grade']);
     Route::get('courses/{course:id}/lessons/{lesson:id}/submissions/{submission}/file', [Admin\LessonAssessmentController::class, 'download']);
     Route::post('courses/{course:id}/lessons/{lesson:id}/assets', [Admin\LessonAssetController::class, 'store']);
+    // Parts of a file too large for one request; see App\Services\Uploads\ChunkedUploads.
+    Route::post('uploads/chunks', [Admin\UploadChunkController::class, 'store']);
     Route::delete('courses/{course:id}/lessons/{lesson:id}/assets/{asset:id}', [Admin\LessonAssetController::class, 'destroy']);
 
     Route::get('enrollments', [Admin\EnrollmentController::class, 'index']);

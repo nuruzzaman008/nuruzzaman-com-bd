@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api/browser';
+import { classLabel } from '@/lib/learn/class-label';
+import { MAX_FILE_BYTES, uploadInParts } from '@/lib/uploads/chunked-upload';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import { taxonomyLabel } from '@/lib/i18n/labels';
 import { Button } from '@/components/ui/button';
@@ -46,6 +48,8 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
   const [editing, setEditing] = useState<Lesson | null>(null);
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [assessmentLesson, setAssessmentLesson] = useState<number | null>(null);
+  // The file being sent in parts, and how much of it has arrived.
+  const [progress, setProgress] = useState<{ name: string; fraction: number } | null>(null);
   const base = `/admin/courses/${course?.id}`;
 
   // The featured image, shared with the product and article editors. Laid out
@@ -158,6 +162,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
     <header><Link className="text-sm text-blue" href="/dashboard/courses">← {bn ? 'সব কোর্স' : 'All courses'}</Link><h1 className="mt-3 text-3xl font-bold text-navy">{course ? (bn ? 'কোর্স ও পাঠ সম্পাদনা' : 'Course & curriculum editor') : (bn ? 'নতুন কোর্স' : 'New course')}</h1><p className="mt-2 text-muted">{bn ? 'অধ্যায় তৈরি করুন, ক্রমানুসারে পাঠ যোগ করুন। প্রতিটি পাঠে ভিডিও, লেখা ও একাধিক ফাইল রাখতে পারবেন।' : 'Create sections and ordered lessons. Combine video, text and multiple files in each lesson.'}</p></header>
     {error ? <p role="alert" className="rounded-lg bg-danger/10 p-4 text-danger">{error}</p> : null}
     {message ? <p role="status" className="rounded-lg bg-success/10 p-4 text-success">{message}</p> : null}
+    {progress ? <p role="status" className="sticky top-2 z-10 rounded-lg bg-blue-soft p-4 text-navy shadow-sm">{bn ? 'আপলোড হচ্ছে' : 'Uploading'} “{progress.name}” — {Math.round(progress.fraction * 100)}%<span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white"><span className="block h-full bg-blue" style={{ width: `${Math.round(progress.fraction * 100)}%` }} /></span></p> : null}
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
     <form id="course-details" onSubmit={saveCourse} className="min-w-0 space-y-4">
       <FeaturedImageCard
@@ -206,9 +211,9 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
     {course ? <>
       <div className="flex flex-wrap gap-3">{(['draft', 'in_review', 'published', 'archived'] as const).filter((status) => course.status === 'archived' ? status === 'draft' : course.status === 'published' ? ['draft', 'archived'].includes(status) : status !== course.status).map((status) => <Button key={status} type="button" disabled={busy} onClick={() => void action(async () => { await api(`${base}/transition`, { method: 'POST', body: { status } }); await reload(); })}>{bn ? { draft: 'খসড়া', in_review: 'পর্যালোচনা', published: 'প্রকাশ করুন', archived: 'আর্কাইভ' }[status] : status.replace('_', ' ')}</Button>)}</div>
       <section className="space-y-4"><h2 className="text-xl font-bold text-navy">{bn ? 'কোর্সের অধ্যায় ও পাঠ' : 'Sections & lessons'}</h2>
-        {course.sections.map((section) => <div key={section.id} className="rounded-xl border border-line bg-white p-5">
+        {course.sections.map((section, sectionIndex) => <div key={section.id} className="rounded-xl border border-line bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h3 className="text-lg font-semibold text-navy">{section.title}</h3><p className="text-sm text-muted">{section.lessons.length} {bn ? 'পাঠ' : 'lessons'} · {bn ? 'কত দিন পরে:' : 'Drip days:'} {section.drip_days ?? 0}</p></div>
+            <div><h3 className="text-lg font-semibold text-navy"><span className="font-latin text-blue">{classLabel(sectionIndex)}:</span> {section.title}</h3><p className="text-sm text-muted">{section.lessons.length} {bn ? 'পাঠ' : 'lessons'} · {bn ? 'কত দিন পরে:' : 'Drip days:'} {section.drip_days ?? 0}</p></div>
             <div className="flex gap-3">
               <Button type="button" variant="secondary" disabled={busy} aria-label={`${bn ? 'অধ্যায় সম্পাদনা:' : 'Edit section:'} ${section.title}`} onClick={() => setEditingSection(section.id)}>{bn ? 'সম্পাদনা' : 'Edit'}</Button>
               <Button type="button" variant="secondary" className="text-danger" disabled={busy} aria-label={`${bn ? 'অধ্যায় মুছুন:' : 'Delete section:'} ${section.title}`} onClick={() => deleteSection(section)}>{bn ? 'মুছুন' : 'Delete'}</Button>
@@ -220,15 +225,16 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
             <label className="mt-3 block text-sm font-semibold text-blue">{bn ? 'ভিডিও আপলোড (MP4/WebM, সর্বোচ্চ 100 MB)' : 'Upload video (MP4/WebM, up to 100 MB)'}<input type="file" accept=".mp4,.webm" disabled={busy} className="mt-2 block w-full text-xs" onChange={(event) => {
               const file = event.target.files?.[0]; const control = event.target;
               if (!file) return;
-              void action(async () => { if (file.size > 100 * 1024 * 1024) throw new Error('Video must be 100 MB or smaller.'); const body = new FormData(); body.set('video', file); await api(`${base}/lessons/${lesson.id}/video`, { method: 'POST', body }); control.value = ''; await reload(); });
+              // Sent in 1 MB parts: the host refuses any single upload over 2 MB.
+              void action(async () => { try { if (file.size > MAX_FILE_BYTES) throw new Error(bn ? 'ভিডিও ১০০ MB-এর বেশি হতে পারবে না।' : 'Video must be 100 MB or smaller.'); const parts = await uploadInParts(file, (fraction) => setProgress({ name: file.name, fraction })); await api(`${base}/lessons/${lesson.id}/video`, { method: 'POST', body: parts }); await reload(); } finally { control.value = ''; setProgress(null); } });
             }} /></label>
             {lesson.video_provider === 'uploaded' ? <p className="mt-2 text-sm text-success">{bn ? 'আপলোড করা ভিডিও প্রস্তুত' : 'Uploaded video ready'}</p> : null}
             {lesson.video_url ? <p className="mt-2 break-all text-xs text-muted">{lesson.video_url}</p> : null}
             <ul className="mt-3 space-y-2">{lesson.assets.map((asset) => <li key={asset.id} className="flex items-center justify-between gap-3 text-sm"><span>{lesson.assets.indexOf(asset) + 1}. {asset.title} · {(asset.size_bytes / 1024).toFixed(0)} KB</span><span className="flex gap-3"><button type="button" disabled={busy || lesson.assets[0]?.id === asset.id} aria-label={`Move ${asset.title} up`} onClick={() => void action(() => moveAsset(lesson, asset.id, -1))}>↑</button><button type="button" disabled={busy || lesson.assets.at(-1)?.id === asset.id} aria-label={`Move ${asset.title} down`} onClick={() => void action(() => moveAsset(lesson, asset.id, 1))}>↓</button></span><button className="text-danger" disabled={busy} type="button" onClick={() => { if (window.confirm(bn ? 'এই ফাইল মুছে ফেলবেন?' : 'Delete this file?')) void action(async () => { await api(`${base}/lessons/${lesson.id}/assets/${asset.id}`, { method: 'DELETE' }); await reload(); }); }}>{bn ? 'মুছুন' : 'Delete'}</button></li>)}</ul>
-            <label className="mt-4 block text-sm font-semibold text-blue">{bn ? 'পাঠে ফাইল যোগ করুন (একাধিক নির্বাচন করা যাবে)' : 'Attach lesson files (multiple allowed)'}<input type="file" multiple disabled={busy} className="mt-2 block w-full text-xs" accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.dwg,.dxf" onChange={(event) => {
+            <label className="mt-4 block text-sm font-semibold text-blue">{bn ? 'পাঠে ফাইল যোগ করুন — PDF, DOCX, XLSX, PPTX, DWG, ZIP বা যেকোনো ফাইল (একাধিক নির্বাচন করা যাবে)' : 'Attach lesson files — PDF, DOCX, XLSX, PPTX, DWG, ZIP or any other file (multiple allowed)'}<input type="file" multiple disabled={busy} className="mt-2 block w-full text-xs" onChange={(event) => {
               const files = Array.from(event.target.files ?? []); const control = event.target;
-              void action(async () => { try { for (const file of files) { const body = new FormData(); body.set('file', file); body.set('title', file.name); await api(`${base}/lessons/${lesson.id}/assets`, { method: 'POST', body }); } } finally { control.value = ''; await reload(); } });
-            }} /></label><p className="mt-1 text-xs text-muted">PDF, Office, ZIP, AutoCAD, images · {bn ? 'প্রতি ফাইল সর্বোচ্চ ১০০ MB' : 'Up to 100 MB per file'}</p>
+              void action(async () => { try { for (const file of files) { if (file.size > MAX_FILE_BYTES) throw new Error(bn ? `${file.name}: প্রতি ফাইল সর্বোচ্চ ১০০ MB।` : `${file.name}: files can be up to 100 MB.`); const parts = await uploadInParts(file, (fraction) => setProgress({ name: file.name, fraction })); await api(`${base}/lessons/${lesson.id}/assets`, { method: 'POST', body: { ...parts, title: file.name.slice(0, 200) } }); } } finally { control.value = ''; setProgress(null); await reload(); } });
+            }} /></label><p className="mt-1 text-xs text-muted">{bn ? 'প্রতি ফাইল সর্বোচ্চ ১০০ MB; বড় ফাইল টুকরো করে পাঠানো হয়। নিরাপত্তার জন্য .php জাতীয় সার্ভার-স্ক্রিপ্ট নেওয়া হয় না।' : 'Up to 100 MB per file; large files are sent in parts. Server scripts such as .php are refused for safety.'}</p>
             <button type="button" className="mt-4 text-sm font-semibold text-blue" aria-expanded={assessmentLesson === lesson.id} onClick={() => setAssessmentLesson(assessmentLesson === lesson.id ? null : lesson.id)}>{bn ? 'কুইজ / অ্যাসাইনমেন্ট' : 'Quiz / assignment'}</button>{assessmentLesson === lesson.id ? <LessonAssessments courseId={course.id} lessonId={lesson.id} /> : null}
           </li>)}</ol>
         </div>)}
@@ -242,7 +248,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
           <label>{bn ? 'অধ্যায়' : 'Section'}<select name="course_section_id" defaultValue={editing?.course_section_id ?? course.sections[0].id} className={input}>{course.sections.map((section) => <option key={section.id} value={section.id}>{section.title}</option>)}</select></label>
           <label>{bn ? 'পাঠের ধরন' : 'Lesson type'}<select name="type" defaultValue={editing?.type ?? 'video'} className={input}><option value="video">{bn ? 'ভিডিও + ফাইল' : 'Video + files'}</option><option value="text">{bn ? 'লেখা + ফাইল' : 'Text + files'}</option><option value="download">{bn ? 'ফাইল / রিসোর্স' : 'Download / resources'}</option>{editing && ['quiz', 'assignment'].includes(editing.type) ? <option value={editing.type}>{editing.type}</option> : null}</select></label>
         </div>
-        <label className="block">{bn ? 'ভিডিও লিংক (ঐচ্ছিক)' : 'Video URL (optional)'}<input name="video_url" type="url" pattern="https://.*" defaultValue={editing?.video_url ?? ''} placeholder="https://www.youtube.com/watch?v=…" className={input} /><span className="mt-1 block text-xs text-muted">YouTube, Vimeo, MP4/WebM {bn ? 'বা অন্য HTTPS ভিডিও লিংক। অন্য সাইটে ভিডিও নতুন ট্যাবে খুলবে।' : 'or another HTTPS video link. Other websites open in a new tab.'}</span></label>
+        <label className="block">{bn ? 'ভিডিও লিংক (ঐচ্ছিক)' : 'Video URL (optional)'}<input name="video_url" type="url" pattern="https://.*" defaultValue={editing?.video_url ?? ''} placeholder="https://www.youtube.com/watch?v=… · https://www.facebook.com/…/videos/… · https://vimeo.com/…" className={input} /><span className="mt-1 block text-xs text-muted">{bn ? 'YouTube, Facebook বা Vimeo ভিডিওর লিংক দিন — ভিডিও পাতার ভেতরেই চলবে (Facebook ভিডিও Public হতে হবে)। MP4/WebM লিংকও চলবে; অন্য সাইটের লিংক নতুন ট্যাবে খুলবে।' : 'Paste a YouTube, Facebook or Vimeo video link — it plays inside the lesson (a Facebook video must be public). MP4/WebM links play too; other websites open in a new tab.'}</span></label>
         <div><label htmlFor="lesson-body" className="block">{bn ? 'পাঠের লেখা / নির্দেশনা (Markdown)' : 'Lesson content / instructions (Markdown)'}</label><MarkdownTextarea id="lesson-body" rows={7} name="body_markdown" defaultValue={editing?.body_markdown ?? ''} className="min-h-48 text-navy" /></div>
         <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'সময় (সেকেন্ড)' : 'Duration (seconds)'}<input type="number" name="duration_seconds" min="1" max="86400" defaultValue={editing?.duration_seconds ?? ''} className={input} /></label><label>{bn ? 'ভর্তির কত দিন পরে খুলবে (ঐচ্ছিক)' : 'Unlock days after enrollment (optional)'}<input type="number" name="drip_days" min="0" max="3650" defaultValue={editing?.drip_days ?? ''} className={input} /></label></div>
         <label className="block"><input type="checkbox" name="is_free_preview" defaultChecked={editing?.is_free_preview} /> {bn ? 'ভিডিও ও লেখা বিনামূল্যে প্রিভিউ করা যাবে (ফাইল শুধু ভর্তিকৃতদের জন্য)' : 'Allow free video/text preview (files require enrollment)'}</label>

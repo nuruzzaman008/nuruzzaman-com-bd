@@ -44,13 +44,16 @@ export default async function LessonPage(props: {
     throw error;
   }
 
-  const outlineLesson = outline.sections
-    .flatMap((section) => section.lessons)
-    .find((lesson) => lesson.slug === lessonSlug);
+  const lessons = outline.sections.flatMap((section) => section.lessons);
+  const index = lessons.findIndex((lesson) => lesson.slug === lessonSlug);
+  const outlineLesson = lessons[index];
 
   if (!outlineLesson) {
     notFound();
   }
+
+  const neighbour = (row: (typeof lessons)[number] | undefined) =>
+    row ? { slug: row.slug, title: row.title, is_unlocked: row.is_unlocked } : null;
 
   // Notes for this lesson only. A failure here must not take the lesson down
   // with it, so an empty list is the fallback.
@@ -78,14 +81,16 @@ export default async function LessonPage(props: {
     }
   }
 
+  /*
+    The lesson in the middle and the course on the right, as a classic course
+    player lays them out. The sidebar is sticky and scrolls on its own, so the
+    list and the exam, certificate and review buttons stay in reach while a
+    long article is read. On a phone it follows the lesson.
+  */
   return (
-    <Container size="wide" className="py-8">
-      <div className="grid gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <CourseOutlineNav outline={outline} currentSlug={lessonSlug} locale={locale} />
-        </aside>
-
-        <div className="rounded-[--radius-card] border border-line bg-white p-6 sm:p-8">
+    <Container size="wide" className="py-6 sm:py-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="min-w-0 rounded-[--radius-card] border border-line bg-white p-4 sm:p-6">
           {lesson ? (
             <>
               <LessonPlayer
@@ -93,6 +98,13 @@ export default async function LessonPage(props: {
                 courseSlug={courseSlug}
                 lesson={lesson}
                 isCompleted={outlineLesson.is_completed}
+                previous={neighbour(lessons[index - 1])}
+                next={neighbour(lessons[index + 1])}
+              />
+              <LessonAssessments
+                key={`activities-${lessonSlug}`}
+                quizId={lesson.quiz_id}
+                assignmentId={lesson.assignment_id}
               />
               <LessonNotes
                 key={`notes-${lessonSlug}`}
@@ -100,10 +112,6 @@ export default async function LessonPage(props: {
                 lessonSlug={lessonSlug}
                 notes={lessonNotes}
               />
-              <LessonAssessments key={`activities-${lessonSlug}`} quizId={lesson.quiz_id} assignmentId={lesson.assignment_id} />
-              <nav aria-label="Lesson navigation" className="mt-8 flex flex-wrap justify-between gap-4 border-t border-line pt-5 text-sm font-semibold text-blue">
-                {(() => { const rows = outline.sections.flatMap((section) => section.lessons); const index = rows.findIndex((row) => row.slug === lessonSlug); const previous = rows[index - 1]; const next = rows[index + 1]; return <>{previous ? <Link href={`/learn/${courseSlug}/${previous.slug}`}>← {previous.title}</Link> : <span />}{next?.is_unlocked ? <Link href={`/learn/${courseSlug}/${next.slug}`}>{next.title} →</Link> : null}</>; })()}
-              </nav>
             </>
           ) : (
             <Callout tone="warning" title={t.learn.lockedTitle} role="status">
@@ -116,6 +124,10 @@ export default async function LessonPage(props: {
             </Callout>
           )}
         </div>
+
+        <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto">
+          <CourseOutlineNav outline={outline} currentSlug={lessonSlug} locale={locale} />
+        </aside>
       </div>
     </Container>
   );

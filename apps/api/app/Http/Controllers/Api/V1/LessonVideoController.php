@@ -7,19 +7,33 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\User;
 use App\Services\Lms\EnrollmentService;
+use App\Services\Uploads\ChunkedUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class LessonVideoController extends Controller
 {
-    public function upload(Request $request, Course $course, Lesson $lesson): JsonResponse
+    public function upload(Request $request, Course $course, Lesson $lesson, ChunkedUploads $uploads): JsonResponse
     {
         $this->authorize('update', $course);
         abort_unless($lesson->course_id === $course->id, 404);
-        $request->validate(['video' => ['required', 'file', 'max:102400', 'mimes:mp4,webm', 'extensions:mp4,webm']]);
-        $path = $request->file('video')->store('lesson-videos/'.$lesson->id, 'private');
+
+        try {
+            // Every lesson video is over the host's per-request limit, so it
+            // normally arrives in parts first.
+            $video = $uploads->fileFrom($request, 'video', 102400);
+            Validator::make(
+                ['video' => $video],
+                ['video' => ['required', 'file', 'max:102400', 'mimes:mp4,webm', 'extensions:mp4,webm']],
+            )->validate();
+            $path = $video->store('lesson-videos/'.$lesson->id, 'private');
+        } finally {
+            $uploads->forgetFrom($request);
+        }
+
         try {
             $lesson->update(['type' => 'video', 'video_provider' => 'uploaded', 'video_asset_id' => $path, 'video_url' => null]);
         } catch (\Throwable $error) {

@@ -21,7 +21,8 @@ it('opens the selected section for editing and saves the title and drip days', a
   fireEvent.change(form.getByLabelText('Section title'), { target: { value: 'Updated foundations' } });
   fireEvent.change(form.getByLabelText('Drip days'), { target: { value: '5' } });
   fireEvent.click(form.getByRole('button', { name: 'Save' }));
-  await screen.findByRole('heading', { name: 'Updated foundations' });
+  // Numbered as the student sees it in the course player.
+  await screen.findByRole('heading', { name: 'Class-01: Updated foundations' });
   expect(request).toHaveBeenCalledWith('/admin/courses/3/sections/12', { method: 'PATCH', body: { title: 'Updated foundations', drip_days: 5 } });
   expect(screen.queryByRole('form', { name: /Edit section/ })).not.toBeInTheDocument();
 });

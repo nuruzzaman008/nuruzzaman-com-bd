@@ -2528,7 +2528,7 @@ paths:
                 properties:
                   data:
                     type: object
-                    required: [course, enrollment, sections]
+                    required: [course, certificate, review, enrollment, sections]
                     properties:
                       course:
                         type: object
@@ -2538,6 +2538,22 @@ paths:
                           title: { type: string }
                           sequential: { type: boolean }
                           issues_certificate: { type: boolean }
+                      certificate:
+                        description: This learner's valid certificate for the course, once issued.
+                        type: [object, 'null']
+                        required: [verification_id, issued_at]
+                        properties:
+                          verification_id: { type: string }
+                          issued_at: { type: [string, 'null'], format: date-time }
+                      review:
+                        description: This learner's own review, whatever its moderation status.
+                        type: [object, 'null']
+                        required: [rating, title, body, status]
+                        properties:
+                          rating: { type: integer, minimum: 1, maximum: 5 }
+                          title: { type: [string, 'null'] }
+                          body: { type: [string, 'null'] }
+                          status: { type: string }
                       enrollment:
                         type: object
                         required: [status, progress_percent]
@@ -2558,12 +2574,16 @@ paths:
                               type: array
                               items:
                                 type: object
-                                required: [slug, title, type, duration_seconds, is_completed, is_unlocked]
+                                required: [slug, title, type, duration_seconds, has_video, assets_count, has_quiz, has_assignment, is_completed, is_unlocked]
                                 properties:
                                   slug: { type: string }
                                   title: { type: string }
                                   type: { type: string }
                                   duration_seconds: { type: [integer, 'null'] }
+                                  has_video: { type: boolean }
+                                  assets_count: { type: integer }
+                                  has_quiz: { type: boolean }
+                                  has_assignment: { type: boolean }
                                   is_completed: { type: boolean }
                                   is_unlocked: { type: boolean }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -3631,6 +3651,44 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
 
+  /admin/uploads/chunks:
+    post:
+      tags: [Admin]
+      operationId: adminUploadChunk
+      summary: Receive one part of a large upload
+      security: [{ sessionCookie: [] }]
+      description: |
+        The host refuses any single upload over 2 MB, so a lesson file or video
+        is sent in parts of at most 1.5 MB, then attached by naming its
+        upload_id. Parts belong to the person who sent them, and are removed
+        once the file is attached, or after a day.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [upload_id, index, chunk]
+              properties:
+                upload_id: { type: string, format: uuid }
+                index: { type: integer, minimum: 0, maximum: 199 }
+                chunk: { type: string, format: binary }
+      responses:
+        '201':
+          description: Part stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [received]
+                    properties:
+                      received: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/markdown/preview:
     post:
       tags: [Admin]
@@ -5892,6 +5950,11 @@ paths:
         - Admin
       operationId: adminUploadLessonAsset
       summary: Upload a private lesson resource (up to 100 MB)
+      description: |
+        Any kind of file except server-side scripts (.php, .phtml, .cgi and the
+        like). Send the file itself, or - for anything over the host's 2 MB
+        per-request limit - send it in parts to /admin/uploads/chunks first and
+        name them here with upload_id, total and filename.
       security:
         - sessionCookie: []
       parameters:
@@ -5911,15 +5974,23 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required:
-                - file
               properties:
                 title:
                   type: string
-                  maxLength: 255
+                  maxLength: 200
                 file:
                   type: string
                   format: binary
+                upload_id:
+                  type: string
+                  format: uuid
+                total:
+                  type: integer
+                  minimum: 1
+                  maximum: 200
+                filename:
+                  type: string
+                  maxLength: 255
       responses:
         "201":
           description: Success

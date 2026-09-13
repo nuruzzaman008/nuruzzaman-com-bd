@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1\Learn;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LessonResource;
+use App\Models\Certificate;
 use App\Models\Course;
+use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Services\Lms\EnrollmentService;
@@ -56,7 +58,11 @@ class LessonController extends Controller
 
         $this->authorize('learn', $enrollment);
 
-        $course->load(['sections.lessons']);
+        // What each lesson holds, so the player's list can say so without
+        // loading every lesson: a video, how many files, a quiz or assignment.
+        $course->load(['sections.lessons' => fn ($query) => $query
+            ->withCount('assets')
+            ->with(['quiz:id,lesson_id', 'assignment:id,lesson_id'])]);
 
         // isUnlocked() falls back to the section's drip window when the lesson
         // has none, and every lesson without its own drip_days would otherwise
@@ -70,6 +76,18 @@ class LessonController extends Controller
 
         $completed = $enrollment->progress()->where('is_completed', true)->pluck('lesson_id')->all();
 
+        $certificate = Certificate::query()
+            ->where('user_id', $request->user()->getKey())
+            ->where('course_id', $course->getKey())
+            ->whereNull('revoked_at')
+            ->latest('issued_at')
+            ->first();
+
+        $review = CourseReview::query()
+            ->where('user_id', $request->user()->getKey())
+            ->where('course_id', $course->getKey())
+            ->first();
+
         return response()->json([
             'data' => [
                 'course' => [
@@ -78,6 +96,17 @@ class LessonController extends Controller
                     'sequential' => (bool) $course->sequential,
                     'issues_certificate' => (bool) $course->issues_certificate,
                 ],
+                'certificate' => $certificate ? [
+                    'verification_id' => $certificate->verification_id,
+                    'issued_at' => $certificate->issued_at?->toIso8601String(),
+                ] : null,
+                // The learner's own review, so the form opens on what they wrote.
+                'review' => $review ? [
+                    'rating' => (int) $review->rating,
+                    'title' => $review->title,
+                    'body' => $review->body,
+                    'status' => $review->status instanceof \BackedEnum ? $review->status->value : (string) $review->status,
+                ] : null,
                 'enrollment' => [
                     'status' => $enrollment->status->value,
                     'progress_percent' => (int) $enrollment->progress_percent,
@@ -92,6 +121,10 @@ class LessonController extends Controller
                         'title' => $lesson->title,
                         'type' => $lesson->type->value,
                         'duration_seconds' => $lesson->duration_seconds,
+                        'has_video' => filled($lesson->video_url) || filled($lesson->video_asset_id),
+                        'assets_count' => (int) $lesson->assets_count,
+                        'has_quiz' => $lesson->quiz !== null,
+                        'has_assignment' => $lesson->assignment !== null,
                         'is_completed' => in_array($lesson->getKey(), $completed, true),
                         'is_unlocked' => $this->enrollments->isUnlocked($enrollment, $lesson),
                     ])->values(),
