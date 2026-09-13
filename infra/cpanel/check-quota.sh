@@ -33,25 +33,40 @@ done
 QUOTA_RAW=''
 
 # Works against both renderings UAPI produces, quoted or bare, and takes the
-# whole number from a decimal. Anchored on a word boundary so megabytes_limit
-# cannot be answered by megabytes_remain.
+# whole number from a decimal. Anchored on word boundaries so that
+# megabyte_limit is never answered by megabytes_remain.
 quota_number() {
   printf '%s\n' "$QUOTA_RAW" | sed -n "s/.*\b$1\b[^0-9-]*\([0-9][0-9]*\).*/\1/p" | head -1
+}
+
+# The first of several possible names that has a value.
+#
+# cPanel's own names for the limits are singular - megabyte_limit and
+# inode_limit - beside plural megabytes_used and inodes_used. The first version
+# of this check guessed the plural for all four, its tests were written against
+# the same guess, and on the real server it read nothing at all. The real names
+# come first; the plural stays as a fallback in case another build differs.
+first_number() {
+  local key value
+  for key in "$@"; do
+    value="$(quota_number "$key")"
+    if [ -n "$value" ]; then printf '%s' "$value"; return; fi
+  done
 }
 
 if [ -n "$UAPI_BIN" ]; then
   # stderr is kept: when this cannot answer, its complaint is the diagnosis.
   QUOTA_RAW="$("$UAPI_BIN" --output=json Quota get_quota_info 2>&1)"
-  # Older cPanel builds do not take --output; the default rendering parses too.
-  if [ -z "$(quota_number megabytes_limit)" ]; then
+  # Not every cPanel build takes --output; the default rendering parses too.
+  if [ -z "$(first_number megabyte_limit megabytes_limit inode_limit inodes_limit)" ]; then
     QUOTA_RAW="$("$UAPI_BIN" Quota get_quota_info 2>&1)"
   fi
 fi
 
-MB_LIMIT="$(quota_number megabytes_limit)"
-MB_USED="$(quota_number megabytes_used)"
-INODES_LIMIT="$(quota_number inodes_limit)"
-INODES_USED="$(quota_number inodes_used)"
+MB_LIMIT="$(first_number megabyte_limit megabytes_limit)"
+MB_USED="$(first_number megabytes_used megabyte_used)"
+INODES_LIMIT="$(first_number inode_limit inodes_limit)"
+INODES_USED="$(first_number inodes_used inode_used)"
 
 # Every path below says something. An earlier version of this check could take
 # a branch that printed nothing at all, which reads exactly like a healthy run
@@ -63,7 +78,7 @@ fi
 
 if [ -z "$MB_LIMIT" ] && [ -z "$INODES_LIMIT" ]; then
   printf 'Quota: UAPI answered but no figures could be read; disk headroom not checked.\n' >&2
-  printf 'Quota: it said: %.300s\n' "$QUOTA_RAW" >&2
+  printf 'Quota: it said: %.600s\n' "$QUOTA_RAW" >&2
   exit 0
 fi
 
@@ -84,7 +99,7 @@ elif [ -n "$MB_LIMIT" ] && [ "$MB_LIMIT" = 0 ]; then
 fi
 
 if [ -n "$INODES_LIMIT" ] && [ -n "$INODES_USED" ] && [ "$INODES_LIMIT" -gt 0 ]; then
-  printf 'Inodes: %s of %s used.\n' "$INODES_USED" "$INODES_LIMIT"
+  printf 'Inodes: %s of %s used (%s%%).\n' "$INODES_USED" "$INODES_LIMIT" "$((INODES_USED * 100 / INODES_LIMIT))"
 
   # A warning, never a refusal: what a run costs in inodes is not known ahead
   # of time, and refusing on a guess would block a deployment that would have

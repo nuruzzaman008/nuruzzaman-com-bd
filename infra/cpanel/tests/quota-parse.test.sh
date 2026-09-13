@@ -3,10 +3,14 @@
 # with a stub standing in for cPanel's uapi. This is how a nearly full account
 # gets tested without filling one up.
 #
-# The bug worth guarding against is silence. The first version of this check
-# could take a branch that printed nothing at all, which reads exactly like a
-# healthy run while telling you the quota was never looked at - and it did
-# exactly that on the first real deployment.
+# The fixtures start from what this server's uapi actually printed, captured
+# from a deployment log. An earlier version of this file invented its fixtures
+# instead, using plural key names cPanel does not use - so every test passed
+# while the check read nothing at all on the real host. A test that shares its
+# author's guess cannot catch the guess.
+#
+# The other failure worth guarding against is silence: a check that prints
+# nothing reads exactly like a healthy run.
 #
 # Usage: infra/cpanel/tests/quota-parse.test.sh
 set -uo pipefail
@@ -17,19 +21,20 @@ CHECK="$ROOT/infra/cpanel/check-quota.sh"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-EMPTY="$WORK/no-uapi"
-mkdir -p "$EMPTY"
 
 fail=0
 
 # Runs the check with a stub uapi that prints $1 and exits $2. Captures both
-# streams and the exit status.
+# streams and the exit status. The stub ignores its arguments, so the check's
+# --output=json attempt and its plain retry both see the same answer - which
+# is what this host does, since it answered in the default rendering.
 with_uapi() {
   local payload=$1 code=${2:-0} stub="$WORK/stub"
   mkdir -p "$stub"
+  printf '%s\n' "$payload" > "$stub/answer"
   {
     printf '#!/bin/sh\n'
-    printf 'cat <<%s\n%s\n%s\n' 'PAYLOAD' "$payload" 'PAYLOAD'
+    printf 'cat "%s"\n' "$stub/answer"
     printf 'exit %s\n' "$code"
   } > "$stub/uapi"
   chmod +x "$stub/uapi"
@@ -38,10 +43,8 @@ with_uapi() {
   STATUS=$?
 }
 
-# Runs it on a host with no uapi anywhere.
+# Runs it on a host with no uapi anywhere (none is installed in the container).
 without_uapi() {
-  # A PATH with the ordinary tools but no uapi. /usr/bin holds sed and head,
-  # which the check needs, and no cPanel is installed in this container.
   OUT="$(NB_MIN_FREE_MB="${MIN_FREE:-4096}" bash "$CHECK" 2>&1)"
   STATUS=$?
 }
@@ -64,68 +67,87 @@ allow_expected() {
   else printf 'FAIL %s (exit %s)\n     %s\n' "$1" "$STATUS" "$OUT"; fail=1; fi
 }
 
-# --- A healthy account, with the figures this host actually reported -------
-# 30,720 MB quota, ~10 GB used, 450,000 inodes.
-with_uapi '{"result":{"data":{"inodes_limit":"450000","inodes_remain":"438204","inodes_used":"11796","megabytes_limit":"30720","megabytes_remain":"20457.75","megabytes_used":"10262.25"}}}'
-expect 'json: reports disk in the units the host quoted' 'Disk: 10262 MB of 30720 MB used, 20458 MB free.'
-expect 'json: reports inodes'                            'Inodes: 11796 of 450000 used.'
-allow_expected 'json: a healthy account is allowed to proceed'
-
-# --- The default (non-JSON) rendering, for an older cPanel ----------------
-with_uapi '---
+# --- Verbatim from this server, 2026-09-12 deployment log -----------------
+REAL_ANSWER="$(cat <<'UAPI'
+---
 apiversion: 3
 func: get_quota_info
 module: Quota
 result:
   data:
-    inodes_limit: 450000
-    inodes_remain: 438204
-    inodes_used: 11796
-    megabytes_limit: 30720
-    megabytes_remain: 20457.75
-    megabytes_used: 10262.25
-  errors: ~
-  status: 1'
-expect 'plain: reports disk'   'Disk: 10262 MB of 30720 MB used, 20458 MB free.'
-expect 'plain: reports inodes' 'Inodes: 11796 of 450000 used.'
-allow_expected 'plain: allowed to proceed'
+    backup_warning_threshold_pct: 90
+    inode_limit: 450000
+    inodes_remain: 220669
+    inodes_used: 229331
+    megabyte_limit: 30720
+    megabytes_remain: '21124.74'
+    megabytes_used: '9595.26'
+    under_backup_threshold: 1
+UAPI
+)"
 
-# megabytes_used must not be read off the megabytes_remain line, and a prefix
-# match must not let inodes_limit answer for megabytes_limit.
-with_uapi '{"megabytes_limit":"30720","megabytes_remain":"1.5","megabytes_used":"30718.5","inodes_limit":"450000","inodes_used":"11796"}'
-expect 'a nearly full account reads as nearly full' 'Disk: 30718 MB of 30720 MB used, 2 MB free.'
+with_uapi "$REAL_ANSWER"
+expect 'real host: disk read from megabyte_limit' 'Disk: 9595 MB of 30720 MB used, 21125 MB free.'
+expect 'real host: inodes read from inode_limit'  'Inodes: 229331 of 450000 used (50%).'
+allow_expected 'real host: allowed to proceed'
+case "$OUT" in
+  *'no figures could be read'*) printf 'FAIL %s\n' 'real host must not report unreadable figures'; fail=1 ;;
+  *) printf 'PASS %s\n' 'real host is not reported as unreadable' ;;
+esac
+
+# The same answer with megabytes_remain placed first, so a sloppy match on
+# "megabyte" would pick up the wrong number.
+with_uapi 'megabytes_remain: 1.50
+megabytes_used: 30718.50
+megabyte_limit: 30720
+inodes_used: 229331
+inode_limit: 450000'
+expect 'megabytes_remain is never read as the limit' 'Disk: 30718 MB of 30720 MB used, 2 MB free.'
 refuse_expected 'a nearly full account is refused before anything is written'
 expect 'and says what to do about it' 'Lower NB_BACKUP_KEEP'
 
-# --- Inodes exhausted with disk to spare ----------------------------------
-with_uapi '{"megabytes_limit":"30720","megabytes_used":"10262","inodes_limit":"450000","inodes_used":"430000"}'
+# --- The JSON rendering, for a build that honours --output=json ------------
+with_uapi '{"result":{"data":{"inode_limit":450000,"inodes_used":229331,"megabyte_limit":30720,"megabytes_remain":"21124.74","megabytes_used":"9595.26"}}}'
+expect 'json: reports disk'   'Disk: 9595 MB of 30720 MB used, 21125 MB free.'
+expect 'json: reports inodes' 'Inodes: 229331 of 450000 used (50%).'
+allow_expected 'json: allowed to proceed'
+
+# --- Plural key names, in case another cPanel build spells them that way ---
+with_uapi '{"megabytes_limit":"30720","megabytes_used":"9595.26","inodes_limit":"450000","inodes_used":"229331"}'
+expect 'plural names still read' 'Disk: 9595 MB of 30720 MB used, 21125 MB free.'
+
+# --- Inodes nearly exhausted with disk to spare ----------------------------
+with_uapi 'megabyte_limit: 30720
+megabytes_used: 9595
+inode_limit: 450000
+inodes_used: 430000'
 expect 'inode pressure is warned about' 'WARNING: inodes are above 85%'
 # Never a refusal: what a run costs in inodes is not known ahead of time.
 allow_expected 'inode pressure warns without blocking the deployment'
 
-# --- An unlimited account -------------------------------------------------
-with_uapi '{"megabytes_limit":"0","megabytes_used":"10262","inodes_limit":"0","inodes_used":"11796"}'
+# --- An unlimited account --------------------------------------------------
+with_uapi 'megabyte_limit: 0
+megabytes_used: 9595
+inode_limit: 0
+inodes_used: 229331'
 expect 'an unlimited account says so' 'no megabyte quota'
 allow_expected 'an unlimited account is allowed to proceed'
 
-# --- UAPI answers, but not with figures. This is the silence bug. ---------
+# --- UAPI answers, but not with figures ------------------------------------
 with_uapi 'Execution of Quota::get_quota_info failed: permission denied' 1
-expect 'an unreadable answer says so'          'no figures could be read'
-expect 'and repeats what UAPI complained'      'permission denied'
+expect 'an unreadable answer says so'     'no figures could be read'
+expect 'and repeats what UAPI complained' 'permission denied'
 allow_expected 'an unreadable answer does not block the deployment'
 
-# --- No uapi at all -------------------------------------------------------
+# --- No uapi at all ----------------------------------------------------------
 without_uapi
 expect 'a host without UAPI says so' 'UAPI not found'
 allow_expected 'a host without UAPI is allowed to proceed'
 
-# --- Whatever happens, it must never be silent ----------------------------
-for payload in \
-  '{"megabytes_limit":"30720","megabytes_used":"10262","inodes_limit":"450000","inodes_used":"11796"}' \
-  'nonsense' \
-  ''; do
+# --- Whatever happens, it must never be silent -----------------------------
+for payload in "$REAL_ANSWER" 'nonsense' ''; do
   with_uapi "$payload"
-  label="$(printf '%.28s' "${payload:-<empty answer>}")"
+  label="$(printf '%.20s' "${payload:-<empty answer>}" | tr '\n' ' ')"
   if [ -n "$OUT" ]; then
     printf 'PASS never silent: %s\n' "$label"
   else
