@@ -287,6 +287,7 @@ export function courseSchema(course: {
   cover_url?: string | null;
   rating?: { average: number; count: number } | null;
   instructors?: { name?: string | null }[];
+  price?: { currency: string; amount_minor: number; offer_ends_at?: string | null } | null;
 }) {
   return {
     '@context': 'https://schema.org',
@@ -299,6 +300,22 @@ export function courseSchema(course: {
     provider: { '@type': 'Organization', name: brand.owner, url: publicEnv.siteUrl },
     ...(course.instructors?.length && course.instructors[0]?.name
       ? { author: { '@type': 'Person', name: course.instructors[0].name } }
+      : {}),
+    // What enrolling costs, including a free course and an offer's last day.
+    ...(course.price
+      ? {
+          offers: {
+            '@type': 'Offer',
+            category: course.price.amount_minor === 0 ? 'Free' : 'Paid',
+            price: (course.price.amount_minor / 100).toFixed(2),
+            priceCurrency: course.price.currency,
+            availability: 'https://schema.org/InStock',
+            url: absoluteUrl(`/courses/${course.slug}`),
+            ...(course.price.offer_ends_at
+              ? { priceValidUntil: course.price.offer_ends_at.slice(0, 10) }
+              : {}),
+          },
+        }
       : {}),
     // Only emitted when real, published reviews exist.
     ...(course.rating && course.rating.count > 0

@@ -74,6 +74,9 @@ Route::middleware(['auth:sanctum', 'active', EnsureCustomerAccount::class])->gro
         Route::post('{courseSlug}/lessons/{lessonSlug}/complete', [Learn\ProgressController::class, 'complete'])
             ->middleware('throttle:progress');
         Route::post('{courseSlug}/reviews', [Learn\CourseReviewController::class, 'store']);
+        // A free course is joined here; checkout refuses an order for nothing.
+        Route::post('{courseSlug}/enroll-free', [Learn\FreeEnrollmentController::class, 'store'])
+            ->middleware('throttle:public-forms');
 
         Route::get('{courseSlug}/gradebook', [Learn\GradebookController::class, 'show']);
         Route::get('{courseSlug}/announcements', [Learn\AnnouncementController::class, 'index']);

@@ -13,6 +13,7 @@ import { LocaleLink } from '@/components/ui/locale-link';
 import { PriceTag } from '@/components/ui/price';
 import { Prose } from '@/components/ui/prose';
 import { AddToCart } from '@/features/catalog/add-to-cart';
+import { FreeEnroll } from '@/features/courses/free-enroll';
 import { publicApi } from '@/lib/api/server';
 import { counted, date, duration, number } from '@/lib/format';
 import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
@@ -80,6 +81,8 @@ export default async function CoursePage(
   const course = await loadCourse(slug, locale);
 
   const purchasable = course.variants?.find((variant) => variant.is_purchasable) ?? null;
+  // A free course is joined directly; checkout cannot take a zero total.
+  const isFree = purchasable?.price?.amount_minor === 0;
   const previewLesson = course.sections
     ?.flatMap((section) => section.lessons)
     .find((lesson) => lesson.is_free_preview);
@@ -98,6 +101,7 @@ export default async function CoursePage(
               cover_url: course.cover_url,
               rating: course.rating ?? null,
               instructors: course.instructors,
+              price: purchasable?.price ?? null,
             }),
           ),
         }}
@@ -262,7 +266,9 @@ export default async function CoursePage(
               <PriceTag value={purchasable?.price ?? null} size="lg" />
 
               <div className="mt-5 space-y-3">
-                {purchasable ? (
+                {isFree ? (
+                  <FreeEnroll courseSlug={course.slug} />
+                ) : purchasable ? (
                   <AddToCart variants={course.variants ?? []} buttonLabel={t.course.enroll} hidePrice openCart />
                 ) : (
                   <Callout tone="info">

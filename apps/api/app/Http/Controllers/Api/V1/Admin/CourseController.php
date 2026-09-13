@@ -10,6 +10,7 @@ use App\Services\Content\PublishingService;
 use App\Services\Content\RevalidationService;
 use App\Services\Lms\CoursePricingService;
 use App\Support\CourseTracks;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,13 +44,13 @@ class CourseController extends Controller
     {
         $this->authorize('create', Course::class);
 
-        $validated = $request->validate($this->rules(null));
+        $validated = $request->validate($this->rules(null), self::MESSAGES);
         $course = DB::transaction(function () use ($validated) {
-            $course = Course::create(collect($validated)->except(['price_minor', 'seo'])->all() + ['status' => ContentStatus::Draft]);
+            $course = Course::create(collect($validated)->except(['price_minor', 'pricing', 'seo'])->all() + ['status' => ContentStatus::Draft]);
             if (isset($validated['seo'])) {
                 $course->seo()->create($validated['seo']);
             }
-            app(CoursePricingService::class)->set($course, $validated['price_minor'] ?? 150000);
+            $this->savePrice($course, $validated, creating: true);
 
             return $course;
         });
@@ -61,16 +62,14 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
 
-        $validated = $request->validate($this->rules($course->getKey()));
+        $validated = $request->validate($this->rules($course->getKey()), self::MESSAGES);
         $oldSlug = $course->slug;
         DB::transaction(function () use ($course, $validated) {
-            $course->update(collect($validated)->except(['seo', 'price_minor'])->all());
+            $course->update(collect($validated)->except(['seo', 'price_minor', 'pricing'])->all());
             if (isset($validated['seo'])) {
                 $course->seo()->updateOrCreate([], $validated['seo']);
             }
-            if (isset($validated['price_minor'])) {
-                app(CoursePricingService::class)->set($course, $validated['price_minor']);
-            }
+            $this->savePrice($course, $validated, creating: false);
         });
 
         try {
@@ -177,10 +176,57 @@ class CourseController extends Controller
         ]);
     }
 
+    private const MESSAGES = [
+        'pricing.offer_minor.lt' => 'The offer price must be lower than the regular price.',
+        'pricing.offer_ends_at.required_with' => 'Choose when the offer ends.',
+        'pricing.offer_ends_at.after' => 'The offer must end in the future.',
+        'pricing.offer_ends_at.before' => 'An offer can run for up to a year.',
+    ];
+
+    /**
+     * `pricing` is what the course editor sends: free, or a regular price with
+     * an optional offer. `price_minor` remains for callers that only ever set
+     * a plain price. A new course with neither gets the default price.
+     */
+    private function savePrice(Course $course, array $validated, bool $creating): void
+    {
+        $pricing = app(CoursePricingService::class);
+
+        if (isset($validated['pricing'])) {
+            $plan = $validated['pricing'];
+
+            if ($plan['type'] === 'free') {
+                $pricing->plan($course, 0, null, null);
+
+                return;
+            }
+
+            $pricing->plan(
+                $course,
+                (int) $plan['regular_minor'],
+                isset($plan['offer_minor']) ? (int) $plan['offer_minor'] : null,
+                isset($plan['offer_ends_at']) ? CarbonImmutable::parse($plan['offer_ends_at']) : null,
+            );
+
+            return;
+        }
+
+        if (isset($validated['price_minor'])) {
+            $pricing->set($course, $validated['price_minor']);
+        } elseif ($creating) {
+            $pricing->set($course, 150000);
+        }
+    }
+
     private function rules(?int $courseId): array
     {
         return [
             'price_minor' => ['sometimes', 'integer', 'min:1', 'max:100000000'],
+            'pricing' => ['sometimes', 'array:type,regular_minor,offer_minor,offer_ends_at'],
+            'pricing.type' => ['required_with:pricing', 'string', 'in:free,paid'],
+            'pricing.regular_minor' => ['exclude_if:pricing.type,free', 'required_with:pricing', 'integer', 'min:1', 'max:100000000'],
+            'pricing.offer_minor' => ['exclude_if:pricing.type,free', 'nullable', 'integer', 'min:1', 'lt:pricing.regular_minor'],
+            'pricing.offer_ends_at' => ['exclude_if:pricing.type,free', 'nullable', 'required_with:pricing.offer_minor', 'date', 'after:now', 'before:+1 year'],
             'slug' => [
                 $courseId ? 'sometimes' : 'required',
                 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',

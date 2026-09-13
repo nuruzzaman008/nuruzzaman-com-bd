@@ -3700,6 +3700,62 @@
         }
       }
     },
+    "/learn/{courseSlug}/enroll-free": {
+      "post": {
+        "tags": [
+          "Learn"
+        ],
+        "operationId": "enrollInFreeCourse",
+        "summary": "Join a free course",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Only for a published course whose current price is zero; checkout\nrefuses zero totals. Joining again while enrolled changes nothing, and\nan enrolment revoked by staff is not restored.\n",
+        "parameters": [
+          {
+            "name": "courseSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Already enrolled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeEnrollmentResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Enrolled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FreeEnrollmentResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/quizzes/{quizId}": {
       "get": {
         "tags": [
@@ -8616,6 +8672,13 @@
                   },
                   "access_duration_days": {
                     "type": "integer"
+                  },
+                  "price_minor": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "pricing": {
+                    "$ref": "#/components/schemas/CoursePricingWrite"
                   }
                 }
               }
@@ -8753,6 +8816,13 @@
                   },
                   "access_duration_days": {
                     "type": "integer"
+                  },
+                  "price_minor": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "pricing": {
+                    "$ref": "#/components/schemas/CoursePricingWrite"
                   },
                   "track": {
                     "type": [
@@ -12298,6 +12368,75 @@
               "null"
             ],
             "minimum": 0
+          },
+          "offer_ends_at": {
+            "description": "When a discounted price stops applying; null when it is not a time-limited offer.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "FreeEnrollmentResult": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "course_slug",
+              "status",
+              "learn_url"
+            ],
+            "properties": {
+              "course_slug": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "learn_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CoursePricingWrite": {
+        "type": "object",
+        "description": "A course's price as the editor sets it: free, or a regular price with an\noptional offer that ends at offer_ends_at, after which the regular price\napplies again by itself.\n",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "free",
+              "paid"
+            ]
+          },
+          "regular_minor": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "offer_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "offer_ends_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       },

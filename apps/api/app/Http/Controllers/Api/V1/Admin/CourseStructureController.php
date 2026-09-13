@@ -25,7 +25,7 @@ class CourseStructureController extends Controller
         return response()->json(['data' => ['saved' => true]]);
     }
 
-    public function show(Course $course): JsonResponse
+    public function show(Course $course, CoursePricingService $pricing): JsonResponse
     {
         $this->authorize('update', $course);
         $course->load('sections.lessons.assets', 'seo', 'cover');
@@ -45,6 +45,8 @@ class CourseStructureController extends Controller
             'cover_alt' => $course->cover?->alt_text,
             'seo' => $course->seo?->only(['meta_title', 'meta_title_en', 'meta_description', 'meta_description_en', 'focus_keyword', 'canonical_url', 'noindex', 'nofollow']),
             'price_minor' => $course->purchasableVariants()->with('prices')->get()->map(fn ($variant) => $variant->currentPrice()?->amount_minor)->filter(fn ($amount) => $amount !== null)->min(),
+            // Free, or the regular price and any offer still running.
+            'pricing' => $pricing->summary($course),
             'sections' => $course->sections->map(function ($section) {
                 return array_merge($section->toArray(), ['lessons' => $section->lessons->map(
                     fn (Lesson $lesson) => $lesson->makeVisible(['video_url', 'video_asset_id'])->toArray()

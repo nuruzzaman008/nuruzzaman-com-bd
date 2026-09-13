@@ -14,12 +14,13 @@ import { CoverArt } from '@/components/ui/cover-art';
 import { LessonAssessments } from '@/features/admin/lesson-assessments';
 import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
+import { CoursePricingFields, pricingFromForm, type CoursePricing } from '@/features/admin/course-pricing-fields';
 
 type Asset = { id: number; title: string; size_bytes: number };
 type Lesson = { id: number; title: string; slug: string; type: string; course_section_id: number; body_markdown: string | null; video_url: string | null; video_provider: string | null; video_asset_id: string | null; duration_seconds: number | null; position: number; drip_days: number | null; is_free_preview: boolean; assets: Asset[] };
 type Section = { id: number; title: string; position: number; drip_days: number | null; lessons: Lesson[] };
 type CourseSeo = { meta_title?: string | null; meta_title_en?: string | null; meta_description?: string | null; meta_description_en?: string | null; focus_keyword?: string | null; canonical_url?: string | null; noindex?: boolean; nofollow?: boolean };
-export type Curriculum = { id: number; title: string; slug: string; status: string; sequential: boolean; issues_certificate: boolean; description_markdown: string | null; subtitle?: string | null; track?: string | null; cover_media_id?: number | null; cover_url?: string | null; cover_alt?: string | null; price_minor?: number | null; seo?: CourseSeo | null; sections: Section[] };
+export type Curriculum = { id: number; title: string; slug: string; status: string; sequential: boolean; issues_certificate: boolean; description_markdown: string | null; subtitle?: string | null; track?: string | null; cover_media_id?: number | null; cover_url?: string | null; cover_alt?: string | null; price_minor?: number | null; pricing?: CoursePricing | null; seo?: CourseSeo | null; sections: Section[] };
 const input = 'mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-navy';
 
 /**
@@ -87,7 +88,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       await image.persistAlt();
       const response = await api<{ data: { id: number } }>(course ? base : '/admin/courses', { method: course ? 'PATCH' : 'POST', body: {
         title: data.get('title'), slug: data.get('slug'), subtitle: String(data.get('subtitle') ?? '').trim() || null,
-        description_markdown: data.get('description_markdown'), price_minor: Math.round(Number(data.get('price_bdt')) * 100), sequential: data.get('sequential') === 'on', issues_certificate: data.get('issues_certificate') === 'on',
+        description_markdown: data.get('description_markdown'), pricing: pricingFromForm(data), sequential: data.get('sequential') === 'on', issues_certificate: data.get('issues_certificate') === 'on',
         // Sent only when the image was actually changed. Left out, the course
         // keeps exactly what it has, so saving the words can never lose it.
         ...(image.changed ? { cover_media_id: image.cover?.id ?? null } : {}),
@@ -176,7 +177,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
         </figure>}
       />
       <div className="space-y-4 rounded-xl border border-line bg-white p-5">
-      <h2 className="text-lg font-bold text-navy">{bn ? 'কোর্সের তথ্য' : 'Course details'}</h2><label className="block">{bn ? 'কোর্সের দাম (৳)' : 'Course price (BDT)'}<input required name="price_bdt" type="number" min="1" max="1000000" step="0.01" defaultValue={(course?.price_minor ?? 150000) / 100} className={input} /></label>
+      <h2 className="text-lg font-bold text-navy">{bn ? 'কোর্সের তথ্য' : 'Course details'}</h2><CoursePricingFields initial={course?.pricing} fallbackMinor={course?.price_minor} />
       <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'কোর্সের নাম' : 'Course title'}<input required name="title" defaultValue={course?.title} className={input} /></label><label>URL slug<input required name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" defaultValue={course?.slug} placeholder="autocad-basics" className={input} /></label></div>
       <label className="block">{bn ? 'সাবটাইটেল' : 'Subtitle'}<input name="subtitle" maxLength={255} defaultValue={course?.subtitle ?? ''} className={input} /><span className="text-xs text-muted">{bn ? 'এক লাইনের সারসংক্ষেপ — কোর্সের কার্ডে দেখায়, আর meta description না থাকলে সার্চ ফলাফলেও।' : 'One line of summary — shown on the course card, and in search results when there is no meta description.'}</span></label>
       <div><label htmlFor="course-description" className="block">{bn ? 'বিস্তারিত (Markdown)' : 'Description (Markdown)'}</label><MarkdownTextarea id="course-description" name="description_markdown" rows={12} defaultValue={course?.description_markdown ?? ''} className="min-h-72 text-navy" /></div>

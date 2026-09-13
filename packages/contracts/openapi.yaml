@@ -165,6 +165,35 @@ components:
         currency: { type: string, examples: ['BDT'] }
         amount_minor: { type: integer, minimum: 0 }
         compare_at_minor: { type: [integer, 'null'], minimum: 0 }
+        offer_ends_at:
+          description: When a discounted price stops applying; null when it is not a time-limited offer.
+          type: [string, 'null']
+          format: date-time
+
+    FreeEnrollmentResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [course_slug, status, learn_url]
+          properties:
+            course_slug: { type: string }
+            status: { type: string }
+            learn_url: { type: string }
+
+    CoursePricingWrite:
+      type: object
+      description: |
+        A course's price as the editor sets it: free, or a regular price with an
+        optional offer that ends at offer_ends_at, after which the regular price
+        applies again by itself.
+      required: [type]
+      properties:
+        type: { type: string, enum: [free, paid] }
+        regular_minor: { type: integer, minimum: 1 }
+        offer_minor: { type: [integer, 'null'], minimum: 1 }
+        offer_ends_at: { type: [string, 'null'], format: date-time }
 
     Author:
       type: object
@@ -2702,6 +2731,33 @@ paths:
                   data: { $ref: '#/components/schemas/CourseReview' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /learn/{courseSlug}/enroll-free:
+    post:
+      tags: [Learn]
+      operationId: enrollInFreeCourse
+      summary: Join a free course
+      security: [{ sessionCookie: [] }]
+      description: |
+        Only for a published course whose current price is zero; checkout
+        refuses zero totals. Joining again while enrolled changes nothing, and
+        an enrolment revoked by staff is not restored.
+      parameters:
+        - { name: courseSlug, in: path, required: true, schema: { type: string } }
+      responses:
+        '201':
+          description: Enrolled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FreeEnrollmentResult' }
+        '200':
+          description: Already enrolled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FreeEnrollmentResult' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
   /quizzes/{quizId}:
     get:
       tags: [Learn]
@@ -4769,6 +4825,8 @@ paths:
                 pass_percentage: { type: integer }
                 issues_certificate: { type: boolean }
                 access_duration_days: { type: integer }
+                price_minor: { type: integer, minimum: 1 }
+                pricing: { $ref: '#/components/schemas/CoursePricingWrite' }
       responses:
         '201':
           description: OK
@@ -4825,6 +4883,8 @@ paths:
                 pass_percentage: { type: integer }
                 issues_certificate: { type: boolean }
                 access_duration_days: { type: integer }
+                price_minor: { type: integer, minimum: 1 }
+                pricing: { $ref: '#/components/schemas/CoursePricingWrite' }
                 track: { type: [string, 'null'] }
                 seo: { $ref: '#/components/schemas/SeoWriteRequest' }
       responses:

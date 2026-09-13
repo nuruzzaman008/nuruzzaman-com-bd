@@ -71,6 +71,14 @@ class PricingService
             return new CartLine($variant, $quantity, null, Money::zero($currency), 'Price currency does not match the cart currency.');
         }
 
+        if ($price->amount_minor === 0) {
+            // A free course is joined from its own page. An order for nothing
+            // would stall at the payment gateway, which refuses a zero amount.
+            return new CartLine($variant, $quantity, null, Money::zero($currency), $variant->course_id
+                ? 'This course is free. Enrol from the course page instead of checking out.'
+                : 'This item is free and cannot be bought.');
+        }
+
         $unit = Money::minor($price->amount_minor, $price->currency);
 
         return new CartLine($variant, $quantity, $unit, $unit->times($quantity));
