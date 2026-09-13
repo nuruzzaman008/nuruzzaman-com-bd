@@ -696,6 +696,12 @@ const bn = {
     keywordUniqueHint:
       'একই কিওয়ার্ডে দুটি পাতা থাকলে সেগুলো নিজেরাই একে অপরের সঙ্গে প্রতিযোগিতা করে; সার্চ ইঞ্জিন একটিকে বেছে নেয়, বাকিটির মান নষ্ট হয়।',
 
+    featuredImageYes: 'ফিচার্ড ইমেজ দেওয়া আছে, alt টেক্সটসহ।',
+    featuredImageNo: 'কোনো ফিচার্ড ইমেজ নেই।',
+    featuredImageNoAlt: 'ফিচার্ড ইমেজ আছে, কিন্তু তার alt টেক্সট নেই।',
+    featuredImageHint:
+      'সোশ্যাল শেয়ার কার্ড, সার্চ ফলাফলের থাম্বনেইল আর তালিকায় এই ছবিটিই দেখানো হয়; না থাকলে সাইটের সাধারণ ছবি চলে যায়। এডিটর থেকে আপলোড করুন।',
+
     tocYes: 'লেখার ভেতরে সূচিপত্র (অভ্যন্তরীণ লিংক) আছে।',
     tocNo: 'লেখাটি লম্বা, কিন্তু কোনো সূচিপত্র নেই।',
     tocHint:
@@ -1375,14 +1381,13 @@ const bn = {
       featuredImage: 'ফিচার্ড ইমেজ',
       featuredImageHint:
         'প্রোডাক্ট পেজ, তালিকা এবং সোশ্যাল শেয়ার কার্ডে এই ছবিটিই ব্যবহৃত হয়।',
-      chooseImage: 'মিডিয়া লাইব্রেরি থেকে বাছুন',
       noImage: 'কোনো ছবি নেই',
-      mediaUnavailable: 'মিডিয়া লাইব্রেরি পড়া যায়নি — এর জন্য “media.manage” অনুমতি লাগে।',
-      mediaEmpty: 'মিডিয়া লাইব্রেরি খালি — নিচ থেকে কম্পিউটারের ছবি আপলোড করুন।',
       uploadImage: 'কম্পিউটার থেকে আপলোড',
+      removeImage: 'ছবি সরান',
       uploading: 'আপলোড হচ্ছে…',
       uploadAlt: 'ছবির বর্ণনা (alt text)',
-      uploadAltHint: 'স্ক্রিন রিডার ও সার্চ ইঞ্জিন এটি পড়ে — ছবিতে কী আছে সেটি লিখুন।',
+      uploadAltHint:
+        'স্ক্রিন রিডার ও সার্চ ইঞ্জিন এটি পড়ে — ছবিতে কী আছে সেটি লিখুন। বদলে “সংরক্ষণ করুন” চাপলে বর্তমান ছবিতেও বসে যায়।',
       uploadHint:
         'JPG, PNG বা WebP। বড় ছবি আপলোডের আগে আপনার ব্রাউজারেই ছোট করা হয় (লম্বা দিকে সর্বোচ্চ ২৪০০px), যাতে সার্ভারের ২ MB সীমার মধ্যে থাকে।',
       uploadDone: 'ছবি আপলোড হয়ে বাছাই হয়েছে। স্থায়ী করতে “সংরক্ষণ করুন” চাপুন।',
@@ -1391,7 +1396,7 @@ const bn = {
       uploadTooLarge: 'ছোট করার পরও ছবিটি ২ MB-এর বেশি — সার্ভার এর বেশি নেয় না। অন্য একটি ছবি বেছে নিন।',
       uploadUnreadable: 'ছবিটি পড়া যায়নি — ফাইলটি নষ্ট বা অন্য ফরম্যাটের হতে পারে।',
       uploadFailed: 'ছবি আপলোড করা যায়নি।',
-      altMissing: 'এই ছবির alt লেখা নেই। মিডিয়া লাইব্রেরিতে গিয়ে alt যোগ করুন; SEO ও স্ক্রিন রিডার—দুটোতেই এটি দরকার।',
+      altMissing: 'এই ছবির alt টেক্সট নেই — উপরের বর্ণনার ঘরে লিখে “সংরক্ষণ করুন” চাপুন।',
       seoLink: 'SEO বিশ্লেষণ',
       viewPublic: 'সাইটে দেখুন',
       save: 'সংরক্ষণ করুন',
@@ -2283,6 +2288,12 @@ const en: Dictionary = {
     keywordUniqueHint:
       'Two pages on one keyword compete with each other; the search engine picks one and the other page’s value is wasted.',
 
+    featuredImageYes: 'A featured image is set, with alt text.',
+    featuredImageNo: 'No featured image is set.',
+    featuredImageNoAlt: 'A featured image is set, but it has no alt text.',
+    featuredImageHint:
+      'It is the picture on social share cards, search result thumbnails and listings; without one, the site’s generic image goes out instead. Upload one in the editor.',
+
     tocYes: 'The piece has a table of contents (links into its own headings).',
     tocNo: 'The piece is long but has no table of contents.',
     tocHint:
@@ -2946,14 +2957,13 @@ const en: Dictionary = {
       featuredImage: 'Featured image',
       featuredImageHint:
         'Used on the product page, in listings and on the social share card.',
-      chooseImage: 'Choose from the media library',
       noImage: 'No image',
-      mediaUnavailable: 'The media library could not be read — that needs the “media.manage” permission.',
-      mediaEmpty: 'The media library is empty — upload an image from your computer below.',
       uploadImage: 'Upload from computer',
+      removeImage: 'Remove image',
       uploading: 'Uploading…',
       uploadAlt: 'Image description (alt text)',
-      uploadAltHint: 'Read by screen readers and search engines — say what the image shows.',
+      uploadAltHint:
+        'Read by screen readers and search engines — say what the image shows. Changing it and saving updates the current image too.',
       uploadHint:
         'JPG, PNG or WebP. Large images are resized in your browser before upload (up to 2400px on the long edge) to fit the server’s 2 MB limit.',
       uploadDone: 'Image uploaded and selected. Click “Save changes” to keep it.',
@@ -2963,8 +2973,7 @@ const en: Dictionary = {
         'Even after resizing, the image is over 2 MB, which the server will not accept. Choose another image.',
       uploadUnreadable: 'The image could not be read — the file may be damaged or in another format.',
       uploadFailed: 'The image could not be uploaded.',
-      altMissing:
-        'This image has no alt text. Add it in the media library: both search engines and screen readers need it.',
+      altMissing: 'This image has no alt text — write a description above and click “Save changes”.',
       seoLink: 'SEO analysis',
       viewPublic: 'View on the site',
       save: 'Save changes',

@@ -38,26 +38,24 @@ const product: EditableProduct = {
   description_markdown: '## A heading\n\nSome prose.',
   cover_media_id: 4,
   cover_url: 'https://example.test/cover.webp',
+  cover_alt: 'The NB Tools ribbon in AutoCAD',
   is_price_public: true,
 };
 
-/** The admin media index answers with a paginator, not a nested envelope. */
-function withMedia(list: unknown[] = []) {
-  request.mockImplementation((path: string, options?: { method?: string }) =>
-    options?.method ? Promise.resolve({ data: {} }) : Promise.resolve({ data: list }),
-  );
+function mediaPatch() {
+  return request.mock.calls.find(([path]) => String(path).startsWith('/admin/media/'));
 }
 
 beforeEach(() => {
   request.mockReset();
-  withMedia();
+  request.mockResolvedValue({ data: {} });
 });
 
 describe('ProductEditor', () => {
-  it('edits the Markdown source, never the rendered HTML', async () => {
+  it('edits the Markdown source, never the rendered HTML', () => {
     render(<ProductEditor initial={product} />);
 
-    const body = (await screen.findByLabelText(/Description/)) as HTMLTextAreaElement;
+    const body = screen.getByLabelText(/Description/) as HTMLTextAreaElement;
 
     // Loading description_html here would save the rendering back over its own
     // source, and the next edit would render the rendering.
@@ -65,19 +63,17 @@ describe('ProductEditor', () => {
     expect(body.value).not.toContain('<h2');
   });
 
-  it('shows the stored Bengali copy rather than a translated reading', async () => {
+  it('shows the stored Bengali copy rather than a translated reading', () => {
     render(<ProductEditor initial={product} />);
 
-    expect(((await screen.findByLabelText(/Name/)) as HTMLInputElement).value).toBe(
-      'অটোক্যাড টুলস',
-    );
+    expect((screen.getByLabelText(/^Name/) as HTMLInputElement).value).toBe('অটোক্যাড টুলস');
     expect((screen.getByLabelText(/Tagline/) as HTMLInputElement).value).toBe('বাংলা ট্যাগলাইন');
   });
 
   it('sends every edited field to the product endpoint', async () => {
     render(<ProductEditor initial={product} />);
 
-    fireEvent.change(await screen.findByLabelText(/Name/), { target: { value: 'New name' } });
+    fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: 'New name' } });
     fireEvent.change(screen.getByLabelText(/Slug/), { target: { value: 'new-slug' } });
     fireEvent.change(screen.getByLabelText(/Description/), { target: { value: 'New body' } });
     fireEvent.click(screen.getByLabelText(/Publish the price/));
@@ -102,33 +98,29 @@ describe('ProductEditor', () => {
     expect(await screen.findByText('Changes saved.')).toBeInTheDocument();
   });
 
-  it('keeps the featured image unless it is changed', async () => {
-    withMedia([
-      { id: 4, url: 'https://example.test/cover.webp', original_name: 'cover.webp', alt_text: 'A cover' },
-      { id: 9, url: 'https://example.test/other.webp', original_name: 'other.webp', alt_text: 'Another' },
-    ]);
-
+  it('no longer offers a media-library dropdown', () => {
     render(<ProductEditor initial={product} />);
 
-    fireEvent.change(await screen.findByLabelText(/Choose from the media library/), {
-      target: { value: '9' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
-
-    await waitFor(() =>
-      expect(request).toHaveBeenCalledWith(
-        '/admin/products/12',
-        expect.objectContaining({ body: expect.objectContaining({ cover_media_id: 9 }) }),
-      ),
-    );
+    expect(screen.queryByText(/media library/i)).not.toBeInTheDocument();
+    // The only select left in the form is the product type.
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
   });
 
-  it('can clear the featured image', async () => {
+  it('shows the current featured image with its upload control', () => {
     render(<ProductEditor initial={product} />);
 
-    fireEvent.change(await screen.findByLabelText(/Choose from the media library/), {
-      target: { value: '' },
-    });
+    expect(screen.getByRole('img')).toHaveAttribute('src', 'https://example.test/cover.webp');
+    expect(screen.getByRole('button', { name: 'Upload from computer' })).toBeInTheDocument();
+  });
+
+  it('removes the featured image', async () => {
+    render(<ProductEditor initial={product} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove image' }));
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove image' })).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
@@ -141,19 +133,56 @@ describe('ProductEditor', () => {
     );
   });
 
-  it('warns when the chosen image has no alt text', async () => {
-    withMedia([
-      { id: 4, url: 'https://example.test/cover.webp', original_name: 'cover.webp', alt_text: null },
-    ]);
-
+  it('writes a changed description to the image itself', async () => {
     render(<ProductEditor initial={product} />);
 
-    expect(await screen.findByText(/no alt text/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Image description/), {
+      target: { value: 'NB Tools ribbon with the footing design panel open' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('/admin/media/4', {
+        method: 'PATCH',
+        body: { alt_text: 'NB Tools ribbon with the footing design panel open' },
+      }),
+    );
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('/admin/products/12', expect.anything()),
+    );
+  });
+
+  it('leaves the image alone when its description was not touched', async () => {
+    render(<ProductEditor initial={product} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(await screen.findByText('Changes saved.')).toBeInTheDocument();
+    expect(mediaPatch()).toBeUndefined();
+  });
+
+  it('flags an undescribed image and fills it from the field on save', async () => {
+    render(<ProductEditor initial={{ ...product, cover_alt: null }} />);
+
+    expect(screen.getByText(/no alt text/i)).toBeInTheDocument();
+    // The field offers the product's name, so saving is enough to fix it.
+    expect((screen.getByLabelText(/Image description/) as HTMLInputElement).value).toBe(
+      'অটোক্যাড টুলস',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('/admin/media/4', {
+        method: 'PATCH',
+        body: { alt_text: 'অটোক্যাড টুলস' },
+      }),
+    );
+    await waitFor(() => expect(screen.queryByText(/no alt text/i)).not.toBeInTheDocument());
   });
 
   it('puts a rejected field next to its input rather than in a banner', async () => {
     render(<ProductEditor initial={product} />);
-    await screen.findByLabelText(/Name/);
 
     request.mockRejectedValueOnce(
       new FakeApiError(422, 'The given data was invalid.', {
@@ -169,35 +198,11 @@ describe('ProductEditor', () => {
 
   it('does not claim success when the save fails outright', async () => {
     render(<ProductEditor initial={product} />);
-    await screen.findByLabelText(/Name/);
 
     request.mockRejectedValueOnce(new Error('Could not reach the API.'));
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the API.');
     expect(screen.queryByText('Changes saved.')).not.toBeInTheDocument();
-  });
-
-  it('still renders when the media library is out of reach', async () => {
-    request.mockImplementation((path: string, options?: { method?: string }) =>
-      options?.method ? Promise.resolve({ data: {} }) : Promise.reject(new FakeApiError(403, 'Forbidden.')),
-    );
-
-    render(<ProductEditor initial={product} />);
-
-    expect(await screen.findByText(/media.manage/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Name/)).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
-
-  it('does not blame permissions for a library that is merely empty', async () => {
-    withMedia([]);
-
-    render(<ProductEditor initial={product} />);
-
-    // Telling an admin they lack a permission they hold sends them looking for
-    // a problem that is not there.
-    expect(await screen.findByText(/library is empty/)).toBeInTheDocument();
-    expect(screen.queryByText(/media.manage/)).not.toBeInTheDocument();
   });
 });

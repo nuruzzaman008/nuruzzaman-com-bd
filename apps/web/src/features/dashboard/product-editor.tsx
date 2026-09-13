@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
@@ -24,16 +24,13 @@ export type EditableProduct = {
   description_markdown?: string | null;
   cover_media_id?: number | null;
   cover_url?: string | null;
+  cover_alt?: string | null;
   is_price_public?: boolean;
 };
 
-type Medium = {
-  id: number;
-  url: string | null;
-  original_name: string | null;
-  alt_text: string | null;
-  mime_type?: string | null;
-};
+type Medium = { id: number; url: string | null; alt_text: string | null };
+
+type Cover = { id: number; url: string | null; alt: string | null };
 
 /** The values ProductType accepts; the API refuses anything else. */
 const PRODUCT_TYPES = [
@@ -59,51 +56,30 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
   const { t } = useLocale();
   const router = useRouter();
 
-  const [media, setMedia] = useState<Medium[]>([]);
-  // Distinguished from an empty library, so the permission hint is only shown
-  // to someone who actually lacks the permission - not during the first render
-  // and not to an admin whose library is simply empty.
-  const [mediaState, setMediaState] = useState<'loading' | 'ready' | 'denied'>('loading');
-  const [coverId, setCoverId] = useState<number | null>(initial.cover_media_id ?? null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
-  // Uploading from the computer. The alt text starts as the product's name so
-  // an upload is never anonymous, and can be rewritten to describe the image.
+  // The featured image. Set by uploading and cleared with Remove; the library
+  // chooser it replaced only listed files, and nothing could put any there.
+  const [cover, setCover] = useState<Cover | null>(
+    initial.cover_media_id
+      ? { id: initial.cover_media_id, url: initial.cover_url ?? null, alt: initial.cover_alt ?? null }
+      : null,
+  );
+
+  // Describes the current image, and the next one uploaded. It starts as the
+  // image's own alt text, or the product's name where there is none, so an
+  // image is never left undescribed without the admin being able to see it.
+  const [altText, setAltText] = useState(initial.cover_alt ?? initial.name_raw ?? initial.name);
+
   const fileInput = useRef<HTMLInputElement>(null);
-  const [altText, setAltText] = useState(initial.name_raw ?? initial.name);
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState<{
     tone: 'success' | 'danger';
     text: string;
   } | null>(null);
-
-  const loadMedia = useCallback(async () => {
-    try {
-      // The admin media index answers with a paginator, so the list is at the
-      // top-level `data` key and there is no second envelope.
-      const response = await api<{ data: Medium[] }>('/admin/media');
-      setMedia(response.data ?? []);
-      setMediaState('ready');
-    } catch {
-      // The picker needs `media.manage`, which a commerce-only admin may not
-      // hold. A chooser that cannot list its options is not worth an error
-      // banner across the whole form; the current image still shows.
-      setMedia([]);
-      setMediaState('denied');
-    }
-  }, []);
-
-  useEffect(() => {
-    void (async () => {
-      await loadMedia();
-    })();
-  }, [loadMedia]);
-
-  const chosen = media.find((item) => item.id === coverId);
-  const preview = chosen?.url ?? (coverId === initial.cover_media_id ? initial.cover_url : null);
 
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -143,15 +119,14 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
       const response = await api<{ data: Medium }>('/admin/media', { method: 'POST', body });
       const uploaded = response.data;
 
-      setMedia((current) => [uploaded, ...current.filter((item) => item.id !== uploaded.id)]);
-      setMediaState('ready');
       // Selected, not saved: the form is saved as a whole, and saving behind
       // the admin's back would also write any half-finished edits above.
-      setCoverId(uploaded.id);
+      setCover({ id: uploaded.id, url: uploaded.url, alt: uploaded.alt_text });
+      setAltText(uploaded.alt_text ?? '');
       setUploadNotice({ tone: 'success', text: t.admin.products.uploadDone });
     } catch (caught) {
       // The server's own reason is worth showing: "The file failed to upload"
-      // from PHP reads very differently from a validation message about type.
+      // from PHP reads very differently from a refusal on permission.
       const reason =
         caught instanceof ApiError
           ? (caught.fields?.file?.[0] ?? caught.message)
@@ -168,6 +143,11 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
     }
   }
 
+  function removeCover() {
+    setCover(null);
+    setUploadNotice(null);
+  }
+
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -178,6 +158,19 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
     setErrors({});
 
     try {
+      // The description belongs to the image, not the product, so a change to
+      // it is written to the image - and only a change: an untouched field
+      // must not rewrite anything.
+      const alt = altText.trim();
+
+      if (cover && alt !== (cover.alt ?? '')) {
+        await api(`/admin/media/${cover.id}`, {
+          method: 'PATCH',
+          body: { alt_text: alt || null },
+        });
+        setCover({ ...cover, alt: alt || null });
+      }
+
       await api(`/admin/products/${initial.id}`, {
         method: 'PATCH',
         body: {
@@ -186,7 +179,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
           type: String(form.get('type') ?? ''),
           tagline: String(form.get('tagline') ?? '').trim() || null,
           description_markdown: String(form.get('description_markdown') ?? '').trim() || null,
-          cover_media_id: coverId,
+          cover_media_id: cover?.id ?? null,
           is_price_public: form.get('is_price_public') === 'on',
         },
       });
@@ -314,58 +307,31 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
         <h2 className="text-lg font-bold text-navy">{t.admin.products.featuredImage}</h2>
         <p className="mt-1 text-sm text-muted">{t.admin.products.featuredImageHint}</p>
 
-        <div className="mt-4 flex flex-wrap items-start gap-5">
-          {preview ? (
-            /* Not next/image: next/image only allows the media host when
-               NEXT_PUBLIC_MEDIA_HOST was set at build time, and a plain img
-               shows a just-uploaded file in every environment. */
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={preview}
-              alt={chosen?.alt_text ?? ''}
-              className="size-28 rounded-lg border border-line object-cover"
-            />
-          ) : (
-            <div className="grid size-28 place-items-center rounded-lg border border-dashed border-line p-2 text-center text-xs text-muted">
-              {t.admin.products.noImage}
-            </div>
-          )}
-
-          <Field
-            label={t.admin.products.chooseImage}
-            hint={
-              mediaState === 'denied'
-                ? t.admin.products.mediaUnavailable
-                : mediaState === 'ready' && media.length === 0
-                  ? t.admin.products.mediaEmpty
-                  : undefined
-            }
-            error={errors.cover_media_id?.[0]}
-            className="min-w-64 flex-1"
-          >
-            {(props) => (
-              <Select
-                {...props}
-                value={coverId ?? ''}
-                onChange={(event) =>
-                  setCoverId(event.target.value ? Number(event.target.value) : null)
-                }
-              >
-                <option value="">{t.admin.products.noImage}</option>
-                {media.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.alt_text || item.original_name || `#${item.id}`}
-                  </option>
-                ))}
-              </Select>
+        <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] md:items-start">
+          <div>
+            {cover?.url ? (
+              /* Not next/image: next/image only allows the media host when
+                 NEXT_PUBLIC_MEDIA_HOST was set at build time, and a plain img
+                 shows a just-uploaded file in every environment. Contained,
+                 not cropped, so the whole picture can be judged. */
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cover.url}
+                alt={cover.alt ?? ''}
+                className="aspect-video w-full rounded-lg border border-line bg-surface object-contain"
+              />
+            ) : (
+              <div className="grid aspect-video w-full place-items-center rounded-lg border border-dashed border-line bg-surface p-4 text-center text-sm text-muted">
+                {t.admin.products.noImage}
+              </div>
             )}
-          </Field>
-        </div>
 
-        {/* Uploading needs media.manage too; without it the API would refuse,
-            so the control is not offered rather than offered and then failed. */}
-        {mediaState !== 'denied' ? (
-          <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+            {errors.cover_media_id?.[0] ? (
+              <p className="mt-2 text-sm font-medium text-danger">{errors.cover_media_id[0]}</p>
+            ) : null}
+          </div>
+
+          <div className="space-y-4">
             <Field label={t.admin.products.uploadAlt} hint={t.admin.products.uploadAltHint}>
               {(props) => (
                 <Input
@@ -383,7 +349,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
               )}
             </Field>
 
-            <div className="sm:pt-7">
+            <div className="flex flex-wrap items-center gap-3">
               <input
                 ref={fileInput}
                 type="file"
@@ -401,11 +367,23 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
               >
                 {uploading ? t.admin.products.uploading : t.admin.products.uploadImage}
               </Button>
+
+              {cover ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-danger"
+                  disabled={uploading}
+                  onClick={removeCover}
+                >
+                  {t.admin.products.removeImage}
+                </Button>
+              ) : null}
             </div>
 
-            <p className="text-xs text-muted sm:col-span-2">{t.admin.products.uploadHint}</p>
+            <p className="text-xs text-muted">{t.admin.products.uploadHint}</p>
           </div>
-        ) : null}
+        </div>
 
         {uploadNotice ? (
           <Callout
@@ -417,7 +395,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
           </Callout>
         ) : null}
 
-        {chosen && !chosen.alt_text ? (
+        {cover && !cover.alt ? (
           <Callout tone="warning" className="mt-4">
             {t.admin.products.altMissing}
           </Callout>

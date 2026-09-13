@@ -52,6 +52,13 @@ export default async function ProductSeoPage(props: { params: Promise<{ id: stri
           kind="product"
           endpoint={`/admin/products/${id}`}
           recordId={product.id}
+          // The cover is what share cards, listings and result thumbnails show,
+          // so it is part of the page's search presence. Set in the editor.
+          featuredImage={
+            product.cover_url
+              ? { alt: (product as { cover_alt?: string | null }).cover_alt ?? null }
+              : null
+          }
           title={product.name}
           slug={product.slug}
           // The analysis reads the product description, which the API returns as

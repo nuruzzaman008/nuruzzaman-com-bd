@@ -72,6 +72,13 @@ export type SeoInput = {
    * rather than reported as a pass, so it never flickers green and back.
    */
   keywordUsedBy?: { title: string }[];
+  /**
+   * The featured image, for a record whose editor can set one.
+   *
+   * `undefined` skips the check - a surface with no way to set an image must
+   * not be failed for lacking one - and `null` means none is set.
+   */
+  featuredImage?: { alt: string | null } | null;
 };
 
 /** Strips HTML tags and markdown syntax down to readable prose. */
@@ -268,8 +275,12 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
         : say.keywordInHeadingNo,
     });
 
-    if (alts.length > 0) {
-      const inAlt = alts.some((alt) => contains(alt, keyword));
+    // The featured image's alt counts as well: it is an image on the page, and
+    // the one most likely to be shown beside it elsewhere.
+    const altPool = input.featuredImage?.alt ? [...alts, input.featuredImage.alt] : alts;
+
+    if (altPool.length > 0) {
+      const inAlt = altPool.some((alt) => contains(alt, keyword));
       additional.push({
         id: 'keyword-in-alt',
         status: inAlt ? 'pass' : 'warn',
@@ -318,6 +329,25 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
       : say.externalLinksNo,
     hint: say.externalLinksHint,
   });
+
+  // The featured image is what a share card, a listing and a search result
+  // thumbnail show, so a page without one goes out with the site's generic
+  // image instead. Missing is a failure; present but undescribed is not.
+  if (input.featuredImage !== undefined) {
+    const featured = input.featuredImage;
+    const described = Boolean(featured?.alt?.trim());
+
+    additional.push({
+      id: 'featured-image',
+      status: !featured ? 'fail' : described ? 'pass' : 'warn',
+      message: !featured
+        ? say.featuredImageNo
+        : described
+          ? say.featuredImageYes
+          : say.featuredImageNoAlt,
+      hint: say.featuredImageHint,
+    });
+  }
 
   // Only when the API has answered. Asking is the panel's job, not this
   // function's, and an unanswered question is not a pass.

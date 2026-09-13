@@ -26,6 +26,7 @@ export function SeoEditor({
   kind,
   endpoint,
   recordId,
+  featuredImage,
   title,
   slug,
   body,
@@ -37,6 +38,8 @@ export function SeoEditor({
   endpoint: string;
   /** This record's id, so the keyword-reuse check can exclude it. */
   recordId?: number;
+  /** The record's featured image, where one can be set; omit to skip the check. */
+  featuredImage?: { alt: string | null } | null;
   title: string;
   slug: string;
   body: string;
@@ -206,6 +209,7 @@ export function SeoEditor({
           formId="seo-editor"
           kind={kind}
           recordId={recordId}
+          featuredImage={featuredImage}
           fields={{
             title: 'title',
             slug: 'slug',

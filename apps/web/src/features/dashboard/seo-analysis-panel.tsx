@@ -55,6 +55,7 @@ export function SeoAnalysisPanel({
   formId,
   kind,
   recordId,
+  featuredImage,
   fields,
 }: {
   /** The editor form to read from. */
@@ -65,6 +66,11 @@ export function SeoAnalysisPanel({
    * than reporting the record's own keyword back as a clash with itself.
    */
   recordId?: number;
+  /**
+   * The featured image, where the editor can set one. Left out, the check is
+   * skipped rather than failing a page that has no way to add an image.
+   */
+  featuredImage?: { alt: string | null } | null;
   /** Field names in that form, since each editor names them differently. */
   fields: {
     title: string;
@@ -154,11 +160,12 @@ export function SeoAnalysisPanel({
             {
               ...values,
               keywordUsedBy: usedBy?.keyword === keyword ? usedBy.rows : undefined,
+              featuredImage,
             },
             t,
           )
         : null,
-    [values, usedBy, keyword, t],
+    [values, usedBy, keyword, featuredImage, t],
   );
 
   if (!analysis) {

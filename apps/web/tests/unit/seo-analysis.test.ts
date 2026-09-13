@@ -148,6 +148,39 @@ ${'শব্দ '.repeat(1200)}`,
     expect(find(withToc, 'table-of-contents')?.status).toBe('pass');
   });
 
+  it('checks the featured image only where one can be set', () => {
+    // No featuredImage given: a surface that cannot set one is not failed for it.
+    expect(find(base, 'featured-image')).toBeUndefined();
+
+    expect(find({ ...base, featuredImage: null }, 'featured-image')?.status).toBe('fail');
+    expect(find({ ...base, featuredImage: { alt: null } }, 'featured-image')?.status).toBe('warn');
+    expect(find({ ...base, featuredImage: { alt: '   ' } }, 'featured-image')?.status).toBe('warn');
+    expect(
+      find({ ...base, featuredImage: { alt: 'পাঞ্চিং শিয়ার চিত্র' } }, 'featured-image')?.status,
+    ).toBe('pass');
+  });
+
+  it('counts the featured image alt towards the keyword-in-alt check', () => {
+    const prose = { ...base, content: 'শুধু লেখা, কোনো ছবি নেই।' };
+
+    // No image anywhere: nothing to check.
+    expect(find(prose, 'keyword-in-alt')).toBeUndefined();
+
+    expect(
+      find({ ...prose, featuredImage: { alt: 'পাঞ্চিং শিয়ার ডায়াগ্রাম' } }, 'keyword-in-alt')?.status,
+    ).toBe('pass');
+    expect(find({ ...prose, featuredImage: { alt: 'অন্য কিছু' } }, 'keyword-in-alt')?.status).toBe(
+      'warn',
+    );
+  });
+
+  it('scores a page without a featured image lower than one with it', () => {
+    const without = analyzeSeo({ ...base, featuredImage: null }, t);
+    const withImage = analyzeSeo({ ...base, featuredImage: { alt: 'পাঞ্চিং শিয়ার চিত্র' } }, t);
+
+    expect(withImage.score).toBeGreaterThan(without.score);
+  });
+
   it('scores a warning as half a pass, not as a failure', () => {
     const strong = analyzeSeo({
       ...base,

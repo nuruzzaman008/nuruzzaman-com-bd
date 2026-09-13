@@ -43,25 +43,18 @@ const product: EditableProduct = {
   description_markdown: 'Some prose.',
   cover_media_id: null,
   cover_url: null,
+  cover_alt: null,
   is_price_public: true,
 };
 
 const uploaded = {
   id: 42,
   url: 'https://api.example.test/storage/uploads/2026/09/cover.webp',
-  original_name: 'cover.webp',
   alt_text: 'অটোক্যাড টুলস',
 };
 
-function route({
-  denied = false,
-  uploadError,
-}: { denied?: boolean; uploadError?: Error } = {}) {
+function route(uploadError?: Error) {
   request.mockImplementation((path: string, options?: { method?: string }) => {
-    if (path === '/admin/media' && !options?.method) {
-      return denied ? Promise.reject(new FakeApiError(403, 'Forbidden.')) : Promise.resolve({ data: [] });
-    }
-
     if (path === '/admin/media' && options?.method === 'POST') {
       return uploadError ? Promise.reject(uploadError) : Promise.resolve({ data: uploaded });
     }
@@ -77,8 +70,7 @@ function uploadCall() {
 }
 
 async function choose(file: File) {
-  // Waits for the library to load, which is when the control appears.
-  const input = await screen.findByLabelText('Upload from computer');
+  const input = screen.getByLabelText('Upload from computer');
   // Inside act, so the state set once the file has been prepared lands within
   // it - not in the gap before the next query starts waiting, which is where
   // an early refusal would otherwise put it.
@@ -87,6 +79,8 @@ async function choose(file: File) {
   });
 }
 
+const photo = () => new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
+
 beforeEach(() => {
   request.mockReset();
   prepare.mockReset();
@@ -94,12 +88,20 @@ beforeEach(() => {
 });
 
 describe('ProductEditor upload from computer', () => {
-  it('uploads the chosen image with its description and selects it', async () => {
-    const photo = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
-    prepare.mockResolvedValue({ ok: true, file: photo, resized: false });
+  it('needs nothing loaded first: the control is there straight away', () => {
+    render(<ProductEditor initial={product} />);
+
+    expect(screen.getByRole('button', { name: 'Upload from computer' })).toBeEnabled();
+    // No library request any more; the page does not wait on one.
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('uploads the chosen image with its description and shows it', async () => {
+    const file = photo();
+    prepare.mockResolvedValue({ ok: true, file, resized: false });
 
     render(<ProductEditor initial={product} />);
-    await choose(photo);
+    await choose(file);
 
     await waitFor(() => expect(uploadCall()).toBeDefined());
     const body = uploadCall()![1].body as FormData;
@@ -114,11 +116,11 @@ describe('ProductEditor upload from computer', () => {
   });
 
   it('saves the uploaded image as the featured image', async () => {
-    const photo = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
-    prepare.mockResolvedValue({ ok: true, file: photo, resized: false });
+    const file = photo();
+    prepare.mockResolvedValue({ ok: true, file, resized: false });
 
     render(<ProductEditor initial={product} />);
-    await choose(photo);
+    await choose(file);
     await screen.findByText(/Image uploaded and selected/);
 
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -130,6 +132,31 @@ describe('ProductEditor upload from computer', () => {
           method: 'PATCH',
           body: expect.objectContaining({ cover_media_id: 42 }),
         }),
+      ),
+    );
+    // The description went up with the file; saving must not send it again.
+    expect(request.mock.calls.some(([path]) => String(path).startsWith('/admin/media/'))).toBe(false);
+  });
+
+  it('replaces an existing featured image', async () => {
+    const file = photo();
+    prepare.mockResolvedValue({ ok: true, file, resized: false });
+
+    render(
+      <ProductEditor
+        initial={{ ...product, cover_media_id: 4, cover_url: 'https://example.test/old.webp', cover_alt: 'Old' }}
+      />,
+    );
+    await choose(file);
+    await screen.findByText(/Image uploaded and selected/);
+
+    expect(screen.getByRole('img')).toHaveAttribute('src', uploaded.url);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        '/admin/products/12',
+        expect.objectContaining({ body: expect.objectContaining({ cover_media_id: 42 }) }),
       ),
     );
   });
@@ -148,14 +175,14 @@ describe('ProductEditor upload from computer', () => {
   });
 
   it('uses the description the admin wrote, and sends none when it is cleared', async () => {
-    const photo = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
-    prepare.mockResolvedValue({ ok: true, file: photo, resized: false });
+    const file = photo();
+    prepare.mockResolvedValue({ ok: true, file, resized: false });
 
     render(<ProductEditor initial={product} />);
-    const alt = await screen.findByLabelText(/Image description/);
+    const alt = screen.getByLabelText(/Image description/);
 
     fireEvent.change(alt, { target: { value: 'NB Tools ribbon inside AutoCAD 2026' } });
-    await choose(photo);
+    await choose(file);
     await waitFor(() => expect(uploadCall()).toBeDefined());
     expect((uploadCall()![1].body as FormData).get('alt_text')).toBe(
       'NB Tools ribbon inside AutoCAD 2026',
@@ -163,7 +190,7 @@ describe('ProductEditor upload from computer', () => {
 
     request.mockClear();
     fireEvent.change(alt, { target: { value: '   ' } });
-    await choose(photo);
+    await choose(file);
     await waitFor(() => expect(uploadCall()).toBeDefined());
     expect((uploadCall()![1].body as FormData).has('alt_text')).toBe(false);
   });
@@ -176,8 +203,7 @@ describe('ProductEditor upload from computer', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Only JPG, PNG or WebP');
     expect(uploadCall()).toBeUndefined();
-    // And the control is usable again for the next attempt.
-    expect(await screen.findByRole('button', { name: 'Upload from computer' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Upload from computer' })).toBeEnabled();
   });
 
   it('explains an image that is still too large after resizing', async () => {
@@ -188,23 +214,22 @@ describe('ProductEditor upload from computer', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('over 2 MB');
     expect(uploadCall()).toBeUndefined();
-    expect(await screen.findByRole('button', { name: 'Upload from computer' })).toBeEnabled();
   });
 
   it('shows the server’s reason and selects nothing when the upload is refused', async () => {
-    const photo = new File(['x'], 'cover.jpg', { type: 'image/jpeg' });
-    prepare.mockResolvedValue({ ok: true, file: photo, resized: false });
-    route({
-      uploadError: new FakeApiError(422, 'The given data was invalid.', {
+    const file = photo();
+    prepare.mockResolvedValue({ ok: true, file, resized: false });
+    route(
+      new FakeApiError(422, 'The given data was invalid.', {
         file: ['The file failed to upload.'],
       }),
-    });
+    );
 
     render(<ProductEditor initial={product} />);
-    await choose(photo);
+    await choose(file);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('The file failed to upload.');
-    expect(screen.queryByText(/Image uploaded and selected/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() =>
@@ -215,12 +240,14 @@ describe('ProductEditor upload from computer', () => {
     );
   });
 
-  it('does not offer uploading to someone the API would refuse', async () => {
-    route({ denied: true });
+  it('explains a refusal on permission rather than swallowing it', async () => {
+    const file = photo();
+    prepare.mockResolvedValue({ ok: true, file, resized: false });
+    route(new FakeApiError(403, 'This action is unauthorized.'));
 
     render(<ProductEditor initial={product} />);
+    await choose(file);
 
-    expect(await screen.findByText(/media.manage/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Upload from computer' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('This action is unauthorized.');
   });
 });
