@@ -2,16 +2,16 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Checkbox, ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
+import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { ApiError, api } from '@/lib/api/browser';
 import { useLocale } from '@/lib/i18n/locale-provider';
-import { ACCEPTED_TYPES, prepareImageForUpload } from '@/lib/media/prepare-upload';
 
 export type EditableProduct = {
   id: number;
@@ -36,10 +36,6 @@ export type EditableProduct = {
     nofollow?: boolean;
   } | null;
 };
-
-type Medium = { id: number; url: string | null; alt_text: string | null };
-
-type Cover = { id: number; url: string | null; alt: string | null };
 
 /** The values ProductType accepts; the API refuses anything else. */
 const PRODUCT_TYPES = [
@@ -89,93 +85,14 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
-  // The featured image. Set by uploading and cleared with Remove.
-  const [cover, setCover] = useState<Cover | null>(
-    initial.cover_media_id
+  const image = useFeaturedImage({
+    initialCover: initial.cover_media_id
       ? { id: initial.cover_media_id, url: initial.cover_url ?? null, alt: initial.cover_alt ?? null }
       : null,
-  );
-
-  // Describes the current image, and the next one uploaded. It starts as the
-  // image's own alt text, or the product's name where there is none, so an
-  // image is never left undescribed without the admin being able to see it.
-  const [altText, setAltText] = useState(initial.cover_alt ?? initial.name_raw ?? initial.name);
-
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadNotice, setUploadNotice] = useState<{
-    tone: 'success' | 'danger';
-    text: string;
-  } | null>(null);
+    fallbackAlt: initial.name_raw ?? initial.name,
+  });
 
   const seo = initial.seo ?? null;
-
-  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
-    const input = event.currentTarget;
-    const picked = input.files?.[0];
-    // Cleared at once, so choosing the same file again still fires a change.
-    input.value = '';
-
-    if (!picked) {
-      return;
-    }
-
-    setUploading(true);
-    setUploadNotice(null);
-
-    try {
-      const prepared = await prepareImageForUpload(picked);
-
-      if (!prepared.ok) {
-        const reasons = {
-          type: t.admin.products.uploadWrongType,
-          'too-large': t.admin.products.uploadTooLarge,
-          unreadable: t.admin.products.uploadUnreadable,
-        };
-        setUploadNotice({ tone: 'danger', text: reasons[prepared.reason] });
-
-        return;
-      }
-
-      const body = new FormData();
-      body.set('file', prepared.file);
-
-      const alt = altText.trim();
-      if (alt) {
-        body.set('alt_text', alt);
-      }
-
-      const response = await api<{ data: Medium }>('/admin/media', { method: 'POST', body });
-      const uploaded = response.data;
-
-      // Selected, not saved: the form is saved as a whole, and saving behind
-      // the admin's back would also write any half-finished edits.
-      setCover({ id: uploaded.id, url: uploaded.url, alt: uploaded.alt_text });
-      setAltText(uploaded.alt_text ?? '');
-      setUploadNotice({ tone: 'success', text: t.admin.products.uploadDone });
-    } catch (caught) {
-      // The server's own reason is worth showing: "The file failed to upload"
-      // from PHP reads very differently from a refusal on permission.
-      const reason =
-        caught instanceof ApiError
-          ? (caught.fields?.file?.[0] ?? caught.message)
-          : caught instanceof Error
-            ? caught.message
-            : null;
-
-      setUploadNotice({
-        tone: 'danger',
-        text: reason ? `${t.admin.products.uploadFailed} ${reason}` : t.admin.products.uploadFailed,
-      });
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function removeCover() {
-    setCover(null);
-    setUploadNotice(null);
-  }
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -188,18 +105,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
     setErrors({});
 
     try {
-      // The description belongs to the image, not the product, so a change to
-      // it is written to the image - and only a change: an untouched field
-      // must not rewrite anything.
-      const alt = altText.trim();
-
-      if (cover && alt !== (cover.alt ?? '')) {
-        await api(`/admin/media/${cover.id}`, {
-          method: 'PATCH',
-          body: { alt_text: alt || null },
-        });
-        setCover({ ...cover, alt: alt || null });
-      }
+      await image.persistAlt();
 
       await api(`/admin/products/${initial.id}`, {
         method: 'PATCH',
@@ -209,7 +115,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
           type: String(form.get('type') ?? ''),
           tagline: text('tagline'),
           description_markdown: text('description_markdown'),
-          cover_media_id: cover?.id ?? null,
+          cover_media_id: image.cover?.id ?? null,
           is_price_public: form.get('is_price_public') === 'on',
           seo: {
             focus_keyword: text('focus_keyword'),
@@ -257,105 +163,11 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
           </Callout>
         ) : null}
 
-        {/* ------------------------------------------------ featured image */}
-        <Card className="p-6">
-          <h2 className="text-lg font-bold text-navy">{t.admin.products.featuredImage}</h2>
-          <p className="mt-1 text-sm text-muted">{t.admin.products.featuredImageHint}</p>
-
-          <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] md:items-start">
-            <div>
-              {cover?.url ? (
-                /* Not next/image: next/image only allows the media host when
-                   NEXT_PUBLIC_MEDIA_HOST was set at build time, and a plain img
-                   shows a just-uploaded file in every environment. Contained,
-                   not cropped, so the whole picture can be judged. */
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={cover.url}
-                  alt={cover.alt ?? ''}
-                  className="aspect-video w-full rounded-lg border border-line bg-surface object-contain"
-                />
-              ) : (
-                <div className="grid aspect-video w-full place-items-center rounded-lg border border-dashed border-line bg-surface p-4 text-center text-sm text-muted">
-                  {t.admin.products.noImage}
-                </div>
-              )}
-
-              {errors.cover_media_id?.[0] ? (
-                <p className="mt-2 text-sm font-medium text-danger">{errors.cover_media_id[0]}</p>
-              ) : null}
-            </div>
-
-            <div className="space-y-4">
-              <Field label={t.admin.products.uploadAlt} hint={t.admin.products.uploadAltHint}>
-                {(props) => (
-                  <Input
-                    {...props}
-                    value={altText}
-                    maxLength={255}
-                    onChange={(event) => setAltText(event.target.value)}
-                    // Enter here would submit the whole product form.
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                      }
-                    }}
-                  />
-                )}
-              </Field>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept={ACCEPTED_TYPES.join(',')}
-                  aria-label={t.admin.products.uploadImage}
-                  tabIndex={-1}
-                  className="sr-only"
-                  onChange={(event) => void upload(event)}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={uploading}
-                  onClick={() => fileInput.current?.click()}
-                >
-                  {uploading ? t.admin.products.uploading : t.admin.products.uploadImage}
-                </Button>
-
-                {cover ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-danger"
-                    disabled={uploading}
-                    onClick={removeCover}
-                  >
-                    {t.admin.products.removeImage}
-                  </Button>
-                ) : null}
-              </div>
-
-              <p className="text-xs text-muted">{t.admin.products.uploadHint}</p>
-            </div>
-          </div>
-
-          {uploadNotice ? (
-            <Callout
-              tone={uploadNotice.tone}
-              role={uploadNotice.tone === 'danger' ? 'alert' : 'status'}
-              className="mt-4"
-            >
-              {uploadNotice.text}
-            </Callout>
-          ) : null}
-
-          {cover && !cover.alt ? (
-            <Callout tone="warning" className="mt-4">
-              {t.admin.products.altMissing}
-            </Callout>
-          ) : null}
-        </Card>
+        <FeaturedImageCard
+          image={image}
+          hint={t.admin.products.featuredImageHint}
+          error={errors.cover_media_id?.[0]}
+        />
 
         {/* ------------------------------------------------------------ copy */}
         <Card className="grid gap-5 p-6 sm:grid-cols-2">
@@ -551,7 +363,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
           recordId={initial.id}
           // Live, as the admin uploads, removes or describes the image - not
           // the state it was in when the page loaded.
-          featuredImage={cover ? { alt: altText.trim() || null } : null}
+          featuredImage={image.analysisInput}
           fields={SEO_FIELDS}
         />
       </aside>

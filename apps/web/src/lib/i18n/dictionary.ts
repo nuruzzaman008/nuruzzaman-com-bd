@@ -699,6 +699,8 @@ const bn = {
     featuredImageYes: 'ফিচার্ড ইমেজ দেওয়া আছে, alt টেক্সটসহ।',
     featuredImageNo: 'কোনো ফিচার্ড ইমেজ নেই।',
     featuredImageNoAlt: 'ফিচার্ড ইমেজ আছে, কিন্তু তার alt টেক্সট নেই।',
+    featuredImageGenerated:
+      'কোনো ছবি আপলোড করা হয়নি — পাতায় স্বয়ংক্রিয় কভার দেখায়, কিন্তু শেয়ার কার্ড ও সার্চ ফলাফলে এই লেখার নিজের কোনো ছবি যায় না।',
     featuredImageHint:
       'সোশ্যাল শেয়ার কার্ড, সার্চ ফলাফলের থাম্বনেইল আর তালিকায় এই ছবিটিই দেখানো হয়; না থাকলে সাইটের সাধারণ ছবি চলে যায়। এডিটর থেকে আপলোড করুন।',
 
@@ -1486,6 +1488,9 @@ const bn = {
       saveFailed: 'সংরক্ষণ করা যায়নি।',
       statusFailed: 'অবস্থা পরিবর্তন করা যায়নি।',
       saved: 'সংরক্ষিত হয়েছে। আগের সংস্করণটি রিভিশন হিসেবে রাখা হয়েছে।',
+      featuredImageHint:
+        'লেখার শুরুতে, ব্লগের কার্ডে আর সোশ্যাল শেয়ার কার্ডে এই ছবিটি দেখায়। আপলোড না করা পর্যন্ত নিচের স্বয়ংক্রিয় কভারটিই থাকে।',
+      generatedCover: 'স্বয়ংক্রিয় কভার — ছবি আপলোড না করা পর্যন্ত সাইটে এটিই দেখায়।',
       title: 'শিরোনাম',
       slug: 'স্লাগ',
       slugHint: 'ছোট হাতের অক্ষর ও হাইফেন',
@@ -2292,6 +2297,8 @@ const en: Dictionary = {
     featuredImageYes: 'A featured image is set, with alt text.',
     featuredImageNo: 'No featured image is set.',
     featuredImageNoAlt: 'A featured image is set, but it has no alt text.',
+    featuredImageGenerated:
+      'No image uploaded — the page shows generated cover art, but share cards and search results get no picture of this article.',
     featuredImageHint:
       'It is the picture on social share cards, search result thumbnails and listings; without one, the site’s generic image goes out instead. Upload one in the editor.',
 
@@ -3066,6 +3073,9 @@ const en: Dictionary = {
       saveFailed: 'That could not be saved.',
       statusFailed: 'The status could not be changed.',
       saved: 'Saved. The previous version has been kept as a revision.',
+      featuredImageHint:
+        'Shown at the top of the article, on its card in the blog and on the social share card. Until one is uploaded, the generated cover below stays.',
+      generatedCover: 'Generated cover — shown on the site until an image is uploaded.',
       title: 'Title',
       slug: 'Slug',
       slugHint: 'Lower case and hyphens',

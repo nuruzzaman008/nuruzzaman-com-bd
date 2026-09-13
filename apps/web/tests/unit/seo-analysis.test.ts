@@ -152,7 +152,12 @@ ${'শব্দ '.repeat(1200)}`,
     // No featuredImage given: a surface that cannot set one is not failed for it.
     expect(find(base, 'featured-image')).toBeUndefined();
 
-    expect(find({ ...base, featuredImage: null }, 'featured-image')?.status).toBe('fail');
+    // An article still shows generated cover art, so no upload is a warning;
+    // a product shows nothing at all, so there it is a failure.
+    expect(find({ ...base, featuredImage: null }, 'featured-image')?.status).toBe('warn');
+    expect(
+      find({ ...base, kind: 'product', featuredImage: null }, 'featured-image')?.status,
+    ).toBe('fail');
     expect(find({ ...base, featuredImage: { alt: null } }, 'featured-image')?.status).toBe('warn');
     expect(find({ ...base, featuredImage: { alt: '   ' } }, 'featured-image')?.status).toBe('warn');
     expect(

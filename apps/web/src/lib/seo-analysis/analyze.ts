@@ -337,11 +337,17 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
     const featured = input.featuredImage;
     const described = Boolean(featured?.alt?.trim());
 
+    // An article or a course still shows generated cover art on the page, so
+    // no upload is a warning there. A product shows nothing at all: a failure.
+    const generated = input.kind !== 'product';
+
     additional.push({
       id: 'featured-image',
-      status: !featured ? 'fail' : described ? 'pass' : 'warn',
+      status: !featured ? (generated ? 'warn' : 'fail') : described ? 'pass' : 'warn',
       message: !featured
-        ? say.featuredImageNo
+        ? generated
+          ? say.featuredImageGenerated
+          : say.featuredImageNo
         : described
           ? say.featuredImageYes
           : say.featuredImageNoAlt,

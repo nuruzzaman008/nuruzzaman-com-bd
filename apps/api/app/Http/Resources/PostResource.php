@@ -40,6 +40,13 @@ class PostResource extends JsonResource
             'toc' => Markdown::headings($this->body_markdown),
             'cover_url' => $this->whenLoaded('cover', fn () => $this->cover?->url()),
             'cover_alt' => $this->whenLoaded('cover', fn () => $this->cover?->alt_text),
+            // Which image the post uses, so the editor can keep or replace it.
+            // A reader has no use for the id, so only someone who may edit
+            // posts is given it.
+            'cover_media_id' => $this->when(
+                (bool) $request->user()?->hasPermission('posts.update'),
+                fn () => $this->cover_media_id,
+            ),
             'reading_minutes' => $this->reading_minutes ?? Markdown::readingMinutes($this->body_markdown),
             'funnel_stage' => $this->funnel_stage,
             'published_at' => $this->published_at?->toIso8601String(),

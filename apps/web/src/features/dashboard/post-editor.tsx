@@ -4,18 +4,29 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
+import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
 import type { Post } from '@nuruzzaman/contracts';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
+import { CoverArt } from '@/components/ui/cover-art';
 import { ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { ApiError, api } from '@/lib/api/browser';
 import type { Dictionary } from '@/lib/i18n/dictionary';
 import { useLocale } from '@/lib/i18n/locale-provider';
 
 type Transition = keyof Dictionary['admin']['postEditor'];
+
+/**
+ * The article as the editor loads it. `cover_media_id` is only returned to
+ * someone who may edit posts, so it is not part of the public Post contract.
+ */
+export type EditablePost = Post & {
+  cover_media_id?: number | null;
+  cover_alt?: string | null;
+};
 
 /** Which moves each status allows. The API enforces the same rules. */
 const TRANSITIONS: Record<string, { label: Transition; to: string }[]> = {
@@ -35,6 +46,17 @@ const TRANSITIONS: Record<string, { label: Transition; to: string }[]> = {
   archived: [{ label: 'backToDraft', to: 'draft' }],
 };
 
+/** Where the analysis finds each input; a constant so the panel reads it once. */
+const SEO_FIELDS = {
+  title: 'title',
+  slug: 'slug',
+  content: 'body_markdown',
+  metaTitle: 'meta_title',
+  metaDescription: 'meta_description',
+  focusKeyword: 'focus_keyword',
+  excerpt: 'excerpt',
+};
+
 /**
  * Markdown editor for an article.
  *
@@ -42,13 +64,22 @@ const TRANSITIONS: Record<string, { label: Transition; to: string }[]> = {
  * stripped, so nothing typed here can inject script into a published page.
  * Every save snapshots a revision on the server first.
  */
-export function PostEditor({ post }: { post: Post }) {
+export function PostEditor({ post }: { post: EditablePost }) {
   const { t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const image = useFeaturedImage({
+    initialCover: post.cover_media_id
+      ? { id: post.cover_media_id, url: post.cover_url ?? null, alt: post.cover_alt ?? null }
+      : null,
+    fallbackAlt: post.title,
+  });
+
+  const category = post.categories?.[0];
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,6 +91,8 @@ export function PostEditor({ post }: { post: Post }) {
     const form = new FormData(event.currentTarget);
 
     try {
+      await image.persistAlt();
+
       await api<{ data: Post }>(`/admin/posts/${post.id}`, {
         method: 'PATCH',
         body: {
@@ -69,6 +102,10 @@ export function PostEditor({ post }: { post: Post }) {
           body_markdown: form.get('body_markdown'),
           funnel_stage: form.get('funnel_stage') || null,
           search_intent: form.get('search_intent') || null,
+          // Sent only when the image was actually changed. Left out, the post
+          // keeps exactly what it has - an uploaded image, or none and the
+          // generated cover - so saving the words can never lose the picture.
+          ...(image.changed ? { cover_media_id: image.cover?.id ?? null } : {}),
           seo: {
             meta_title: form.get('meta_title') || null,
             meta_description: form.get('meta_description') || null,
@@ -116,7 +153,7 @@ export function PostEditor({ post }: { post: Post }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <form id="post-editor" onSubmit={save} noValidate className="space-y-5">
+      <form id="post-editor" onSubmit={save} noValidate className="min-w-0 space-y-5">
         <ErrorSummary errors={errors} />
 
         {message ? (
@@ -130,6 +167,27 @@ export function PostEditor({ post }: { post: Post }) {
             {t.admin.postEditor.saved}
           </Callout>
         ) : null}
+
+        <FeaturedImageCard
+          image={image}
+          hint={t.admin.postEditor.featuredImageHint}
+          error={errors.cover_media_id?.[0]}
+          // What the site already shows for an article with no upload, so the
+          // editor previews the page as it is rather than an empty box.
+          fallback={
+            <figure>
+              <CoverArt
+                topic={category?.slug}
+                seed={post.slug}
+                label={category?.name}
+                className="rounded-lg border border-line"
+              />
+              <figcaption className="mt-2 text-xs text-muted">
+                {t.admin.postEditor.generatedCover}
+              </figcaption>
+            </figure>
+          }
+        />
 
         <Field label={t.admin.postEditor.title} required error={errors.title?.[0]}>
           {(props) => <Input name="title" defaultValue={post.title} {...props} />}
@@ -257,15 +315,8 @@ export function PostEditor({ post }: { post: Post }) {
           formId="post-editor"
           kind="post"
           recordId={post.id}
-          fields={{
-            title: 'title',
-            slug: 'slug',
-            content: 'body_markdown',
-            metaTitle: 'meta_title',
-            metaDescription: 'meta_description',
-            focusKeyword: 'focus_keyword',
-            excerpt: 'excerpt',
-          }}
+          featuredImage={image.analysisInput}
+          fields={SEO_FIELDS}
         />
       </aside>
     </div>
