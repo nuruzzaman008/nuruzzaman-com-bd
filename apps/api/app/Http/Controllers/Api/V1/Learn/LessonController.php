@@ -20,12 +20,19 @@ use Illuminate\Http\Request;
  */
 class LessonController extends Controller
 {
-    public function download(Request $request, string $courseSlug, string $lessonSlug, int $assetId): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function download(Request $request, string $courseSlug, string $lessonSlug, int $assetId): \Symfony\Component\HttpFoundation\Response
     {
         $course = Course::query()->where('slug', $courseSlug)->firstOrFail();
         $lesson = $course->lessons()->where('slug', $lessonSlug)->with('section')->firstOrFail();
         $this->enrollments->assertAccess($request->user(), $lesson);
         $asset = $lesson->assets()->findOrFail($assetId);
+
+        // A linked document opens where it lives - Google Drive, Dropbox - but
+        // only after the same enrolment check a stored file gets.
+        if ($asset->isLink()) {
+            return redirect()->away($asset->storage_path);
+        }
+
         $disk = \Illuminate\Support\Facades\Storage::disk($asset->disk);
         abort_unless($disk->exists($asset->storage_path), 404);
         $extension = pathinfo($asset->storage_path, PATHINFO_EXTENSION);

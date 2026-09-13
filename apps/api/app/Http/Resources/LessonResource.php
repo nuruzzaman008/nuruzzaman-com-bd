@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\DocumentLink;
 use App\Support\Markdown;
 use App\Support\RequestLocale;
 use Illuminate\Http\Request;
@@ -42,6 +43,9 @@ class LessonResource extends JsonResource
                 'title' => $asset->title,
                 'size_bytes' => $asset->size_bytes,
                 'checksum_sha256' => $asset->checksum_sha256,
+                'kind' => $asset->isLink() ? 'link' : 'file',
+                // Only the service's name; the address is reached through download_url.
+                'provider' => $asset->isLink() ? DocumentLink::provider($asset->storage_path) : null,
                 'download_url' => '/api/v1/learn/'.rawurlencode($this->course->slug).'/lessons/'.rawurlencode($this->slug).'/assets/'.$asset->id,
             ])->values()),
             // Expiring descriptor; the private source URL is never included.

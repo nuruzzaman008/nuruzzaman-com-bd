@@ -16,8 +16,10 @@ import { LessonAssessments } from '@/features/admin/lesson-assessments';
 import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { CoursePricingFields, pricingFromForm, type CoursePricing } from '@/features/admin/course-pricing-fields';
+import { DocumentLinkAdder, LessonForm, type LessonDraft } from '@/features/admin/lesson-form';
+import { documentProvider, PROVIDER_NAMES } from '@/lib/document-link';
 
-type Asset = { id: number; title: string; size_bytes: number };
+type Asset = { id: number; title: string; size_bytes: number | null; kind?: 'file' | 'link'; link_url?: string | null };
 type Lesson = { id: number; title: string; slug: string; type: string; course_section_id: number; body_markdown: string | null; video_url: string | null; video_provider: string | null; video_asset_id: string | null; duration_seconds: number | null; position: number; drip_days: number | null; is_free_preview: boolean; assets: Asset[] };
 type Section = { id: number; title: string; position: number; drip_days: number | null; lessons: Lesson[] };
 type CourseSeo = { meta_title?: string | null; meta_title_en?: string | null; meta_description?: string | null; meta_description_en?: string | null; focus_keyword?: string | null; canonical_url?: string | null; noindex?: boolean; nofollow?: boolean };
@@ -54,6 +56,8 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
   const [progress, setProgress] = useState<{ name: string; fraction: number } | null>(null);
   // Set by "Save and publish" just before the form submits.
   const publishAfterSave = useRef(false);
+  // Bumped after a new lesson is saved, so its form starts empty again.
+  const [lessonFormVersion, setLessonFormVersion] = useState(0);
 
   /** Tidies a slug field when it is left: "Basic English Sound" → "basic-english-sound". */
   function tidySlug(event: React.FocusEvent<HTMLInputElement>) {
@@ -64,6 +68,11 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
   function slugFromTitle(event: React.FocusEvent<HTMLInputElement>) {
     const slug = event.currentTarget.form?.elements.namedItem('slug');
     if (slug instanceof HTMLInputElement && !slug.value.trim()) slug.value = slugify(event.currentTarget.value);
+  }
+  /** On a new course the slug follows the title as it is typed, until the slug itself is typed into. */
+  function slugFollowsTitle(event: React.ChangeEvent<HTMLInputElement>) {
+    const slug = event.currentTarget.form?.elements.namedItem('slug');
+    if (slug instanceof HTMLInputElement && slug.dataset.typed !== 'true') slug.value = slugify(event.currentTarget.value);
   }
   const base = `/admin/courses/${course?.id}`;
 
@@ -145,21 +154,37 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       await reload();
     });
   }
-  function saveLesson(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const lessonSlug = slugify(String(data.get('slug') || data.get('title') || ''));
+  /**
+   * Saves the lesson, then attaches the documents gathered in its form: files
+   * sent in parts, then links. A document that fails does not undo the
+   * lesson - the message says which one to add again from the lesson list.
+   */
+  function saveLesson(draft: LessonDraft) {
     void action(async () => {
-      if (!lessonSlug) throw new Error(bn ? 'পাঠের URL slug ইংরেজি অক্ষরে লিখুন, যেমন lesson-01।' : 'Write the lesson URL slug in English letters, for example lesson-01.');
-      await api(`${base}/lessons${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: {
-        title: data.get('title'), slug: lessonSlug, type: data.get('type'), course_section_id: Number(data.get('course_section_id')),
-        body_markdown: data.get('body_markdown') || null, video_url: data.get('video_url') || null,
-        duration_seconds: data.get('duration_seconds') ? Number(data.get('duration_seconds')) : null,
-        drip_days: data.get('drip_days') ? Number(data.get('drip_days')) : null,
-        is_free_preview: data.get('is_free_preview') === 'on',
-      } });
-      setEditing(null); form.reset(); await reload();
+      const oversize = draft.files.find((file) => file.size > MAX_FILE_BYTES);
+      if (oversize) throw new Error(bn ? `${oversize.name}: প্রতি ফাইল সর্বোচ্চ ১০০ MB।` : `${oversize.name}: files can be up to 100 MB.`);
+      const saved = await api<{ data: { id: number } }>(`${base}/lessons${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: draft.values });
+      const lessonId = editing?.id ?? saved.data.id;
+      const reason = (caught: unknown) => caught instanceof ApiError ? [caught.message, ...Object.values(caught.fields).flat()].join(' ') : caught instanceof Error ? caught.message : '';
+      let failed: string | null = null;
+      for (const file of draft.files) {
+        if (failed) break;
+        try {
+          const parts = await uploadInParts(file, (fraction) => setProgress({ name: file.name, fraction }));
+          await api(`${base}/lessons/${lessonId}/assets`, { method: 'POST', body: { ...parts, title: file.name.slice(0, 200) } });
+        } catch (caught) { failed = `${file.name} (${reason(caught)})`; }
+      }
+      for (const link of draft.links) {
+        if (failed) break;
+        try {
+          await api(`${base}/lessons/${lessonId}/links`, { method: 'POST', body: { url: link.url, title: link.title || null } });
+        } catch (caught) { failed = `${link.title || link.url} (${reason(caught)})`; }
+      }
+      setProgress(null);
+      setEditing(null);
+      setLessonFormVersion((version) => version + 1);
+      await reload();
+      if (failed) throw new Error(bn ? `পাঠ সংরক্ষিত হয়েছে, কিন্তু একটি ডকুমেন্ট যুক্ত করা যায়নি: ${failed}। পাঠের তালিকা থেকে আবার যোগ করুন।` : `The lesson was saved, but a document could not be attached: ${failed}. Add it again from the lesson list.`);
     });
   }
   async function moveLesson(lesson: Lesson, direction: number) {
@@ -203,7 +228,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       />
       <div className="space-y-4 rounded-xl border border-line bg-white p-5">
       <h2 className="text-lg font-bold text-navy">{bn ? 'কোর্সের তথ্য' : 'Course details'}</h2><CoursePricingFields initial={course?.pricing} fallbackMinor={course?.price_minor} />
-      <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'কোর্সের নাম' : 'Course title'}<input required name="title" defaultValue={course?.title} onBlur={slugFromTitle} className={input} /></label><label>URL slug<input required name="slug" maxLength={180} defaultValue={course?.slug} onBlur={tidySlug} placeholder="basic-english-sound" className={`${input} font-latin`} /><span className="text-xs text-muted">{bn ? 'যেভাবে খুশি লিখুন — "Basic English Sound" লিখলে নিজে থেকেই basic-english-sound হয়ে যাবে। প্রকাশের পরে বদলালে পুরনো লিংক কাজ করবে না।' : 'Type it any way — "Basic English Sound" becomes basic-english-sound by itself. Changing it after publishing breaks the old link.'}</span></label></div>
+      <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'কোর্সের নাম' : 'Course title'}<input required name="title" defaultValue={course?.title} onChange={course ? undefined : slugFollowsTitle} onBlur={slugFromTitle} className={input} /></label><label>URL slug<input required name="slug" maxLength={180} defaultValue={course?.slug} onInput={(event) => { event.currentTarget.dataset.typed = 'true'; }} onBlur={tidySlug} placeholder="basic-english-sound" className={`${input} font-latin`} /><span className="text-xs text-muted">{bn ? 'যেভাবে খুশি লিখুন — "Basic English Sound" লিখলে নিজে থেকেই basic-english-sound হয়ে যাবে। প্রকাশের পরে বদলালে পুরনো লিংক কাজ করবে না।' : 'Type it any way — "Basic English Sound" becomes basic-english-sound by itself. Changing it after publishing breaks the old link.'}</span></label></div>
       <label className="block">{bn ? 'সাবটাইটেল' : 'Subtitle'}<input name="subtitle" maxLength={255} defaultValue={course?.subtitle ?? ''} className={input} /><span className="text-xs text-muted">{bn ? 'এক লাইনের সারসংক্ষেপ — কোর্সের কার্ডে দেখায়, আর meta description না থাকলে সার্চ ফলাফলেও।' : 'One line of summary — shown on the course card, and in search results when there is no meta description.'}</span></label>
       <div><label htmlFor="course-description" className="block">{bn ? 'বিস্তারিত (Markdown)' : 'Description (Markdown)'}</label><MarkdownTextarea id="course-description" name="description_markdown" rows={12} defaultValue={course?.description_markdown ?? ''} className="min-h-72 text-navy" /></div>
       <fieldset className="space-y-4 rounded-lg border border-line p-4">
@@ -261,11 +286,12 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
             }} /></label>
             {lesson.video_provider === 'uploaded' ? <p className="mt-2 text-sm text-success">{bn ? 'আপলোড করা ভিডিও প্রস্তুত' : 'Uploaded video ready'}</p> : null}
             {lesson.video_url ? <p className="mt-2 break-all text-xs text-muted">{lesson.video_url}</p> : null}
-            <ul className="mt-3 space-y-2">{lesson.assets.map((asset) => <li key={asset.id} className="flex items-center justify-between gap-3 text-sm"><span>{lesson.assets.indexOf(asset) + 1}. {asset.title} · {(asset.size_bytes / 1024).toFixed(0)} KB</span><span className="flex gap-3"><button type="button" disabled={busy || lesson.assets[0]?.id === asset.id} aria-label={`Move ${asset.title} up`} onClick={() => void action(() => moveAsset(lesson, asset.id, -1))}>↑</button><button type="button" disabled={busy || lesson.assets.at(-1)?.id === asset.id} aria-label={`Move ${asset.title} down`} onClick={() => void action(() => moveAsset(lesson, asset.id, 1))}>↓</button></span><button className="text-danger" disabled={busy} type="button" onClick={() => { if (window.confirm(bn ? 'এই ফাইল মুছে ফেলবেন?' : 'Delete this file?')) void action(async () => { await api(`${base}/lessons/${lesson.id}/assets/${asset.id}`, { method: 'DELETE' }); await reload(); }); }}>{bn ? 'মুছুন' : 'Delete'}</button></li>)}</ul>
+            <ul className="mt-3 space-y-2">{lesson.assets.map((asset) => <li key={asset.id} className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0">{lesson.assets.indexOf(asset) + 1}. {asset.title} · {asset.kind === 'link' ? <a href={asset.link_url ?? '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue hover:underline">{PROVIDER_NAMES[documentProvider(asset.link_url ?? '') ?? 'other']} ↗</a> : `${((asset.size_bytes ?? 0) / 1024).toFixed(0)} KB`}</span><span className="flex gap-3"><button type="button" disabled={busy || lesson.assets[0]?.id === asset.id} aria-label={`Move ${asset.title} up`} onClick={() => void action(() => moveAsset(lesson, asset.id, -1))}>↑</button><button type="button" disabled={busy || lesson.assets.at(-1)?.id === asset.id} aria-label={`Move ${asset.title} down`} onClick={() => void action(() => moveAsset(lesson, asset.id, 1))}>↓</button></span><button className="text-danger" disabled={busy} type="button" onClick={() => { if (window.confirm(bn ? 'এই ফাইল মুছে ফেলবেন?' : 'Delete this file?')) void action(async () => { await api(`${base}/lessons/${lesson.id}/assets/${asset.id}`, { method: 'DELETE' }); await reload(); }); }}>{bn ? 'মুছুন' : 'Delete'}</button></li>)}</ul>
             <label className="mt-4 block text-sm font-semibold text-blue">{bn ? 'পাঠে ফাইল যোগ করুন — PDF, DOCX, XLSX, PPTX, DWG, ZIP বা যেকোনো ফাইল (একাধিক নির্বাচন করা যাবে)' : 'Attach lesson files — PDF, DOCX, XLSX, PPTX, DWG, ZIP or any other file (multiple allowed)'}<input type="file" multiple disabled={busy} className="mt-2 block w-full text-xs" onChange={(event) => {
               const files = Array.from(event.target.files ?? []); const control = event.target;
               void action(async () => { try { for (const file of files) { if (file.size > MAX_FILE_BYTES) throw new Error(bn ? `${file.name}: প্রতি ফাইল সর্বোচ্চ ১০০ MB।` : `${file.name}: files can be up to 100 MB.`); const parts = await uploadInParts(file, (fraction) => setProgress({ name: file.name, fraction })); await api(`${base}/lessons/${lesson.id}/assets`, { method: 'POST', body: { ...parts, title: file.name.slice(0, 200) } }); } } finally { control.value = ''; setProgress(null); await reload(); } });
             }} /></label><p className="mt-1 text-xs text-muted">{bn ? 'প্রতি ফাইল সর্বোচ্চ ১০০ MB; বড় ফাইল টুকরো করে পাঠানো হয়। নিরাপত্তার জন্য .php জাতীয় সার্ভার-স্ক্রিপ্ট নেওয়া হয় না।' : 'Up to 100 MB per file; large files are sent in parts. Server scripts such as .php are refused for safety.'}</p>
+            <div className="mt-4"><DocumentLinkAdder disabled={busy} onAdd={(link) => action(async () => { await api(`${base}/lessons/${lesson.id}/links`, { method: 'POST', body: { url: link.url, title: link.title || null } }); await reload(); })} /></div>
             <button type="button" className="mt-4 text-sm font-semibold text-blue" aria-expanded={assessmentLesson === lesson.id} onClick={() => setAssessmentLesson(assessmentLesson === lesson.id ? null : lesson.id)}>{bn ? 'কুইজ / অ্যাসাইনমেন্ট' : 'Quiz / assignment'}</button>{assessmentLesson === lesson.id ? <LessonAssessments courseId={course.id} lessonId={lesson.id} /> : null}
           </li>)}</ol>
         </div>)}
@@ -273,19 +299,16 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       </section>
       <details className="rounded-xl border border-line bg-white p-5"><summary className="cursor-pointer font-bold text-navy">{bn ? 'শিক্ষার্থী ভর্তি করুন' : 'Enroll a student'}</summary><form className="mt-4 space-y-3" onSubmit={(event) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); void action(async () => { const email = String(data.get('email')).trim(); const users = await api<{ data: { id: number; email: string }[] }>('/admin/users', { query: { q: email } }); const user = users.data.find((row) => row.email.toLowerCase() === email.toLowerCase()); if (!user) throw new Error('User not found'); await api('/admin/enrollments', { method: 'POST', body: { user_id: user.id, course_slug: course.slug, reason: data.get('reason') } }); form.reset(); }); }}><label className="block">{bn ? 'নিবন্ধিত শিক্ষার্থীর ইমেইল' : 'Registered student email'}<input type="email" name="email" required className={input} /></label><label className="block">{bn ? 'ভর্তির কারণ' : 'Enrollment reason'}<input required name="reason" className={input} placeholder={bn ? 'অনুমোদিত ভর্তি / অফলাইন পেমেন্ট' : 'Approved enrollment / offline payment'} /></label><Button type="submit" disabled={busy}>{bn ? 'ভর্তি নিশ্চিত করুন' : 'Enroll student'}</Button></form></details>
       <details className="rounded-xl border border-line bg-white p-5"><summary className="cursor-pointer font-bold text-navy">{bn ? 'কোর্সের ঘোষণা দিন' : 'Post course announcement'}</summary><form className="mt-4 space-y-3" onSubmit={(event) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); void action(async () => { await api(`${base}/announcements`, { method: 'POST', body: { title: data.get('title'), body_markdown: data.get('body_markdown'), is_published: true } }); form.reset(); }); }}><label className="block">{bn ? 'শিরোনাম' : 'Title'}<input required name="title" className={input} /></label><div><label htmlFor="announcement-body" className="block">{bn ? 'ঘোষণা' : 'Announcement'}</label><MarkdownTextarea id="announcement-body" required name="body_markdown" rows={4} className="text-navy" /></div><Button type="submit" disabled={busy}>{bn ? 'ঘোষণা প্রকাশ করুন' : 'Publish announcement'}</Button></form></details>
-      {course.sections.length ? <form key={editing?.id ?? 'new'} id="lesson-editor" onSubmit={saveLesson} className="space-y-4 rounded-xl border border-line bg-white p-5">
-        <h2 className="text-xl font-bold text-navy">{editing ? (bn ? 'পাঠ সম্পাদনা' : 'Edit lesson') : (bn ? 'নতুন পাঠ যোগ করুন' : 'Add lesson')}</h2>
-        <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'পাঠের নাম' : 'Lesson title'}<input required name="title" defaultValue={editing?.title} onBlur={slugFromTitle} className={input} /></label><label>URL slug<input required name="slug" maxLength={180} defaultValue={editing?.slug} onBlur={tidySlug} placeholder="lesson-01" className={`${input} font-latin`} /></label>
-          <label>{bn ? 'অধ্যায়' : 'Section'}<select name="course_section_id" defaultValue={editing?.course_section_id ?? course.sections[0].id} className={input}>{course.sections.map((section) => <option key={section.id} value={section.id}>{section.title}</option>)}</select></label>
-          <label>{bn ? 'পাঠের ধরন' : 'Lesson type'}<select name="type" defaultValue={editing?.type ?? 'video'} className={input}><option value="video">{bn ? 'ভিডিও + ফাইল' : 'Video + files'}</option><option value="text">{bn ? 'লেখা + ফাইল' : 'Text + files'}</option><option value="download">{bn ? 'ফাইল / রিসোর্স' : 'Download / resources'}</option>{editing && ['quiz', 'assignment'].includes(editing.type) ? <option value={editing.type}>{editing.type}</option> : null}</select></label>
-        </div>
-        <label className="block">{bn ? 'ভিডিও লিংক (ঐচ্ছিক)' : 'Video URL (optional)'}<input name="video_url" type="url" pattern="https://.*" defaultValue={editing?.video_url ?? ''} placeholder="https://www.youtube.com/watch?v=… · https://www.facebook.com/…/videos/… · https://vimeo.com/…" className={input} /><span className="mt-1 block text-xs text-muted">{bn ? 'YouTube, Facebook বা Vimeo ভিডিওর লিংক দিন — ভিডিও পাতার ভেতরেই চলবে (Facebook ভিডিও Public হতে হবে)। MP4/WebM লিংকও চলবে; অন্য সাইটের লিংক নতুন ট্যাবে খুলবে।' : 'Paste a YouTube, Facebook or Vimeo video link — it plays inside the lesson (a Facebook video must be public). MP4/WebM links play too; other websites open in a new tab.'}</span></label>
-        <div><label htmlFor="lesson-body" className="block">{bn ? 'পাঠের লেখা / নির্দেশনা (Markdown)' : 'Lesson content / instructions (Markdown)'}</label><MarkdownTextarea id="lesson-body" rows={7} name="body_markdown" defaultValue={editing?.body_markdown ?? ''} className="min-h-48 text-navy" /></div>
-        <div className="grid gap-4 sm:grid-cols-2"><label>{bn ? 'সময় (সেকেন্ড)' : 'Duration (seconds)'}<input type="number" name="duration_seconds" min="1" max="86400" defaultValue={editing?.duration_seconds ?? ''} className={input} /></label><label>{bn ? 'ভর্তির কত দিন পরে খুলবে (ঐচ্ছিক)' : 'Unlock days after enrollment (optional)'}<input type="number" name="drip_days" min="0" max="3650" defaultValue={editing?.drip_days ?? ''} className={input} /></label></div>
-        <label className="block"><input type="checkbox" name="is_free_preview" defaultChecked={editing?.is_free_preview} /> {bn ? 'ভিডিও ও লেখা বিনামূল্যে প্রিভিউ করা যাবে (ফাইল শুধু ভর্তিকৃতদের জন্য)' : 'Allow free video/text preview (files require enrollment)'}</label>
-        <Button type="submit" disabled={busy}>{bn ? 'পাঠ সংরক্ষণ' : 'Save lesson'}</Button>{editing ? <button type="button" className="ms-4 text-sm text-blue" onClick={() => setEditing(null)}>{bn ? 'বাতিল' : 'Cancel'}</button> : null}
-        <p className="text-xs text-muted">{bn ? 'পাঠ সংরক্ষণের পরে উপরের তালিকা থেকে ফাইল আপলোড করুন।' : 'After saving, upload files from the lesson list above.'}</p>
-      </form> : null}
+      {course.sections.length ? <LessonForm
+        key={editing ? `edit-${editing.id}` : `new-${lessonFormVersion}`}
+        sections={course.sections}
+        lesson={editing}
+        courseLessonSlugs={course.sections.flatMap((section) => section.lessons.map((row) => row.slug))}
+        lessonCount={course.sections.reduce((count, section) => count + section.lessons.length, 0)}
+        busy={busy}
+        onSave={saveLesson}
+        onCancel={() => setEditing(null)}
+      /> : null}
     </> : null}
   </div>;
 }

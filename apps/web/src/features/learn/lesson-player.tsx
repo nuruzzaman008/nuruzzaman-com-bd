@@ -10,6 +10,7 @@ import { Callout } from '@/components/ui/callout';
 import { Prose } from '@/components/ui/prose';
 import { api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
+import { PROVIDER_NAMES, type DocumentProvider } from '@/lib/document-link';
 import { number } from '@/lib/format';
 import type { Locale } from '@/lib/i18n/locale';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -228,7 +229,13 @@ export function LessonPlayer({
                   >
                     {asset.title}
                   </span>
-                  {asset.size_bytes ? (
+                  {asset.kind === 'link' ? (
+                    <span className="block text-xs text-muted">
+                      {asset.provider && asset.provider !== 'other'
+                        ? PROVIDER_NAMES[asset.provider as DocumentProvider]
+                        : words.linkedDocument}
+                    </span>
+                  ) : asset.size_bytes ? (
                     <span
                       className="block text-xs text-muted"
                       title={
@@ -240,13 +247,27 @@ export function LessonPlayer({
                   ) : null}
                 </span>
                 {asset.download_url ? (
-                  <a
-                    href={asset.download_url}
-                    aria-label={`${words.download}: ${asset.title}`}
-                    className="shrink-0 rounded-full bg-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy"
-                  >
-                    {words.download}
-                  </a>
+                  asset.kind === 'link' ? (
+                    // Opens on Google Drive or Dropbox, in a tab of its own, so
+                    // the lesson stays where it was.
+                    <a
+                      href={asset.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${words.openLink}: ${asset.title}`}
+                      className="shrink-0 rounded-full bg-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy"
+                    >
+                      {words.openLink} ↗
+                    </a>
+                  ) : (
+                    <a
+                      href={asset.download_url}
+                      aria-label={`${words.download}: ${asset.title}`}
+                      className="shrink-0 rounded-full bg-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy"
+                    >
+                      {words.download}
+                    </a>
+                  )
                 ) : null}
               </li>
             ))}

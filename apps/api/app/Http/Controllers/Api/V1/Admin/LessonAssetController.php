@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonAsset;
 use App\Services\Uploads\ChunkedUploads;
+use App\Support\DocumentLink;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,11 +73,53 @@ class LessonAssetController extends Controller
         }
     }
 
+    /**
+     * A document linked rather than uploaded - a Google Drive, Dropbox or
+     * OneDrive share, or any https:// address. Learners reach it through the
+     * same enrolment-checked download route as a stored file.
+     */
+    public function storeLink(Request $request, Course $course, Lesson $lesson): JsonResponse
+    {
+        $this->authorize('update', $course);
+        abort_unless($lesson->course_id === $course->id, 404);
+
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:200'],
+            'url' => ['required', 'string', 'max:'.DocumentLink::MAX_LENGTH, function (string $attribute, mixed $value, Closure $fail) {
+                if (! is_string($value) || DocumentLink::normalize($value) === null) {
+                    $fail('Enter the full link, starting with https:// - for example a Google Drive or Dropbox share link.');
+                }
+            }],
+        ]);
+
+        $link = DocumentLink::normalize($validated['url']);
+        $title = trim((string) ($validated['title'] ?? ''));
+
+        $asset = $lesson->assets()->create([
+            'title' => $title !== '' ? $title : self::LINK_TITLES[$link['provider']],
+            'disk' => LessonAsset::LINK_DISK,
+            'storage_path' => $link['url'],
+            'position' => ($lesson->assets()->max('position') ?? -1) + 1,
+        ]);
+
+        return response()->json(['data' => $asset], 201);
+    }
+
+    private const LINK_TITLES = [
+        'google_drive' => 'Google Drive document',
+        'dropbox' => 'Dropbox document',
+        'onedrive' => 'OneDrive document',
+        'other' => 'Linked document',
+    ];
+
     public function destroy(Course $course, Lesson $lesson, LessonAsset $asset): JsonResponse
     {
         $this->authorize('update', $course);
         abort_unless($lesson->course_id === $course->id && $asset->lesson_id === $lesson->id, 404);
-        Storage::disk($asset->disk)->delete($asset->storage_path);
+        // A link has nothing on disk to remove.
+        if (! $asset->isLink()) {
+            Storage::disk($asset->disk)->delete($asset->storage_path);
+        }
         $asset->delete();
 
         return response()->json(['message' => 'File deleted.']);

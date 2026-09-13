@@ -11573,6 +11573,122 @@
         }
       }
     },
+    "/admin/courses/{course}/lessons/{lesson}/links": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminAddLessonDocumentLink",
+        "summary": "Attach a document link (Google Drive, Dropbox, OneDrive or any https address)",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Kept as a lesson resource whose download_url redirects enrolled\nlearners to the address. A Dropbox share link is changed to download\nthe file itself (dl=1).\n",
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lesson",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 512
+                  },
+                  "title": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Link attached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "title",
+                        "kind",
+                        "link_url"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "file",
+                            "link"
+                          ]
+                        },
+                        "link_url": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/admin/courses/{course}/lessons/{lesson}/assets/{asset}": {
       "delete": {
         "tags": [
@@ -13614,6 +13730,28 @@
                   "type": [
                     "string",
                     "null"
+                  ]
+                },
+                "kind": {
+                  "description": "A stored file, or a link (Google Drive, Dropbox…) that download_url redirects to.",
+                  "type": "string",
+                  "enum": [
+                    "file",
+                    "link"
+                  ]
+                },
+                "provider": {
+                  "description": "For a link, the service it is on; null for a stored file.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "google_drive",
+                    "dropbox",
+                    "onedrive",
+                    "other",
+                    null
                   ]
                 }
               }

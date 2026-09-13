@@ -1169,6 +1169,8 @@ const bn = {
     next: 'পরের লেসন',
     lessonNavigation: 'লেসন নেভিগেশন',
     download: 'ডাউনলোড',
+    openLink: 'খুলুন',
+    linkedDocument: 'লিংক',
     videoWebsite: 'ভিডিও ওয়েবসাইটে খুলুন',
   },
 
@@ -2912,6 +2914,8 @@ const en: Dictionary = {
     next: 'Next',
     lessonNavigation: 'Lesson navigation',
     download: 'Download',
+    openLink: 'Open',
+    linkedDocument: 'Link',
     videoWebsite: 'Open the video website',
   },
 

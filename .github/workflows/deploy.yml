@@ -192,8 +192,9 @@ jobs:
           # deployment reads the commit from here, and it must agree with the
           # stamp inside the artefact or the build check rejects it.
           git -C "$REPO" fetch --quiet origin main
-          git -C "$REPO" reset --quiet --hard "$SHA"
-          git -C "$REPO" clean -qfd
+          test -z "$(git -C "$REPO" status --porcelain)" || { echo "Server checkout has local changes; preserve and review them first."; exit 1; }
+          git -C "$REPO" merge --ff-only "$SHA"
+          test "$(git -C "$REPO" rev-parse HEAD)" = "$SHA"
 
           # Whether the API needs deploying at all.
           #
@@ -233,6 +234,8 @@ jobs:
           . "\$HOME/.nb-deploy.conf"
           NB_DEPLOY_API=$DEPLOY_API
           NB_RUN_MIGRATIONS=0
+          NB_BACKUP_KEEP=100000
+          NB_RELEASE_KEEP=100000
           NB_BUILD_WEB=0
           NB_WEB_BUILD_ROOT="$BUILD"
           CONF
