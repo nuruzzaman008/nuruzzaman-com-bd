@@ -4,10 +4,12 @@ import { redirect } from 'next/navigation';
 import { ApiError, type User } from '@nuruzzaman/contracts';
 
 import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switcher';
+import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
 import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
+import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { pageDictionary } from '@/lib/i18n/page';
 import { dashboardNavLabel, dashboardNav } from '@/lib/site';
@@ -44,7 +46,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/account');
   }
 
-  const locale = adminLocaleFrom((await cookies()).get(ADMIN_LOCALE_COOKIE)?.value);
+  const cookieStore = await cookies();
+  const locale = adminLocaleFrom(cookieStore.get(ADMIN_LOCALE_COOKIE)?.value);
+  // Read on the server, like the language, so a collapsed menu renders
+  // collapsed from the first byte instead of flashing open and then closing.
+  const sidebarCollapsed = sidebarCollapsedFrom(cookieStore.get(ADMIN_SIDEBAR_COOKIE)?.value);
   const { t } = pageDictionary(locale);
 
   /*
@@ -69,7 +75,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-dvh flex-1 flex-col bg-surface lg:flex-row">
-      <aside className="border-b border-line bg-navy text-white lg:w-64 lg:border-e lg:border-b-0">
+      <AdminSidebar
+        initialCollapsed={sidebarCollapsed}
+        collapseLabel={t.admin.sidebarCollapse}
+        expandLabel={t.admin.sidebarExpand}
+      >
         <div className="p-5">
           <Link href="/" className="flex items-center gap-2 text-white hover:text-amber">
             <span
@@ -124,7 +134,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <Link href="/dashboard/payments" className="mb-3 block rounded px-3 py-2 text-sm hover:bg-white/10">{locale === 'en' ? 'Payment verification' : 'Payment যাচাই'}</Link>}
           <SignOutButton variant="inverse" className="mt-1" />
         </div>
-      </aside>
+      </AdminSidebar>
 
       <main id="main" className="min-w-0 flex-1 p-5 sm:p-8">
         {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <PendingPaymentAlert />}

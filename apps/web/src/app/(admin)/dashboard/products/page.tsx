@@ -56,7 +56,7 @@ export default async function DashboardProductsPage() {
               render: (product) =>
                 product.id ? (
                   <Link
-                    href={`/dashboard/products/${product.id}/seo`}
+                    href={`/dashboard/products/${product.id}`}
                     className="text-blue hover:underline"
                   >
                     {t.admin.products.analysis}

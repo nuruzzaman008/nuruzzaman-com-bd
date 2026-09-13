@@ -1157,6 +1157,8 @@ const bn = {
   */
   admin: {
     shellTitle: 'অ্যাডমিন',
+    sidebarCollapse: 'মেনু ছোট করুন',
+    sidebarExpand: 'মেনু বড় করুন',
     verifyRequiredTitle: 'আগে ইমেইল যাচাই করুন',
     verifyRequired:
       'ড্যাশবোর্ডের সব তথ্যের জন্য যাচাই করা ইমেইল প্রয়োজন। ইমেইলের লিংকে ক্লিক করুন, অথবা নিচ থেকে নতুন লিংক নিন। যাচাই হলে এই পাতাটি আবার খুলুন।',
@@ -1397,7 +1399,6 @@ const bn = {
       uploadUnreadable: 'ছবিটি পড়া যায়নি — ফাইলটি নষ্ট বা অন্য ফরম্যাটের হতে পারে।',
       uploadFailed: 'ছবি আপলোড করা যায়নি।',
       altMissing: 'এই ছবির alt টেক্সট নেই — উপরের বর্ণনার ঘরে লিখে “সংরক্ষণ করুন” চাপুন।',
-      seoLink: 'SEO বিশ্লেষণ',
       viewPublic: 'সাইটে দেখুন',
       save: 'সংরক্ষণ করুন',
       saving: 'সংরক্ষণ হচ্ছে…',
@@ -2731,6 +2732,8 @@ const en: Dictionary = {
 
   admin: {
     shellTitle: 'Admin',
+    sidebarCollapse: 'Collapse the menu',
+    sidebarExpand: 'Expand the menu',
     verifyRequiredTitle: 'Verify your email first',
     verifyRequired:
       'The dashboard needs a verified email address before it will load any data. Open the link in your email, or send yourself a new one below, then come back to this page.',
@@ -2974,7 +2977,6 @@ const en: Dictionary = {
       uploadUnreadable: 'The image could not be read — the file may be damaged or in another format.',
       uploadFailed: 'The image could not be uploaded.',
       altMissing: 'This image has no alt text — write a description above and click “Save changes”.',
-      seoLink: 'SEO analysis',
       viewPublic: 'View on the site',
       save: 'Save changes',
       saving: 'Saving…',
