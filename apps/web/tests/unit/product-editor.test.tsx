@@ -185,8 +185,9 @@ describe('ProductEditor', () => {
     render(<ProductEditor initial={product} />);
 
     expect(screen.queryByText(/media library/i)).not.toBeInTheDocument();
-    // The product type, plus the formatting toolbar's colour, size and font.
-    expect(screen.getAllByRole('combobox')).toHaveLength(4);
+    // The product type, plus the formatting toolbar's block format, font, size
+    // and colour.
+    expect(screen.getAllByRole('combobox')).toHaveLength(5);
     expect(screen.queryByRole('link', { name: 'SEO analysis' })).not.toBeInTheDocument();
   });
 

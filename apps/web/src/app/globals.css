@@ -195,6 +195,50 @@
   .prose-nb .nb-font-serif { font-family: ui-serif, Georgia, 'Times New Roman', serif; }
   .prose-nb .nb-font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
+  .prose-nb sup,
+  .prose-nb sub {
+    font-size: 0.75em;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+
+  .prose-nb sup { top: -0.5em; }
+  .prose-nb sub { bottom: -0.25em; }
+
+  .prose-nb del {
+    text-decoration: line-through;
+    color: var(--color-muted);
+  }
+
+  /*
+    Block formatting from the editor: alignment, indentation and list styles,
+    which the API puts on paragraphs, headings, lists and quotes as these
+    classes. Indents are smaller on a phone, where every rem of width counts.
+  */
+  .prose-nb .nb-align-center { text-align: center; }
+  .prose-nb .nb-align-right { text-align: right; }
+  .prose-nb .nb-align-justify { text-align: justify; }
+
+  .prose-nb .nb-indent-1 { margin-inline-start: 1rem; }
+  .prose-nb .nb-indent-2 { margin-inline-start: 2rem; }
+  .prose-nb .nb-indent-3 { margin-inline-start: 3rem; }
+
+  @media (min-width: 40rem) {
+    .prose-nb .nb-indent-1 { margin-inline-start: 2rem; }
+    .prose-nb .nb-indent-2 { margin-inline-start: 4rem; }
+    .prose-nb .nb-indent-3 { margin-inline-start: 6rem; }
+  }
+
+  .prose-nb .nb-list-disc { list-style-type: disc; }
+  .prose-nb .nb-list-circle { list-style-type: circle; }
+  .prose-nb .nb-list-square { list-style-type: square; }
+  .prose-nb .nb-list-decimal { list-style-type: decimal; }
+  .prose-nb .nb-list-lower-alpha { list-style-type: lower-alpha; }
+  .prose-nb .nb-list-upper-alpha { list-style-type: upper-alpha; }
+  .prose-nb .nb-list-lower-roman { list-style-type: lower-roman; }
+  .prose-nb .nb-list-upper-roman { list-style-type: upper-roman; }
+
   .prose-nb a {
     color: var(--color-blue);
     text-decoration: underline;
