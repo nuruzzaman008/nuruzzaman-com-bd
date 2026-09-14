@@ -62,7 +62,9 @@ jobs:
           composer install --no-interaction --prefer-dist --no-scripts
           cp .env.example .env
           php artisan key:generate --no-interaction
-      - name: Verify upload permissions and existing attachment behavior
+      # LessonDeletionTest: deleting a lesson or section also removes the files
+      # it kept on the hosting, and nobody without edit rights can delete.
+      - name: Verify upload permissions, attachment behavior and lesson deletion
         working-directory: apps/api
         env:
           APP_ENV: testing
@@ -72,7 +74,7 @@ jobs:
           DB_DATABASE: nuruzzaman_test
           DB_USERNAME: root
           DB_PASSWORD: devroot
-        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest'
+        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest'
 
   deploy:
     needs: upload-api-tests
