@@ -1,7 +1,5 @@
 'use client';
 
-import { MediaFileInput } from '@/components/ui/media-file-input';
-
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,12 +12,11 @@ import { taxonomyLabel } from '@/lib/i18n/labels';
 import { Button } from '@/components/ui/button';
 import { MarkdownTextarea } from '@/components/ui/markdown-editor';
 import { CoverArt } from '@/components/ui/cover-art';
-import { LessonAssessments } from '@/features/admin/lesson-assessments';
+import { LessonCard } from '@/features/admin/lesson-card';
 import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { CoursePricingFields, pricingFromForm, type CoursePricing } from '@/features/admin/course-pricing-fields';
-import { DocumentLinkAdder, LessonForm, type LessonDraft } from '@/features/admin/lesson-form';
-import { documentProvider, PROVIDER_NAMES } from '@/lib/document-link';
+import { LessonForm, type LessonDraft } from '@/features/admin/lesson-form';
 
 type Asset = { id: number; title: string; size_bytes: number | null; kind?: 'file' | 'link'; link_url?: string | null };
 type Lesson = { id: number; title: string; slug: string; type: string; course_section_id: number; body_markdown: string | null; video_url: string | null; video_provider: string | null; video_asset_id: string | null; duration_seconds: number | null; position: number; drip_days: number | null; is_free_preview: boolean; assets: Asset[] };
@@ -203,14 +200,6 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
     await reload();
   }
 
-  async function moveAsset(lesson: Lesson, id: number, direction: number) {
-    const ids = lesson.assets.map((asset) => asset.id);
-    const index = ids.indexOf(id); const next = index + direction;
-    if (next < 0 || next >= ids.length) return;
-    [ids[index], ids[next]] = [ids[next], ids[index]];
-    await api(`${base}/lessons/${lesson.id}/assets/reorder`, { method: 'PUT', body: { ids } });
-    await reload();
-  }
   return <div className="space-y-8">
     <header><Link className="text-sm text-blue" href="/dashboard/courses">← {bn ? 'সব কোর্স' : 'All courses'}</Link><h1 className="mt-3 text-3xl font-bold text-navy">{course ? (bn ? 'কোর্স ও পাঠ সম্পাদনা' : 'Course & curriculum editor') : (bn ? 'নতুন কোর্স' : 'New course')}</h1><p className="mt-2 text-muted">{bn ? 'অধ্যায় তৈরি করুন, ক্রমানুসারে পাঠ যোগ করুন। প্রতিটি পাঠে ভিডিও, লেখা ও একাধিক ফাইল রাখতে পারবেন।' : 'Create sections and ordered lessons. Combine video, text and multiple files in each lesson.'}</p></header>
     {error ? <p role="alert" className="rounded-lg bg-danger/10 p-4 text-danger">{error}</p> : null}
@@ -278,24 +267,22 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
             </div>
           </div>
           {editingSection === section.id && <form aria-label={`Edit section ${section.title}`} onSubmit={(event) => saveSection(event, section)} className="mt-4 flex flex-wrap items-end gap-3"><label className="flex-1">{bn ? 'অধ্যায়ের নাম' : 'Section title'}<input required maxLength={255} name="title" defaultValue={section.title} className={input} /></label><label className="w-28">{bn ? 'কত দিন পরে' : 'Drip days'}<input name="drip_days" type="number" min="0" max="3650" defaultValue={section.drip_days ?? ''} className={input} /></label><Button type="submit" disabled={busy}>{bn ? 'সংরক্ষণ' : 'Save'}</Button><Button type="button" variant="secondary" disabled={busy} onClick={() => setEditingSection(null)}>{bn ? 'বাতিল' : 'Cancel'}</Button></form>}
-          <ol className="mt-5 space-y-4">{section.lessons.map((lesson) => <li key={lesson.id} className="rounded-lg border border-line p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold text-navy">{lesson.title}</h3><p className="text-xs text-muted">{lesson.type} · {lesson.assets.length} {bn ? 'ফাইল' : 'files'}</p></div><div className="flex gap-3 text-sm text-blue"><button type="button" disabled={busy} aria-label={`Move ${lesson.title} up`} onClick={() => void action(() => moveLesson(lesson, -1))}>↑</button><button type="button" disabled={busy} aria-label={`Move ${lesson.title} down`} onClick={() => void action(() => moveLesson(lesson, 1))}>↓</button><button type="button" onClick={() => { setEditing(lesson); document.getElementById('lesson-editor')?.scrollIntoView({ behavior: 'smooth' }); }}>{bn ? 'সম্পাদনা' : 'Edit'}</button></div></div>
-            <label className="mt-3 block text-sm font-semibold text-blue">{bn ? 'ভিডিও আপলোড (MP4/WebM, সর্বোচ্চ 100 MB)' : 'Upload video (MP4/WebM, up to 100 MB)'}<MediaFileInput scope="course" courseId={course?.id} type="file" accept=".mp4,.webm" disabled={busy} className="mt-2 block w-full text-xs" onChange={(event) => {
-              const file = event.target.files?.[0]; const control = event.target;
-              if (!file) return;
-              // Sent in 1 MB parts: the host refuses any single upload over 2 MB.
-              void action(async () => { try { if (file.size > MAX_FILE_BYTES) throw new Error(bn ? 'ভিডিও ১০০ MB-এর বেশি হতে পারবে না।' : 'Video must be 100 MB or smaller.'); const parts = await uploadInParts(file, (fraction) => setProgress({ name: file.name, fraction })); await api(`${base}/lessons/${lesson.id}/video`, { method: 'POST', body: parts }); await reload(); } finally { control.value = ''; setProgress(null); } });
-            }} /></label>
-            {lesson.video_provider === 'uploaded' ? <p className="mt-2 text-sm text-success">{bn ? 'আপলোড করা ভিডিও প্রস্তুত' : 'Uploaded video ready'}</p> : null}
-            {lesson.video_url ? <p className="mt-2 break-all text-xs text-muted">{lesson.video_url}</p> : null}
-            <ul className="mt-3 space-y-2">{lesson.assets.map((asset) => <li key={asset.id} className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0">{lesson.assets.indexOf(asset) + 1}. {asset.title} · {asset.kind === 'link' ? <a href={asset.link_url ?? '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue hover:underline">{PROVIDER_NAMES[documentProvider(asset.link_url ?? '') ?? 'other']} ↗</a> : `${((asset.size_bytes ?? 0) / 1024).toFixed(0)} KB`}</span><span className="flex gap-3"><button type="button" disabled={busy || lesson.assets[0]?.id === asset.id} aria-label={`Move ${asset.title} up`} onClick={() => void action(() => moveAsset(lesson, asset.id, -1))}>↑</button><button type="button" disabled={busy || lesson.assets.at(-1)?.id === asset.id} aria-label={`Move ${asset.title} down`} onClick={() => void action(() => moveAsset(lesson, asset.id, 1))}>↓</button></span><button className="text-danger" disabled={busy} type="button" onClick={() => { if (window.confirm(bn ? 'এই ফাইল মুছে ফেলবেন?' : 'Delete this file?')) void action(async () => { await api(`${base}/lessons/${lesson.id}/assets/${asset.id}`, { method: 'DELETE' }); await reload(); }); }}>{bn ? 'মুছুন' : 'Delete'}</button></li>)}</ul>
-            <label className="mt-4 block text-sm font-semibold text-blue">{bn ? 'পাঠে ফাইল যোগ করুন — PDF, DOCX, XLSX, PPTX, DWG, ZIP বা যেকোনো ফাইল (একাধিক নির্বাচন করা যাবে)' : 'Attach lesson files — PDF, DOCX, XLSX, PPTX, DWG, ZIP or any other file (multiple allowed)'}<MediaFileInput scope="course" courseId={course?.id} type="file" multiple disabled={busy} className="mt-2 block w-full text-xs" onChange={(event) => {
-              const files = Array.from(event.target.files ?? []); const control = event.target;
-              void action(async () => { try { for (const file of files) { if (file.size > MAX_FILE_BYTES) throw new Error(bn ? `${file.name}: প্রতি ফাইল সর্বোচ্চ ১০০ MB।` : `${file.name}: files can be up to 100 MB.`); const parts = await uploadInParts(file, (fraction) => setProgress({ name: file.name, fraction })); await api(`${base}/lessons/${lesson.id}/assets`, { method: 'POST', body: { ...parts, title: file.name.slice(0, 200) } }); } } finally { control.value = ''; setProgress(null); await reload(); } });
-            }} /></label><p className="mt-1 text-xs text-muted">{bn ? 'প্রতি ফাইল সর্বোচ্চ ১০০ MB; বড় ফাইল টুকরো করে পাঠানো হয়। নিরাপত্তার জন্য .php জাতীয় সার্ভার-স্ক্রিপ্ট নেওয়া হয় না।' : 'Up to 100 MB per file; large files are sent in parts. Server scripts such as .php are refused for safety.'}</p>
-            <div className="mt-4"><DocumentLinkAdder disabled={busy} onAdd={(link) => action(async () => { await api(`${base}/lessons/${lesson.id}/links`, { method: 'POST', body: { url: link.url, title: link.title || null } }); await reload(); })} /></div>
-            <button type="button" className="mt-4 text-sm font-semibold text-blue" aria-expanded={assessmentLesson === lesson.id} onClick={() => setAssessmentLesson(assessmentLesson === lesson.id ? null : lesson.id)}>{bn ? 'কুইজ / অ্যাসাইনমেন্ট' : 'Quiz / assignment'}</button>{assessmentLesson === lesson.id ? <LessonAssessments courseId={course.id} lessonId={lesson.id} /> : null}
-          </li>)}</ol>
+          {/* One compact row per lesson: its video, files and links one line
+              each, with the places to add more opened only when asked for. */}
+          <ol className="mt-4 space-y-2">{section.lessons.map((lesson) => <LessonCard
+            key={lesson.id}
+            lesson={lesson}
+            courseId={course.id}
+            base={base}
+            busy={busy}
+            run={action}
+            reload={reload}
+            onProgress={setProgress}
+            onEdit={() => { setEditing(lesson); document.getElementById('lesson-editor')?.scrollIntoView({ behavior: 'smooth' }); }}
+            onMove={(direction) => void action(() => moveLesson(lesson, direction))}
+            assessmentOpen={assessmentLesson === lesson.id}
+            onToggleAssessment={() => setAssessmentLesson(assessmentLesson === lesson.id ? null : lesson.id)}
+          />)}</ol>
         </div>)}
         <form onSubmit={(event) => saveSection(event)} className="flex items-end gap-3 rounded-xl border border-dashed border-line p-5"><label className="flex-1">{bn ? 'নতুন অধ্যায়' : 'New section'}<input name="title" required className={input} /></label><Button disabled={busy} type="submit">{bn ? 'অধ্যায় যোগ করুন' : 'Add section'}</Button></form>
       </section>

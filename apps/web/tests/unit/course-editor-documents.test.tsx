@@ -110,6 +110,8 @@ describe('CourseEditor lesson documents', () => {
     render(<CourseEditor initial={course()} />);
 
     const url = 'https://www.dropbox.com/scl/fi/abc/Notes.pdf?rlkey=x&dl=0';
+    // The lesson's link box stays closed until "+ Link" asks for it.
+    fireEvent.click(screen.getByRole('button', { name: '+ Link' }));
     fireEvent.change(screen.getAllByLabelText(/^Document link/)[0], { target: { value: url } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Add link' })[0]);
 
