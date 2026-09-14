@@ -5255,6 +5255,7 @@ paths:
       tags: [Admin]
       operationId: adminUploadReleaseFile
       summary: Upload the installer to private storage and compute its checksum
+      description: An .exe, .msi or .zip up to 300 MB. Installers normally arrive in parts through /admin/uploads/chunks and are named here by upload id; a replaced file is deleted.
       security: [{ sessionCookie: [] }]
       parameters:
         - { name: downloadAsset, in: path, required: true, schema: { type: integer } }
@@ -5267,6 +5268,14 @@ paths:
               required: [file]
               properties:
                 file: { type: string, format: binary }
+          application/json:
+            schema:
+              type: object
+              required: [upload_id, total, filename]
+              properties:
+                upload_id: { type: string, format: uuid }
+                total: { type: integer, minimum: 1, maximum: 320 }
+                filename: { type: string }
       responses:
         '200':
           description: OK
@@ -5277,6 +5286,39 @@ paths:
                 required: [data]
                 properties:
                   data: { type: object, additionalProperties: true }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /admin/download-assets/{downloadAsset}/variants:
+    put:
+      tags: [Admin]
+      operationId: adminSyncReleaseVariants
+      summary: Set which product variants give a buyer this release
+      description: Granted when an order is fulfilled, so a change reaches new orders.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: downloadAsset, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [variant_ids]
+              properties:
+                variant_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/DownloadAsset' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
 

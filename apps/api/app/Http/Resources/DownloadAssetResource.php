@@ -22,6 +22,21 @@ class DownloadAssetResource extends JsonResource
             'release_notes_html' => Markdown::toHtml($this->release_notes_markdown),
             'released_at' => $this->released_at?->toIso8601String(),
             'is_available' => $this->isServable(),
+
+            // What the releases dashboard needs to manage a release, for staff
+            // who can: its id, the uploaded file's name and the licences that
+            // give a buyer this download.
+            ...$this->when(
+                (bool) $request->user()?->hasPermission('downloads.manage'),
+                fn () => [
+                    'id' => $this->id,
+                    'original_filename' => $this->original_filename,
+                    'variant_ids' => $this->relationLoaded('variants')
+                        ? $this->variants->pluck('id')->values()->all()
+                        : [],
+                ],
+                [],
+            ),
         ];
     }
 }

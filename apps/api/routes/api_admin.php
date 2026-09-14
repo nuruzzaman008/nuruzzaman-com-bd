@@ -104,6 +104,7 @@ Route::middleware([
     Route::post('download-assets', [Admin\DownloadAssetController::class, 'store']);
     Route::patch('download-assets/{downloadAsset:id}', [Admin\DownloadAssetController::class, 'update']);
     Route::post('download-assets/{downloadAsset:id}/file', [Admin\DownloadAssetController::class, 'upload']);
+    Route::put('download-assets/{downloadAsset:id}/variants', [Admin\DownloadAssetController::class, 'syncVariants']);
 });
 
 Route::middleware([

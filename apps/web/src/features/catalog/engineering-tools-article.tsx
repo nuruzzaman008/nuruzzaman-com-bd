@@ -279,10 +279,10 @@ export async function EngineeringToolsArticle({
                     <dt className="text-muted">{t.tools.modules}</dt>
                     <dd className="font-latin font-medium text-navy">{MODULE_COUNT}</dd>
                   </div>
-                  <div>
-                    <dt className="text-muted">SHA-256</dt>
-                    <dd className="font-latin mt-1 text-xs break-all text-navy">
-                      {release?.data?.checksum_sha256 ?? t.tools.checksumPending}
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">Installer</dt>
+                    <dd className="font-latin font-medium text-navy">
+                      {en ? '4 (AutoCAD 2024–2027)' : '৪টি (AutoCAD 2024–2027)'}
                     </dd>
                   </div>
                 </dl>

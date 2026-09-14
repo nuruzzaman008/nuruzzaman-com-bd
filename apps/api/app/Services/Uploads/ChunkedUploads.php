@@ -27,8 +27,11 @@ final class ChunkedUploads
     /** Well under the host's 2 MB, leaving room for the form around the part. */
     public const MAX_PART_KB = 1536;
 
-    /** Enough for a 100 MB file in 1 MB parts, with room to spare. */
-    public const MAX_PARTS = 200;
+    /**
+     * Enough for a 300 MB software installer in 1 MB parts, with room to spare.
+     * Each endpoint still sets its own size limit; this only bounds the count.
+     */
+    public const MAX_PARTS = 320;
 
     /** What one person may have waiting in unfinished uploads at once. */
     private const MAX_PENDING_BYTES = 1024 * 1024 * 1024;
