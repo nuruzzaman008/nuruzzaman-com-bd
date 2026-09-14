@@ -35,6 +35,7 @@ const lesson: CardLesson = {
 
 function setup(overrides: Partial<CardLesson> = {}) {
   const reload = vi.fn(async () => {});
+  const onDelete = vi.fn();
 
   render(
     <ol>
@@ -48,13 +49,14 @@ function setup(overrides: Partial<CardLesson> = {}) {
         onProgress={vi.fn()}
         onEdit={vi.fn()}
         onMove={vi.fn()}
+        onDelete={onDelete}
         assessmentOpen={false}
         onToggleAssessment={vi.fn()}
       />
     </ol>,
   );
 
-  return { reload };
+  return { reload, onDelete };
 }
 
 function call(path: string, method: string) {
@@ -153,6 +155,14 @@ describe('LessonCard', () => {
     expect(call('/admin/courses/12/lessons/5/assets/reorder', 'PUT')![1].body).toEqual({
       ids: [2, 1],
     });
+  });
+
+  it('has a red Delete lesson button that hands the whole lesson to the editor', () => {
+    const { onDelete } = setup();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lesson: lesson title02' }));
+
+    expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
   it('deletes a file once confirmed', async () => {

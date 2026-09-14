@@ -55,7 +55,7 @@ describe('MediaFileInput trigger', () => {
     );
   });
 
-  it('gives the lesson form its large blue upload button, opening the course’s Media', async () => {
+  it('gives the lesson form its file button, opening the course’s Media', async () => {
     render(
       <LessonForm
         courseId={12}

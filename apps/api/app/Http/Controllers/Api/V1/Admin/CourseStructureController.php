@@ -12,6 +12,7 @@ use App\Support\LessonVideoUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class CourseStructureController extends Controller
@@ -91,7 +92,9 @@ class CourseStructureController extends Controller
         $this->authorize('update', $course);
         abort_unless($section->course_id === $course->getKey(), 404);
 
+        $files = $this->storedFiles($section->lessons()->with('assets')->get());
         $section->delete();
+        $this->forgetFiles($files);
 
         return response()->json(['message' => 'Section deleted.']);
     }
@@ -123,9 +126,54 @@ class CourseStructureController extends Controller
         $this->authorize('update', $course);
         abort_unless($lesson->course_id === $course->getKey(), 404);
 
+        // Its documents, links, quiz, assignment and learners' progress go with
+        // the row; the files it keeps on the hosting are removed here.
+        $files = $this->storedFiles([$lesson->load('assets')]);
         $lesson->delete();
+        $this->forgetFiles($files);
 
         return response()->json(['message' => 'Lesson deleted.']);
+    }
+
+    /**
+     * The files lessons keep on the hosting - uploaded documents and an uploaded
+     * video - gathered before the rows go, so nothing is left taking up space
+     * with nothing pointing at it. Links, and videos kept elsewhere, have none.
+     *
+     * @param  iterable<Lesson>  $lessons
+     * @return list<array{0: string, 1: string}> disk and path
+     */
+    private function storedFiles(iterable $lessons): array
+    {
+        $files = [];
+
+        foreach ($lessons as $lesson) {
+            foreach ($lesson->assets as $asset) {
+                if (! $asset->isLink() && filled($asset->storage_path)) {
+                    $files[] = [$asset->disk, $asset->storage_path];
+                }
+            }
+
+            $video = (string) $lesson->video_asset_id;
+
+            if ($lesson->video_provider === 'uploaded' && str_starts_with($video, 'lesson-videos/'.$lesson->id.'/') && ! str_contains($video, '..')) {
+                $files[] = ['private', $video];
+            }
+        }
+
+        return $files;
+    }
+
+    /** Removed only once the rows are gone; a file that cannot be removed does not undo that. */
+    private function forgetFiles(array $files): void
+    {
+        foreach ($files as [$disk, $path]) {
+            try {
+                Storage::disk($disk)->delete($path);
+            } catch (\Throwable $error) {
+                report($error);
+            }
+        }
     }
 
     /** Bulk reorder so drag-and-drop in the admin is a single request. */

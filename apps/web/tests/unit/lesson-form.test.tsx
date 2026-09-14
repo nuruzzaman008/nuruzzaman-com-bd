@@ -26,6 +26,20 @@ function setup(lesson: EditableLesson | null = null, taken: string[] = [], lesso
   );
 }
 
+const existing: EditableLesson = {
+  id: 5,
+  title: 'Video 01',
+  slug: 'video01',
+  type: 'video',
+  course_section_id: 1,
+  body_markdown: null,
+  video_url: 'https://youtu.be/dQw4w9WgXcQ',
+  duration_seconds: null,
+  drip_days: null,
+  is_free_preview: false,
+  assets: [],
+};
+
 const slugField = () => screen.getByLabelText(/^URL slug/) as HTMLInputElement;
 const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save lesson' }));
 const draft = () => onSave.mock.calls.at(-1)![0];
@@ -69,22 +83,7 @@ describe('LessonForm', () => {
   });
 
   it('keeps an existing lesson’s slug when its title changes', () => {
-    setup(
-      {
-        id: 5,
-        title: 'Video 01',
-        slug: 'video01',
-        type: 'video',
-        course_section_id: 1,
-        body_markdown: null,
-        video_url: 'https://youtu.be/dQw4w9WgXcQ',
-        duration_seconds: null,
-        drip_days: null,
-        is_free_preview: false,
-        assets: [],
-      },
-      ['video01'],
-    );
+    setup(existing, ['video01']);
 
     fireEvent.change(screen.getByLabelText('Lesson title'), { target: { value: 'Introduction' } });
     save();
@@ -118,6 +117,9 @@ describe('LessonForm', () => {
       },
     });
 
+    // The link box stays folded away until "+ Link" is pressed.
+    expect(screen.queryByLabelText(/^Document link/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '+ Link' }));
     fireEvent.change(screen.getByLabelText(/^Document link/), {
       target: { value: 'drive.google.com/file/d/1/view' },
     });
@@ -148,6 +150,7 @@ describe('LessonForm', () => {
   it('adds a link with Enter instead of saving the lesson', () => {
     setup();
 
+    fireEvent.click(screen.getByRole('button', { name: '+ Link' }));
     fireEvent.change(screen.getByLabelText(/^Document link/), {
       target: { value: 'https://www.dropbox.com/scl/fi/abc/Notes.pdf?dl=0' },
     });
@@ -157,5 +160,40 @@ describe('LessonForm', () => {
     expect(
       within(screen.getByRole('list', { name: 'Attached when saved' })).getByText('Dropbox'),
     ).toBeInTheDocument();
+  });
+
+  it('keeps the lesson text and the rarely changed settings folded away, still saved with the lesson', () => {
+    setup();
+
+    const settings = screen.getByText(/^More settings/).closest('details')!;
+    expect(settings).not.toHaveAttribute('open');
+    expect(
+      screen.getByText('Lesson content / instructions (optional)').closest('details'),
+    ).not.toHaveAttribute('open');
+
+    fireEvent.change(screen.getByLabelText('Lesson title'), { target: { value: 'Loads' } });
+    fireEvent.change(within(settings).getByLabelText('Unlock days after enrollment'), {
+      target: { value: '7' },
+    });
+    save();
+
+    expect(draft().values).toMatchObject({ slug: 'loads', drip_days: 7 });
+  });
+
+  it('opens the lesson text for a text lesson', () => {
+    setup();
+
+    fireEvent.change(screen.getByLabelText('Lesson type'), { target: { value: 'text' } });
+
+    expect(
+      screen.getByText('Lesson content / instructions (optional)').closest('details'),
+    ).toHaveAttribute('open');
+  });
+
+  it('ends with Save and Cancel only - a lesson is deleted from its row in the list', () => {
+    setup(existing, ['video01']);
+
+    expect(screen.getByRole('button', { name: 'Save lesson' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete/ })).not.toBeInTheDocument();
   });
 });

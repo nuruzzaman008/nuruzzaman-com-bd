@@ -78,7 +78,8 @@ describe('CourseEditor lesson documents', () => {
     });
     fireEvent.change(screen.getByLabelText('Lesson type'), { target: { value: 'download' } });
 
-    // The first link box belongs to the existing lesson's card; the last to the new lesson's form.
+    // The first "+ Link" and link box belong to the existing lesson's card; the last to the new lesson's form.
+    fireEvent.click(screen.getAllByRole('button', { name: '+ Link' }).at(-1)!);
     const url = 'https://drive.google.com/file/d/1AbC/view?usp=sharing';
     fireEvent.change(screen.getAllByLabelText(/^Document link/).at(-1)!, {
       target: { value: url },
@@ -111,7 +112,7 @@ describe('CourseEditor lesson documents', () => {
 
     const url = 'https://www.dropbox.com/scl/fi/abc/Notes.pdf?rlkey=x&dl=0';
     // The lesson's link box stays closed until "+ Link" asks for it.
-    fireEvent.click(screen.getByRole('button', { name: '+ Link' }));
+    fireEvent.click(screen.getAllByRole('button', { name: '+ Link' })[0]);
     fireEvent.change(screen.getAllByLabelText(/^Document link/)[0], { target: { value: url } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Add link' })[0]);
 
@@ -147,5 +148,54 @@ describe('CourseEditor lesson documents', () => {
       'href',
       'https://www.dropbox.com/s/abc/Notes.pdf?dl=1',
     );
+  });
+});
+
+describe('CourseEditor lesson deletion', () => {
+  it('deletes the whole lesson from its red button once confirmed', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<CourseEditor initial={course()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lesson: Video 01' }));
+
+    expect(confirm.mock.calls[0][0]).toMatch(/Delete the lesson “Video 01” completely\?/);
+    await waitFor(() => expect(call('/admin/courses/12/lessons/5', 'DELETE')).toBeGreaterThan(-1));
+    confirm.mockRestore();
+  });
+
+  it('deletes nothing when the question is answered no', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<CourseEditor initial={course()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lesson: Video 01' }));
+
+    expect(call('/admin/courses/12/lessons/5', 'DELETE')).toBe(-1);
+    confirm.mockRestore();
+  });
+
+  it('puts the Delete button first in the row, just before + Video', () => {
+    render(<CourseEditor initial={course()} />);
+
+    const remove = screen.getByRole('button', { name: 'Delete lesson: Video 01' });
+    const addVideo = screen.getByRole('button', { name: '+ Video' });
+
+    expect(remove.nextElementSibling).toBe(addVideo);
+    expect(remove.className).toContain('bg-danger');
+  });
+
+  it('closes the lesson form when the lesson being edited is deleted', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    Element.prototype.scrollIntoView = vi.fn();
+    render(<CourseEditor initial={course()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit lesson: Video 01' }));
+    expect(screen.getByRole('heading', { name: 'Edit lesson' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lesson: Video 01' }));
+
+    await waitFor(() => expect(call('/admin/courses/12/lessons/5', 'DELETE')).toBeGreaterThan(-1));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Add lesson' })).toBeInTheDocument(),
+    );
+    confirm.mockRestore();
   });
 });

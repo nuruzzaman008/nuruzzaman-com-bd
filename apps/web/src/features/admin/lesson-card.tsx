@@ -56,6 +56,7 @@ export function LessonCard({
   onProgress,
   onEdit,
   onMove,
+  onDelete,
   assessmentOpen,
   onToggleAssessment,
 }: {
@@ -70,6 +71,8 @@ export function LessonCard({
   onProgress: (progress: { name: string; fraction: number } | null) => void;
   onEdit: () => void;
   onMove: (direction: -1 | 1) => void;
+  /** Deletes the whole lesson; the editor asks first. */
+  onDelete: () => void;
   assessmentOpen: boolean;
   onToggleAssessment: () => void;
 }) {
@@ -211,6 +214,15 @@ export function LessonCard({
           <span className="text-xs text-muted">· {typeLabel}</span>
         </p>
         <div className="flex flex-wrap items-center gap-0.5">
+          <button
+            type="button"
+            className="me-1 inline-flex min-h-8 items-center rounded-md bg-danger px-2.5 text-sm font-semibold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+            disabled={busy}
+            aria-label={`${bn ? 'পাঠ মুছুন' : 'Delete lesson'}: ${lesson.title}`}
+            onClick={onDelete}
+          >
+            {bn ? 'মুছুন' : 'Delete'}
+          </button>
           {(['video', 'file', 'link'] as const).map((kind) => (
             <button
               key={kind}
@@ -231,7 +243,12 @@ export function LessonCard({
           >
             {bn ? 'কুইজ / অ্যাসাইনমেন্ট' : 'Quiz / assignment'}
           </button>
-          <button type="button" className={SMALL} onClick={onEdit}>
+          <button
+            type="button"
+            className={SMALL}
+            aria-label={`${bn ? 'পাঠ সম্পাদনা' : 'Edit lesson'}: ${lesson.title}`}
+            onClick={onEdit}
+          >
             {bn ? 'সম্পাদনা' : 'Edit'}
           </button>
           <button

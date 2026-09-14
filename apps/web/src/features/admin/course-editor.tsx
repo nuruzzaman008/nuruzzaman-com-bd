@@ -186,6 +186,20 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
       if (failed) throw new Error(bn ? `পাঠ সংরক্ষিত হয়েছে, কিন্তু একটি ডকুমেন্ট যুক্ত করা যায়নি: ${failed}। পাঠের তালিকা থেকে আবার যোগ করুন।` : `The lesson was saved, but a document could not be attached: ${failed}. Add it again from the lesson list.`);
     });
   }
+  /** The whole lesson: its row, video, files and links, quiz or assignment, and learners' progress in it. */
+  function deleteLesson(lesson: Lesson) {
+    const count = lesson.assets.length;
+    const warning = bn
+      ? `“${lesson.title}” পাঠটি পুরোপুরি মুছে ফেলবেন? এর ভিডিও, ${count}টি ফাইল/লিংক, কুইজ/অ্যাসাইনমেন্ট ও শিক্ষার্থীদের এই পাঠের অগ্রগতিও মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।`
+      : `Delete the lesson “${lesson.title}” completely? Its video, ${count} file(s)/link(s), quiz/assignment and learners’ progress in it will also be removed. This cannot be undone.`;
+    if (!window.confirm(warning)) return;
+    void action(async () => {
+      await api(`${base}/lessons/${lesson.id}`, { method: 'DELETE' });
+      if (editing?.id === lesson.id) { setEditing(null); setLessonFormVersion((version) => version + 1); }
+      if (assessmentLesson === lesson.id) setAssessmentLesson(null);
+      await reload();
+    });
+  }
   async function moveLesson(lesson: Lesson, direction: number) {
     const rows = course!.sections.flatMap((section) => section.lessons);
     const index = rows.findIndex((row) => row.id === lesson.id);
@@ -280,6 +294,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
             onProgress={setProgress}
             onEdit={() => { setEditing(lesson); document.getElementById('lesson-editor')?.scrollIntoView({ behavior: 'smooth' }); }}
             onMove={(direction) => void action(() => moveLesson(lesson, direction))}
+            onDelete={() => deleteLesson(lesson)}
             assessmentOpen={assessmentLesson === lesson.id}
             onToggleAssessment={() => setAssessmentLesson(assessmentLesson === lesson.id ? null : lesson.id)}
           />)}</ol>
