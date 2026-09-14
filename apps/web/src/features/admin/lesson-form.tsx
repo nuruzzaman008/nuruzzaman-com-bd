@@ -346,11 +346,11 @@ export function LessonForm({
             {bn ? 'হোস্টিংয়ে সরাসরি ফাইল আপলোড' : 'Upload files to hosting'}
           </h3>
           <label htmlFor={fileInputId} className="text-sm font-medium text-navy">
-            {bn
-              ? 'কম্পিউটার থেকে ফাইল বেছে নিন (একাধিক)'
-              : 'Choose files from the computer (several at once)'}
+            {bn ? 'ফাইল বাছুন (একাধিক)' : 'Choose files (several at once)'}
           </label>
-          <MediaFileInput scope="course" courseId={courseId}
+          <MediaFileInput
+            scope="course"
+            courseId={courseId}
             id={fileInputId}
             type="file"
             multiple
@@ -359,13 +359,20 @@ export function LessonForm({
               addFiles(Array.from(event.target.files ?? []));
               event.target.value = '';
             }}
-            className="mt-3 block w-full cursor-pointer text-sm text-navy file:me-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue file:px-5 file:py-3 file:font-semibold file:text-white disabled:opacity-50"
+            className="mt-3 block"
+            // The large blue button: this is the main way files reach a lesson.
+            triggerLabel={
+              bn
+                ? 'ফাইল বাছুন — Media থেকে বা নতুন আপলোড'
+                : 'Choose files — from Media or upload new'
+            }
+            triggerClassName="w-full px-6 shadow-md sm:w-auto"
             aria-describedby={`${fileInputId}-help`}
           />
           <p id={`${fileInputId}-help`} className="mt-3 text-sm text-muted">
             {bn
-              ? 'Choose Files চাপুন, কম্পিউটার বা মোবাইল থেকে ফাইল বাছুন, তারপর Save lesson চাপুন। ফাইল সরাসরি আমাদের হোস্টিংয়ে সংরক্ষিত হবে। প্রতি ফাইল সর্বোচ্চ ১০০ MB।'
-              : 'Click Choose Files, select files from your computer or phone, then click Save lesson. Files are stored directly on our hosting. Up to 100 MB per file.'}
+              ? 'বাটনে চাপলে আগে আপলোড করা ফাইল (Media) দেখাবে — সেখান থেকে বাছুন। না থাকলে একই জায়গা থেকে কম্পিউটার বা মোবাইলের নতুন ফাইল দিন, তারপর Save lesson চাপুন। ফাইল আমাদের হোস্টিংয়ে সংরক্ষিত হবে। প্রতি ফাইল সর্বোচ্চ ১০০ MB।'
+              : 'The button opens your earlier uploads (Media) — choose from there. If the file is not there, add a new one from your computer or phone in the same place, then click Save lesson. Files are stored on our hosting. Up to 100 MB per file.'}
           </p>
         </div>
 
@@ -467,8 +474,6 @@ export function LessonForm({
           className="min-h-48 text-navy"
         />
       </div>
-
-
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label>

@@ -29,6 +29,14 @@ class ApiContractTest extends TestCase
         'api/v1/me/confirm-password' => 'Account security form, not used by the generated client.',
         'api/v1/me/sessions' => 'Device list, rendered by the account UI only.',
         'api/v1/me/sessions/{id}' => 'Device revoke, rendered by the account UI only.',
+        'api/v1/auth/google/redirect' => 'Browser redirect to Google sign-in; followed by the browser, not called by the client.',
+        'api/v1/auth/google/callback' => 'Google sends the browser back here; not called by the client.',
+        'api/v1/lesson-video/{lesson}' => 'Short-lived signed video address from a lesson\'s playback descriptor, played by the video element.',
+        'api/v1/licensing/pair' => 'Called by the AutoCAD plugin, not by the web client.',
+        'api/v1/licensing/delivery' => 'Called by the AutoCAD plugin with its device token, not by the web client.',
+        'api/v1/licensing/acknowledge' => 'Called by the AutoCAD plugin with its device token, not by the web client.',
+        'api/v1/licensing/worker/pending' => 'Private licence-signing worker endpoint with its own token.',
+        'api/v1/licensing/worker/complete' => 'Private licence-signing worker endpoint with its own token.',
     ];
 
     private function spec(): array

@@ -274,8 +274,8 @@ jobs:
           . "\$HOME/.nb-deploy.conf"
           NB_DEPLOY_API=$DEPLOY_API
           NB_RUN_MIGRATIONS=0
-          NB_BACKUP_KEEP=100000
-          NB_RELEASE_KEEP=100000
+          NB_BACKUP_KEEP=3
+          NB_RELEASE_KEEP=5
           NB_BUILD_WEB=0
           NB_WEB_BUILD_ROOT="$BUILD"
           CONF

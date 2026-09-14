@@ -6357,6 +6357,1080 @@
         }
       }
     },
+    "/checkout/orders/{number}/payment": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "getOrderPayment",
+        "summary": "Payment options and earlier submissions for one of the buyer's orders",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "order",
+                        "methods",
+                        "gateway_enabled",
+                        "gateway_test_mode",
+                        "submissions"
+                      ],
+                      "properties": {
+                        "order": {
+                          "$ref": "#/components/schemas/Order"
+                        },
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "enum": [
+                                  "bkash",
+                                  "nagad",
+                                  "rocket",
+                                  "bank"
+                                ]
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "recipient": {
+                                "type": "string"
+                              },
+                              "instructions": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "gateway_enabled": {
+                          "type": "boolean"
+                        },
+                        "gateway_test_mode": {
+                          "type": "boolean"
+                        },
+                        "submissions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "method": {
+                                "type": "string"
+                              },
+                              "transaction_id": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "approved",
+                                  "rejected"
+                                ]
+                              },
+                              "review_note": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "created_at": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/checkout/orders/{number}/payment/manual": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "submitManualPayment",
+        "summary": "Submit a mobile banking or bank transfer payment for manual verification",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "transaction_id",
+                  "sender",
+                  "proof"
+                ],
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "bkash",
+                      "nagad",
+                      "rocket",
+                      "bank"
+                    ]
+                  },
+                  "transaction_id": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 100
+                  },
+                  "sender": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 100
+                  },
+                  "proof": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPG, PNG or WebP, up to 5 MB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The order's payment options and submissions, as GET returns them"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The order is not awaiting payment, or a payment already awaits review"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/checkout/orders/{number}/payment/gateway": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "startGatewayPayment",
+        "summary": "Start an online card payment",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where to send the buyer to pay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "redirect_url"
+                      ],
+                      "properties": {
+                        "redirect_url": {
+                          "type": "string",
+                          "format": "uri"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "description": "A submitted payment is awaiting review"
+          },
+          "422": {
+            "description": "Online card payment is not configured"
+          }
+        }
+      }
+    },
+    "/me/avatar": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "getOwnAvatar",
+        "summary": "The signed-in user's profile photo",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image, private and not cached",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "No profile photo"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "uploadOwnAvatar",
+        "summary": "Replace the signed-in user's profile photo",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "photo"
+                ],
+                "properties": {
+                  "photo": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPG, PNG or WebP, up to 5 MB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/account/connect-device": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "connectAutocadDevice",
+        "summary": "Confirm an AutoCAD pairing code against one of the user's licences",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "license_code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 48,
+                    "maxLength": 48
+                  },
+                  "license_code": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "connected": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/account/refill-device": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "refillAutocadDevice",
+        "summary": "Queue a credit refill from a paid order onto a connected licence",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "order_number",
+                  "license_code"
+                ],
+                "properties": {
+                  "order_number": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "license_code": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "queued": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/admin/manual-payments": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminListManualPayments",
+        "summary": "Manual payment submissions, newest first",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected"
+              ],
+              "default": "pending"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of submissions with their order; the proof's storage path is never included",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "current_page": {
+                      "type": "integer"
+                    },
+                    "last_page": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/manual-payments/pending-count": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminCountPendingManualPayments",
+        "summary": "How many manual payments await review",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pending_count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/manual-payments/{id}/proof": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminViewPaymentProof",
+        "summary": "The payment screenshot a buyer submitted",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image, private, sandboxed and not cached",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/admin/manual-payments/{id}/review": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminReviewManualPayment",
+        "summary": "Approve or reject a manual payment",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decision",
+                  "note"
+                ],
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approved",
+                      "rejected"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  },
+                  "confirmed_amount_minor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Required when approving; must equal the order total"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review saved"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Already reviewed, or the order no longer awaits payment"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/admin/payment-methods": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminGetPaymentMethods",
+        "summary": "The manual payment methods and their receiving accounts",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The four methods: bkash, nagad, rocket and bank"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminUpdatePaymentMethods",
+        "summary": "Update the manual payment methods",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "methods"
+                ],
+                "properties": {
+                  "methods": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "enabled"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "enum": [
+                            "bkash",
+                            "nagad",
+                            "rocket",
+                            "bank"
+                          ]
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "recipient": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 1000
+                        },
+                        "instructions": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 2000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved methods"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/admin/users/{user}/avatar": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminViewUserAvatar",
+        "summary": "A user's profile photo",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image, private and not cached",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/admin/courses/{course}/price": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminSetCoursePrice",
+        "summary": "Set a course's regular price, with no offer",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "amount_minor"
+                ],
+                "properties": {
+                  "amount_minor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/admin/courses/{course}/lessons/{lesson}/video": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminUploadLessonVideo",
+        "summary": "Upload a lesson's video (MP4 or WebM, up to 100 MB)",
+        "description": "Send the video itself, or - for anything over the host's 2 MB\nper-request limit - send it in parts to /admin/uploads/chunks first and\nname them here with upload_id, total and filename.\n",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lesson",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "video": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "upload_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  },
+                  "filename": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/admin/courses/{course}/lessons/{lesson}/assets/reorder": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminReorderLessonAssets",
+        "summary": "Put a lesson's files and links in a new order",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lesson",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "Every asset of the lesson exactly once, in the new order."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The lesson's assets in their new order"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/admin/markdown/preview": {
       "post": {
         "tags": [

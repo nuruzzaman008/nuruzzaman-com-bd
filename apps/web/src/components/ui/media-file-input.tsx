@@ -26,6 +26,10 @@ type Item = {
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   scope?: 'public' | 'personal' | 'course';
   courseId?: number;
+  /** The button's words, where the default "Choose from Media / Upload" is not enough. */
+  triggerLabel?: string;
+  /** Extra classes for a larger, more prominent button. */
+  triggerClassName?: string;
 };
 
 export function acceptsFile(name: string, mime: string, accept = ''): boolean {
@@ -50,7 +54,7 @@ export function acceptsFile(name: string, mime: string, accept = ''): boolean {
 
 /** Keeps the existing upload field and its validation; only changes how files are chosen. */
 export const MediaFileInput = forwardRef<HTMLInputElement, Props>(function MediaFileInput(
-  { scope = 'personal', courseId, className, onChange, ...props },
+  { scope = 'personal', courseId, className, onChange, triggerLabel, triggerClassName, ...props },
   ref,
 ) {
   const { locale } = useLocale();
@@ -177,8 +181,14 @@ export const MediaFileInput = forwardRef<HTMLInputElement, Props>(function Media
       />
       {!className?.includes('sr-only') && (
         <span className="mt-2 block space-y-2">
-          <Button type="button" disabled={props.disabled || busy} onClick={show}>
-            {bn ? 'Media থেকে ফাইল বাছুন / আপলোড' : 'Choose from Media / Upload'}
+          <Button
+            type="button"
+            size={triggerClassName ? 'lg' : 'md'}
+            className={triggerClassName}
+            disabled={props.disabled || busy}
+            onClick={show}
+          >
+            {triggerLabel ?? (bn ? 'Media থেকে ফাইল বাছুন / আপলোড' : 'Choose from Media / Upload')}
           </Button>
           {names && <span className="block break-all text-sm text-muted">{names}</span>}
         </span>
