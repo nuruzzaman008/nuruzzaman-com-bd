@@ -123,6 +123,33 @@ describe('CourseOutlineNav', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps a locked lesson to its lock and title, and explains the lock once under the list', () => {
+    const { unmount } = render(
+      <CourseOutlineNav outline={outline()} currentSlug="basics" locale="en" />,
+    );
+
+    // No "Opens once…" line or lesson-type icon on the row - only the lock.
+    const row = screen.getByText('Final quiz').closest('p')!;
+    expect(row.querySelectorAll('svg')).toHaveLength(1);
+    expect(within(row).getByText('Opens once the previous lesson is complete')).toHaveClass(
+      'sr-only',
+    );
+
+    // Said once, under all the classes.
+    expect(
+      screen.getAllByText('Locked lessons open once the previous lesson is complete'),
+    ).toHaveLength(1);
+    unmount();
+
+    const open = outline();
+    open.sections[1].lessons[2] = { ...open.sections[1].lessons[2], is_unlocked: true };
+    render(<CourseOutlineNav outline={open} currentSlug="basics" locale="en" />);
+
+    expect(
+      screen.queryByText('Locked lessons open once the previous lesson is complete'),
+    ).not.toBeInTheDocument();
+  });
+
   it('offers the exam once a quiz lesson is open, and explains why not before', () => {
     const { unmount } = render(
       <CourseOutlineNav outline={outline()} currentSlug="basics" locale="en" />,

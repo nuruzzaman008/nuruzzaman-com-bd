@@ -22,6 +22,8 @@ const KIND_ICONS: Record<Kind, string> = {
   assignment: 'M12.5 3.5l4 4-8 8H4.5v-4zM10.5 5.5l4 4',
 };
 
+const LOCK = 'M6 9V6.5a4 4 0 0 1 8 0V9M5 9h10v8H5z';
+
 /** What a lesson mainly is, for its icon and label in the list. */
 function kindOf(lesson: OutlineLesson): Kind {
   if (lesson.type === 'quiz' || lesson.has_quiz) return 'quiz';
@@ -57,7 +59,7 @@ function Mark({ lesson }: { lesson: OutlineLesson }) {
         aria-hidden="true"
         className="mt-0.5 flex size-5 shrink-0 items-center justify-center text-muted"
       >
-        <Svg path="M6 9V6.5a4 4 0 0 1 8 0V9M5 9h10v8H5z" className="size-4" />
+        <Svg path={LOCK} className="size-4" />
       </span>
     );
   }
@@ -105,15 +107,13 @@ function LessonRow({
         number(lesson.assets_count, locale),
       )
     : null;
-  const meta = lesson.is_unlocked
-    ? [
-        words.lessonKinds[kind],
-        files,
-        lesson.duration_seconds ? duration(lesson.duration_seconds, locale) : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : words.lockedLesson;
+  const meta = [
+    words.lessonKinds[kind],
+    files,
+    lesson.duration_seconds ? duration(lesson.duration_seconds, locale) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   const content = (
     <>
@@ -122,10 +122,16 @@ function LessonRow({
         <span className="block leading-snug" data-authored="true">
           {lesson.title}
         </span>
-        <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-muted">
-          <Svg path={KIND_ICONS[kind]} className="size-3.5" />
-          {meta}
-        </span>
+        {lesson.is_unlocked ? (
+          <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-muted">
+            <Svg path={KIND_ICONS[kind]} className="size-3.5" />
+            {meta}
+          </span>
+        ) : (
+          // Shown once under the whole list rather than on every locked row;
+          // a screen reader still hears it on the row itself.
+          <span className="sr-only">{words.lockedLesson}</span>
+        )}
       </span>
     </>
   );
@@ -181,6 +187,9 @@ export function CourseOutlineNav({
     .flatMap((section) => section.lessons)
     .filter((lesson) => lesson.type === 'quiz' || lesson.has_quiz);
   const exam = quizzes.find((lesson) => lesson.is_unlocked) ?? null;
+  const hasLocked = outline.sections.some((section) =>
+    section.lessons.some((lesson) => !lesson.is_unlocked),
+  );
 
   return (
     <div className="space-y-3">
@@ -250,6 +259,13 @@ export function CourseOutlineNav({
             );
           })}
         </ol>
+
+        {hasLocked ? (
+          <p className="flex items-center gap-1.5 border-t border-line px-4 py-2.5 text-xs text-muted">
+            <Svg path={LOCK} className="size-3.5" />
+            {words.lockedNote}
+          </p>
+        ) : null}
       </nav>
 
       <div className="space-y-2">
