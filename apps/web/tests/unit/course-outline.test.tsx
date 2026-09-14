@@ -112,17 +112,28 @@ describe('CourseOutlineNav', () => {
     expect(screen.getByText('Final quiz')).toBeInTheDocument();
   });
 
-  it('keeps each lesson to its title, adding only a file count or length when there is one', () => {
+  it('puts a small video or document icon before each title, with no type line under it', () => {
     render(<CourseOutlineNav outline={outline()} currentSlug="basics" locale="en" />);
 
+    const video = screen.getByRole('link', { name: /Basic principles/ });
+    expect(video.querySelector('[data-kind="video"] svg')).not.toBeNull();
+    // Heard by a screen reader, never shown as a second line.
+    expect(within(video).getByText('Video:')).toHaveClass('sr-only');
+
     const documents = screen.getByRole('link', { name: /Documents/ });
+    expect(documents.querySelector('[data-kind="file"] svg')).not.toBeNull();
     expect(within(documents).getByText('2 files')).toBeInTheDocument();
     expect(within(documents).queryByText(/Document ·/)).not.toBeInTheDocument();
+  });
 
-    // A plain video lesson: the tick and the title - no "Video" label, no icon.
-    const video = screen.getByRole('link', { name: /Basic principles/ });
-    expect(within(video).queryByText('Video')).not.toBeInTheDocument();
-    expect(video.querySelectorAll('svg')).toHaveLength(1);
+  it('shows a text lesson that carries files as a document', () => {
+    const withFiles = outline();
+    withFiles.sections[0].lessons[0] = lesson('notes', 'Class notes', { assets_count: 1 });
+    render(<CourseOutlineNav outline={withFiles} currentSlug="basics" locale="en" />);
+
+    const notes = screen.getByRole('link', { name: /Class notes/ });
+    expect(notes.querySelector('[data-kind="file"]')).not.toBeNull();
+    expect(within(notes).getByText('1 file')).toBeInTheDocument();
   });
 
   it('keeps a locked lesson to its lock and title, and explains the lock once under the list', () => {
@@ -130,9 +141,10 @@ describe('CourseOutlineNav', () => {
       <CourseOutlineNav outline={outline()} currentSlug="basics" locale="en" />,
     );
 
-    // No "Opens once…" line or lesson-type icon on the row - only the lock.
+    // No "Opens once…" line on the row - the lock, the quiz icon and the title.
     const row = screen.getByText('Final quiz').closest('p')!;
-    expect(row.querySelectorAll('svg')).toHaveLength(1);
+    expect(row.querySelectorAll('svg')).toHaveLength(2);
+    expect(row.querySelector('[data-kind="quiz"]')).not.toBeNull();
     expect(within(row).getByText('Opens once the previous lesson is complete')).toHaveClass(
       'sr-only',
     );
