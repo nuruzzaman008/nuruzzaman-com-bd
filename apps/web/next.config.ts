@@ -97,27 +97,38 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     return [
+      // The one NB Engineering Tools article is its product page, where the
+      // main menu points; every older address for it goes straight there.
+      {
+        source: '/engineering-tools',
+        destination: '/products/nb-engineering-tools',
+        permanent: true,
+      },
+      {
+        source: '/en/engineering-tools',
+        destination: '/en/products/nb-engineering-tools',
+        permanent: true,
+      },
       {
         // The slug recommended in the owner's product document.
         source: '/nb-engineering-tools-autocad-structural-design-software',
-        destination: '/engineering-tools',
+        destination: '/products/nb-engineering-tools',
         permanent: true,
       },
       {
         source: '/nb-engineering-tools',
-        destination: '/engineering-tools',
+        destination: '/products/nb-engineering-tools',
         permanent: true,
       },
-      // A workflow outline that stood in for an article about the same software;
-      // everything it promised is on the engineering tools page.
+      // A workflow outline that stood in for an article about the same software.
       {
         source: '/blog/nb-engineering-tools-workflow-overview',
-        destination: '/engineering-tools',
+        destination: '/products/nb-engineering-tools',
         permanent: true,
       },
       {
         source: '/en/blog/nb-engineering-tools-workflow-overview',
-        destination: '/en/engineering-tools',
+        destination: '/en/products/nb-engineering-tools',
         permanent: true,
       },
       // The catalogue lived at /shop until it took the name the header, the

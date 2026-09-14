@@ -64,6 +64,11 @@ class ProductResource extends JsonResource
                     'name_raw' => $this->name,
                     'cover_media_id' => $this->cover_media_id,
                     'is_price_public' => (bool) $this->is_price_public,
+                    // Every variant, switched off ones included, so the
+                    // dashboard can price them and switch them back on.
+                    'all_variants' => $this->relationLoaded('variants')
+                        ? ProductVariantResource::collection($this->variants->sortBy('position')->values())
+                        : [],
                 ],
                 [],
             ),

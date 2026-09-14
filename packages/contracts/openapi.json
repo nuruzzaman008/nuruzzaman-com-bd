@@ -14385,6 +14385,9 @@
             ],
             "description": "Null when no price has been published yet."
           },
+          "is_active": {
+            "type": "boolean"
+          },
           "is_purchasable": {
             "type": "boolean"
           }

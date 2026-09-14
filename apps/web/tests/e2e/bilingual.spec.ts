@@ -41,7 +41,13 @@ async function interfaceText(page: import('@playwright/test').Page): Promise<str
   });
 }
 
-const ENGLISH_ROUTES = ['/en', '/en/blog', '/en/courses', '/en/engineering-tools', '/en/products'];
+const ENGLISH_ROUTES = [
+  '/en',
+  '/en/blog',
+  '/en/courses',
+  '/en/products/nb-engineering-tools',
+  '/en/products',
+];
 
 test.describe('the English site', () => {
   for (const route of ENGLISH_ROUTES) {
@@ -65,9 +71,9 @@ test.describe('the English site', () => {
 
     // Every in-site link on an English page belongs to the English tree, except
     // the signed-in applications, which have no English URLs.
-    const hrefs = await page.locator('a[href^="/"]').evaluateAll((links) =>
-      links.map((link) => link.getAttribute('href') ?? ''),
-    );
+    const hrefs = await page
+      .locator('a[href^="/"]')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
 
     const strays = hrefs.filter(
       (href) =>

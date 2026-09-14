@@ -1,42 +1,47 @@
 import Link from 'next/link';
-import type { Product } from '@nuruzzaman/contracts';
+import type { Product, ProductVariant } from '@nuruzzaman/contracts';
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
 import { tryPublicApi } from '@/lib/api/server';
 import { localizePath, type Locale } from '@/lib/i18n/locale';
 
-const PACK_SKUS = ['NBC-500', 'NBC-2000', 'NBC-5000', 'NBC-15000'];
+const TOOLS_PATH = '/products/nb-engineering-tools';
 
-/** The licences on sale, in the order a buyer compares them. */
-const LICENCES = [
-  {
-    sku: 'NBET-V6-SINGLE',
-    bn: '১টি PC',
-    en: '1 PC',
-    noteBn: 'সাথে 1,000 NB Credits (activation-এর পর)',
-    noteEn: 'Includes 1,000 NB Credits (after activation)',
-  },
-  {
-    sku: 'NBET-V6-OFFICE-3',
-    bn: 'অফিস প্যাক — ৩টি PC',
-    en: 'Office pack — 3 PCs',
-    noteBn: 'একটি লাইসেন্স, ৩টি computer পর্যন্ত',
-    noteEn: 'One licence for up to 3 computers',
-  },
-  {
-    sku: 'NBET-V6-OFFICE-5',
-    bn: 'অফিস প্যাক — ৫টি PC',
-    en: 'Office pack — 5 PCs',
-    noteBn: 'একটি লাইসেন্স, ৫টি computer পর্যন্ত',
-    noteEn: 'One licence for up to 5 computers',
-  },
-];
+const count = (value: number, en: boolean) => value.toLocaleString(en ? 'en-BD' : 'bn-BD');
+
+/** How a licence is named: by the number of computers it activates. */
+function licenceTitle(variant: ProductVariant, en: boolean): string {
+  const devices = variant.device_limit ?? 1;
+
+  if (devices === 1) {
+    return en ? '1 PC' : '১টি PC';
+  }
+
+  return en ? `Office pack — ${devices} PCs` : `অফিস প্যাক — ${count(devices, en)}টি PC`;
+}
+
+function licenceNote(variant: ProductVariant, en: boolean): string {
+  const devices = variant.device_limit ?? 1;
+
+  if (devices === 1) {
+    return en
+      ? 'Includes 1,000 NB Credits (after activation)'
+      : 'সাথে 1,000 NB Credits (activation-এর পর)';
+  }
+
+  return en
+    ? `One licence for up to ${devices} computers`
+    : `একটি লাইসেন্স, ${count(devices, en)}টি computer পর্যন্ত`;
+}
 
 /**
- * Licence and NB Credit prices, and how to buy. Used in full on the
- * engineering tools page and compact on the home page. What licences and
- * credits are, and their policies, are explained once on the engineering tools
- * page; this block only prices them.
+ * Licence and NB Credit prices, and how to buy. Used in full on the NB
+ * Engineering Tools page and compact on the home page.
+ *
+ * Every licence and credit pack on sale is listed, with the price set in the
+ * dashboard, so a pack or office licence added there appears here without a
+ * code change. What licences and credits are is explained once, in the
+ * article; this block only prices them.
  */
 export async function CreditGuide({
   locale,
@@ -58,15 +63,14 @@ export async function CreditGuide({
       tags: ['products', 'product:nb-engineering-tools'],
     }),
   ]);
-  const packs = (credits?.data.variants ?? [])
-    .filter((variant) => PACK_SKUS.includes(variant.sku) && variant.is_purchasable)
-    .sort((a, b) => Number(a.sku.replace('NBC-', '')) - Number(b.sku.replace('NBC-', '')));
-  const licences = LICENCES.flatMap((licence) => {
-    const variant = software?.data.variants?.find((row) => row.sku === licence.sku);
 
-    return variant ? [{ ...licence, variant }] : [];
-  });
-  const launch = licences.find((licence) => licence.sku === 'NBET-V6-SINGLE')?.variant.price
+  const packs = (credits?.data.variants ?? [])
+    .filter((variant) => variant.is_purchasable && variant.credit_amount)
+    .sort((a, b) => (a.credit_amount ?? 0) - (b.credit_amount ?? 0));
+  const licences = (software?.data.variants ?? [])
+    .filter((variant) => variant.is_purchasable)
+    .sort((a, b) => (a.device_limit ?? 1) - (b.device_limit ?? 1));
+  const launch = licences.find((variant) => (variant.device_limit ?? 1) === 1)?.price
     ?.compare_at_minor;
 
   const steps = en
@@ -98,20 +102,18 @@ export async function CreditGuide({
       </h2>
       <p className="mt-3 text-muted">
         {en
-          ? 'A licence activates the software - on one PC, or on 3 or 5 PCs for an office. NB Credits pay for paid engineering operations; choose the pack that suits your work.'
-          : 'লাইসেন্স দিয়ে software activate হয় — ১টি PC-তে, অথবা অফিসের জন্য ৩ বা ৫টি PC-তে। NB Credits দিয়ে paid engineering operation চলে; কাজের প্রয়োজন অনুযায়ী pack বেছে নিন।'}
+          ? 'A licence activates the software on one PC, or on several for an office. NB Credits pay for paid engineering operations; choose the pack that suits your work.'
+          : 'লাইসেন্স দিয়ে software activate হয় — ১টি PC-তে, অথবা অফিসের জন্য একাধিক PC-তে। NB Credits দিয়ে paid engineering operation চলে; কাজের প্রয়োজন অনুযায়ী pack বেছে নিন।'}
       </p>
 
-      <h3 className="mt-6 text-xl font-bold text-navy">
-        {en ? 'Software licence' : 'Software licence'}
-      </h3>
+      <h3 className="mt-6 text-xl font-bold text-navy">Software licence</h3>
       {licences.length ? (
         <div className="mt-3 grid gap-4 sm:grid-cols-3">
-          {licences.map((licence) => (
-            <div key={licence.sku} className="rounded-xl bg-blue-soft p-5">
-              <h4 className="font-bold text-navy">{en ? licence.en : licence.bn}</h4>
-              <p className="mt-1 mb-3 text-sm text-muted">{en ? licence.noteEn : licence.noteBn}</p>
-              <AddToCart variants={[licence.variant]} openCart />
+          {licences.map((variant) => (
+            <div key={variant.id} className="rounded-xl bg-blue-soft p-5">
+              <h4 className="font-bold text-navy">{licenceTitle(variant, en)}</h4>
+              <p className="mt-1 mb-3 text-sm text-muted">{licenceNote(variant, en)}</p>
+              <AddToCart variants={[variant]} openCart />
             </div>
           ))}
         </div>
@@ -131,18 +133,18 @@ export async function CreditGuide({
       ) : null}
 
       <h3 className="mt-8 text-xl font-bold text-navy">NB Credits</h3>
-      <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {packs.map((pack) => (
-          <div key={pack.id} className="rounded-xl border border-line p-5">
-            <h4 className="mb-3 text-xl font-bold">
-              {Number(pack.sku.replace('NBC-', '')).toLocaleString(en ? 'en-BD' : 'bn-BD')} NB
-              Credits
-            </h4>
-            <AddToCart variants={[pack]} openCart />
-          </div>
-        ))}
-      </div>
-      {!packs.length && (
+      {packs.length ? (
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {packs.map((pack) => (
+            <div key={pack.id} className="rounded-xl border border-line p-5">
+              <h4 className="mb-3 text-xl font-bold">
+                {count(pack.credit_amount ?? 0, en)} NB Credits
+              </h4>
+              <AddToCart variants={[pack]} openCart />
+            </div>
+          ))}
+        </div>
+      ) : (
         <p className="mt-3">
           {en
             ? 'Credit prices are temporarily unavailable. Please contact support before paying.'
@@ -158,7 +160,7 @@ export async function CreditGuide({
       {compact ? (
         <Link
           className="mt-5 inline-block font-semibold text-blue underline"
-          href={`${localizePath('/engineering-tools', locale)}#payment-guide`}
+          href={`${localizePath(TOOLS_PATH, locale)}#payment-guide`}
         >
           {en
             ? 'Read the complete payment & refill guide →'
@@ -181,12 +183,8 @@ export async function CreditGuide({
           </p>
           <div className="mt-5 flex flex-wrap gap-5 text-sm font-semibold text-blue">
             <Link href="/account/orders">{en ? 'My orders' : 'আমার orders'}</Link>
-            <Link href="/account/activation-requests">
-              {en ? 'Activation / refill request' : 'Activation / refill request'}
-            </Link>
-            <Link href={localizePath('/support/license-recovery', locale)}>
-              {en ? 'Recovery policy' : 'Recovery policy'}
-            </Link>
+            <Link href="/account/activation-requests">Activation / refill request</Link>
+            <Link href={localizePath('/support/license-recovery', locale)}>Recovery policy</Link>
             <Link href={localizePath('/contact', locale)}>
               {en ? 'Contact support' : 'Support-এ যোগাযোগ'}
             </Link>

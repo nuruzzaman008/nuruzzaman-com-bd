@@ -23,7 +23,6 @@ const STATIC_ROUTES: {
   { path: '/', priority: 1, changeFrequency: 'weekly' },
   { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/courses', priority: 0.8, changeFrequency: 'weekly' },
-  { path: '/engineering-tools', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/products', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/blog', priority: 0.9, changeFrequency: 'daily' },
   { path: '/resources', priority: 0.5, changeFrequency: 'monthly' },
@@ -94,12 +93,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const [key, prefix, priority, changeFrequency] of dynamic) {
     for (const item of feed.data[key] ?? []) {
-      // The software's listing names the engineering tools page as its
-      // canonical, and that page is already a static route above.
-      if (key === 'products' && item.slug === 'nb-engineering-tools') {
-        continue;
-      }
-
       const url = absoluteUrl(`${prefix}/${item.slug}`);
 
       if (listed.has(url)) {

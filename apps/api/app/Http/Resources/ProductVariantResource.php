@@ -24,6 +24,7 @@ class ProductVariantResource extends JsonResource
             'course_slug' => $this->whenLoaded('course', fn () => $this->course?->slug),
             // Null price is an honest "contact for price" state, never zero.
             'price' => $price ? new PriceResource($price) : null,
+            'is_active' => (bool) $this->is_active,
             'is_purchasable' => (bool) $this->is_active && $price !== null,
         ];
     }

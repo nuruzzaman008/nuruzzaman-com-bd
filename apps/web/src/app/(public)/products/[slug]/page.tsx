@@ -4,6 +4,12 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { ApiError, type Product } from '@nuruzzaman/contracts';
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
+import {
+  EngineeringToolsArticle,
+  TOOLS_METADATA,
+  TOOLS_PATH,
+  TOOLS_SLUG,
+} from '@/features/catalog/engineering-tools-article';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
@@ -32,23 +38,18 @@ async function loadProduct(slug: string, locale: Locale = DEFAULT_LOCALE): Promi
   }
 }
 
-/**
- * The software's listing: its one full article is the engineering tools page,
- * so this page keeps only what a buyer needs and points there, and search
- * engines are told the article is the page to show.
- */
-const TOOLS_SLUG = 'nb-engineering-tools';
-
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await props.params;
   const product = await loadProduct(slug);
 
+  // The software's page is its full article, titled as the owner's document
+  // titles it; SEO fields set in the dashboard still take precedence.
   return buildMetadata({
-    title: product.name,
-    description: product.tagline,
-    path: product.slug === TOOLS_SLUG ? '/engineering-tools' : `/products/${product.slug}`,
+    ...(product.slug === TOOLS_SLUG
+      ? { ...TOOLS_METADATA, path: TOOLS_PATH }
+      : { title: product.name, description: product.tagline, path: `/products/${product.slug}` }),
     image: product.cover_url,
     seo: product.seo,
   });
@@ -72,7 +73,9 @@ export default async function ProductPage(
     permanentRedirect(localizePath(`/courses/${courseSlug}`, locale));
   }
 
-  const isTools = product.slug === TOOLS_SLUG;
+  if (product.slug === TOOLS_SLUG) {
+    return <EngineeringToolsArticle locale={locale} tools={product} />;
+  }
 
   const cheapest = (product.variants ?? [])
     .map((variant) => variant.price)
@@ -133,20 +136,7 @@ export default async function ProductPage(
               />
             ) : null}
 
-            {isTools ? (
-              <Callout tone="info" className="mt-8">
-                {locale === 'en'
-                  ? 'Modules, workflows, licences, NB Credits, installation and the FAQ are all on one page: '
-                  : 'মডিউল, workflow, লাইসেন্স, NB Credits, ইনস্টলেশন ও সাধারণ জিজ্ঞাসা — সব এক পাতায়: '}
-                <LocaleLink href="/engineering-tools" className="font-semibold underline">
-                  {locale === 'en'
-                    ? 'NB Engineering Tools — full details'
-                    : 'NB Engineering Tools — সম্পূর্ণ বিবরণ'}
-                </LocaleLink>
-              </Callout>
-            ) : null}
-
-            {!isTools && product.description_html ? (
+            {product.description_html ? (
               <div className="mt-8">
                 {product.copy_translated ? null : (
                   <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
@@ -157,7 +147,7 @@ export default async function ProductPage(
               </div>
             ) : null}
 
-            {!isTools && product.feature_groups?.length ? (
+            {product.feature_groups?.length ? (
               <section className="mt-10">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
                   {t.product.featureGroups}
@@ -175,7 +165,7 @@ export default async function ProductPage(
               </section>
             ) : null}
 
-            {!isTools && product.specs && Object.keys(product.specs).length > 0 ? (
+            {product.specs && Object.keys(product.specs).length > 0 ? (
               <section className="mt-10">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
                   {t.product.specifications}

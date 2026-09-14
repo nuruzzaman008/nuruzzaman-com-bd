@@ -49,7 +49,7 @@ test.describe('public pages', () => {
   });
 
   test('a product without a published price never shows a zero price', async ({ page }) => {
-    await page.goto('/engineering-tools');
+    await page.goto('/products/nb-engineering-tools');
 
     await expect(page.getByText('দাম জানতে যোগাযোগ করুন').first()).toBeVisible();
     await expect(page.getByText('০.০০৳')).toHaveCount(0);

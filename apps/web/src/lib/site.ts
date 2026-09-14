@@ -48,7 +48,8 @@ export function navItemLabel(item: NavItem, t: Dictionary): string {
 export const primaryNav: NavItem[] = [
   { href: '/', labelKey: 'home' },
   { href: '/courses', labelKey: 'courses', descriptionKey: 'courses' },
-  { href: '/engineering-tools', labelKey: 'tools', descriptionKey: 'tools' },
+  // The software's product page is its full article.
+  { href: '/products/nb-engineering-tools', labelKey: 'tools', descriptionKey: 'tools' },
   // Next to the tools rather than at the end: /products is where a reader buys,
   // and the catalogue had no link from the header at all until now.
   { href: '/products', labelKey: 'products', descriptionKey: 'products' },

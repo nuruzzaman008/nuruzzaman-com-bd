@@ -45,7 +45,7 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
 
-        return new ProductResource($product->load(['activeVariants.prices', 'cover', 'seo']));
+        return new ProductResource($product->load(['activeVariants.prices', 'variants.prices', 'cover', 'seo']));
     }
 
     public function store(Request $request): ProductResource

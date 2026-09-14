@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\Content\RevalidationService;
 use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class ProductVariantController extends Controller
         ]);
 
         $variant->update($validated);
+        $this->refreshPages($product);
 
         return response()->json(['data' => $variant->fresh()]);
     }
@@ -72,15 +74,34 @@ class ProductVariantController extends Controller
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
         ]);
 
-        $variant->prices()->update(['is_active' => false]);
-        $price = $variant->prices()->create($validated + ['is_active' => true]);
+        // The price being replaced keeps its row, closed today, as the record of
+        // what earlier orders were charged.
+        $variant->prices()->where('is_active', true)->update(['is_active' => false, 'ends_at' => now()]);
+        $price = $variant->prices()->create($validated + ['is_active' => true, 'starts_at' => $validated['starts_at'] ?? now()]);
 
         Audit::record('product.price_published', $variant, [
             'sku' => $variant->sku,
             'amount_minor' => $price->amount_minor,
+            'compare_at_minor' => $price->compare_at_minor,
         ]);
 
+        $this->refreshPages($product);
+
         return response()->json(['data' => $price], 201);
+    }
+
+    /**
+     * Shows a price or availability change on the site at once, rather than
+     * when the cached pages next expire. A site that cannot be reached does not
+     * undo the change, which is already saved.
+     */
+    private function refreshPages(Product $product): void
+    {
+        try {
+            app(RevalidationService::class)->revalidate(['products', 'product:'.$product->slug]);
+        } catch (\Throwable $error) {
+            report($error);
+        }
     }
 
     /** Links protected download assets to what a variant entitles. */

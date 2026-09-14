@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox, ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { MarkdownTextarea } from '@/components/ui/markdown-editor';
 import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
+import type { PricedVariant } from '@/features/dashboard/product-prices';
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { ApiError, api } from '@/lib/api/browser';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -28,6 +29,8 @@ export type EditableProduct = {
   cover_url?: string | null;
   cover_alt?: string | null;
   is_price_public?: boolean;
+  /** Every variant, switched off ones included, with its current price. */
+  all_variants?: PricedVariant[];
   seo?: {
     meta_title?: string | null;
     meta_description?: string | null;
@@ -88,7 +91,11 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
 
   const image = useFeaturedImage({
     initialCover: initial.cover_media_id
-      ? { id: initial.cover_media_id, url: initial.cover_url ?? null, alt: initial.cover_alt ?? null }
+      ? {
+          id: initial.cover_media_id,
+          url: initial.cover_url ?? null,
+          alt: initial.cover_alt ?? null,
+        }
       : null,
     fallbackAlt: initial.name_raw ?? initial.name,
   });

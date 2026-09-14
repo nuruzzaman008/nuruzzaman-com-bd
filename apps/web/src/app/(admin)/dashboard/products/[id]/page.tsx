@@ -4,6 +4,7 @@ import { ApiError } from '@nuruzzaman/contracts';
 
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { ProductEditor, type EditableProduct } from '@/features/dashboard/product-editor';
+import { ProductPrices } from '@/features/dashboard/product-prices';
 import { sessionApi } from '@/lib/api/server';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
@@ -46,6 +47,13 @@ export default async function ProductEditPage(props: { params: Promise<{ id: str
       <h1 className="mt-4 text-[length:var(--step-h1)] font-bold text-navy" data-authored="true">
         {product.name}
       </h1>
+
+      {/* A course's price is set on the course itself. */}
+      {product.type !== 'course' && product.all_variants?.length ? (
+        <div className="mt-6">
+          <ProductPrices productId={product.id} variants={product.all_variants} />
+        </div>
+      ) : null}
 
       <div className="mt-6">
         <ProductEditor initial={product} />

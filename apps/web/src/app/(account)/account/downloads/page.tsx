@@ -35,7 +35,9 @@ export default async function AccountDownloadsPage() {
           title={t.customer.downloads.emptyTitle}
           description={t.customer.downloads.emptyBody}
           action={
-            <ButtonLink href="/engineering-tools">{t.customer.downloads.seeTools}</ButtonLink>
+            <ButtonLink href="/products/nb-engineering-tools">
+              {t.customer.downloads.seeTools}
+            </ButtonLink>
           }
         />
       ) : (
@@ -48,7 +50,9 @@ export default async function AccountDownloadsPage() {
                 <Card className="p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h2 className="font-bold text-navy">{asset?.name ?? t.customer.downloads.file}</h2>
+                      <h2 className="font-bold text-navy">
+                        {asset?.name ?? t.customer.downloads.file}
+                      </h2>
                       {/* Joined rather than concatenated: an asset with no
                           version but a known size rendered a separator with
                           nothing in front of it. */}

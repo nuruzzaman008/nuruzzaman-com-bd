@@ -1,9 +1,10 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { DownloadAsset, Product, SiteSettings } from '@nuruzzaman/contracts';
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
 import { CreditGuide } from '@/features/catalog/credit-guide';
+import { productFaq } from '@/features/catalog/product-faq';
+import { MODULE_COUNT, PRODUCT_MODULES } from '@/features/catalog/product-modules';
 import {
   ToolsInstallation,
   ToolsLicensing,
@@ -11,35 +12,36 @@ import {
   ToolsResponsibility,
   ToolsWorkflows,
 } from '@/features/catalog/tools-article';
-import { productFaq } from '@/features/catalog/product-faq';
-import { MODULE_COUNT, PRODUCT_MODULES } from '@/features/catalog/product-modules';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Container, Section } from '@/components/ui/container';
 import { tryPublicApi } from '@/lib/api/server';
+import { localizePath, type Locale } from '@/lib/i18n/locale';
+import { pageDictionary } from '@/lib/i18n/page';
 import {
   breadcrumbSchema,
-  buildMetadata,
   faqSchema,
   jsonLd,
   productSchema,
   softwareApplicationSchema,
 } from '@/lib/seo';
 import { navItemLabel, supportNav } from '@/lib/site';
-import { localizePath } from '@/lib/i18n/locale';
-import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
-// The one complete article about NB Engineering Tools - the page in the main
-// menu. Title and description follow the owner's product document.
-export const metadata: Metadata = buildMetadata({
+/** The product whose page carries the one complete NB Engineering Tools article. */
+export const TOOLS_SLUG = 'nb-engineering-tools';
+
+/** Where that article lives - the page the main menu's Engineering Tools item opens. */
+export const TOOLS_PATH = `/products/${TOOLS_SLUG}`;
+
+/** Title and description from the owner's product document. */
+export const TOOLS_METADATA = {
   title:
     'NB Engineering Tools for AutoCAD 2024–2027 | Structural Design, Footing, Pile Cap, Beam & Slab Automation Software',
   description:
     'AutoCAD 2024–2027-এর জন্য professional engineering automation suite — footing, combined footing, pile cap, beam, slab, column, grid, geotechnical, reinforcement ও estimate workflow। ২৬টি compiled VLX module, machine activation ও NB Credits। ডেভেলপার: Engr. Md. Nuruzzaman, RSE।',
-  path: '/engineering-tools',
-});
+};
 
 const GROUP_ORDER = [
   'Layout, Grid & Schedule',
@@ -62,27 +64,34 @@ const CONTENTS = [
   { id: 'credit-pricing', bn: 'দাম ও কেনার নিয়ম', en: 'Prices and how to buy' },
 ];
 
-export default async function EngineeringToolsPage({ locale }: LocalizedPageProps) {
+/**
+ * The NB Engineering Tools product page: the one complete article about the
+ * software, with its prices and the cart beside it. Prices and packs come from
+ * the catalogue, so a price changed in the dashboard shows here as it is.
+ */
+export async function EngineeringToolsArticle({
+  locale,
+  tools,
+}: {
+  locale: Locale;
+  tools: Product;
+}) {
   const { locale: active, t } = pageDictionary(locale);
   const en = active === 'en';
   const faq = productFaq(active);
-  const [product, release, settings] = await Promise.all([
-    tryPublicApi<{ data: Product }>('/products/nb-engineering-tools', {
-      query: { locale: active },
-      tags: ['products', 'product:nb-engineering-tools', `product-locale:${active}`],
-    }),
+  const [release, settings] = await Promise.all([
     tryPublicApi<{ data: DownloadAsset }>('/releases/nb-engineering-tools-v6', {
       tags: ['releases'],
     }),
     tryPublicApi<{ data: SiteSettings }>('/site/settings', { tags: ['settings'] }),
   ]);
 
-  const tools = product?.data ?? null;
   const supportEmail = settings?.data?.support_email ?? null;
-  const launch = tools?.variants?.find((variant) => variant.sku === 'NBET-V6-SINGLE')?.price
+  const variants = tools.variants ?? [];
+  const launch = variants.find((variant) => (variant.device_limit ?? 1) === 1)?.price
     ?.compare_at_minor;
 
-  const cheapest = (tools?.variants ?? [])
+  const cheapest = variants
     .map((variant) => variant.price)
     .filter((value): value is NonNullable<typeof value> => Boolean(value))
     .sort((a, b) => a.amount_minor - b.amount_minor)[0];
@@ -92,31 +101,30 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
     modules: PRODUCT_MODULES.filter((module) => module.group === group),
   })).filter((entry) => entry.modules.length > 0);
 
+  const trail = [
+    { name: t.common.home, path: '/' },
+    { name: t.shop.heading, path: '/products' },
+    { name: 'NB Engineering Tools', path: TOOLS_PATH },
+  ];
+
   const schemas = [
-    breadcrumbSchema([
-      { name: t.common.home, path: '/' },
-      { name: t.tools.heading, path: '/engineering-tools' },
-    ]),
+    breadcrumbSchema(trail),
     softwareApplicationSchema({
       name: 'NB Engineering Tools',
       description: 'Structural & Engineering Design Tools for AutoCAD',
       version: release?.data?.version ?? null,
       operatingSystem: 'Windows 10, Windows 11',
-      path: '/engineering-tools',
+      path: TOOLS_PATH,
       price: cheapest ?? null,
     }),
     faqSchema(faq),
-    ...(tools
-      ? [
-          productSchema({
-            name: tools.name,
-            slug: tools.slug,
-            tagline: tools.tagline,
-            cover_url: tools.cover_url,
-            price: cheapest ?? null,
-          }),
-        ]
-      : []),
+    productSchema({
+      name: tools.name,
+      slug: tools.slug,
+      tagline: tools.tagline,
+      cover_url: tools.cover_url,
+      price: cheapest ?? null,
+    }),
   ];
 
   return (
@@ -124,12 +132,7 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(schemas) }} />
 
       <Container className="pt-10">
-        <Breadcrumbs
-          trail={[
-            { name: t.common.home, path: '/' },
-            { name: t.tools.heading, path: '/engineering-tools' },
-          ]}
-        />
+        <Breadcrumbs trail={trail} />
       </Container>
 
       <Section tone="white" className="pt-8">
@@ -240,9 +243,9 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
 
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <Card className="p-6">
-                {tools ? (
+                {variants.length ? (
                   <>
-                    <AddToCart variants={tools.variants ?? []} />
+                    <AddToCart variants={variants} />
                     <p className="mt-3 text-xs text-muted">
                       {launch
                         ? en

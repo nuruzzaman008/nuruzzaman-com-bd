@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import type { CourseSummary, PostSummary, ProductSummary, SiteSettings } from '@nuruzzaman/contracts';
+import type {
+  CourseSummary,
+  PostSummary,
+  ProductSummary,
+  SiteSettings,
+} from '@nuruzzaman/contracts';
 
 import { PostCard } from '@/features/content/post-card';
 import { CourseCard } from '@/features/courses/course-card';
@@ -88,7 +93,7 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
             <p className="mt-5 text-lg text-white/80">{t.brand.heroSupport}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="/engineering-tools" size="lg" variant="accent">
+              <ButtonLink href="/products/nb-engineering-tools" size="lg" variant="accent">
                 {t.home.heroCtaTools}
               </ButtonLink>
               <ButtonLink href="/blog" size="lg" variant="inverse">
@@ -208,7 +213,7 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
           ) : null}
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <ButtonLink href="/engineering-tools">{t.home.toolsCta}</ButtonLink>
+            <ButtonLink href="/products/nb-engineering-tools">{t.home.toolsCta}</ButtonLink>
             <ButtonLink href="/products" variant="secondary">
               {t.home.productsAll}
             </ButtonLink>
@@ -248,7 +253,9 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
       </Section>
 
       <Section tone="blue">
-        <Container><CreditGuide locale={active} compact /></Container>
+        <Container>
+          <CreditGuide locale={active} compact />
+        </Container>
       </Section>
 
       <Section tone="blue">
