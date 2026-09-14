@@ -46,7 +46,8 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
       tags: ['courses', `courses:${active}`],
     }),
     tryPublicApi<{ data: ProductSummary[] }>('/products', {
-      query: { per_page: 3, locale: active },
+      // Courses are shown in their own section just above.
+      query: { per_page: 3, exclude_type: 'course', locale: active },
       tags: ['products', `products:${active}`],
     }),
     tryPublicApi<{ data: SiteSettings }>('/site/settings', { tags: ['settings'] }),

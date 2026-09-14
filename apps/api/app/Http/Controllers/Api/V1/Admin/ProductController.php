@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\Content\PublishingService;
 use App\Support\Audit;
+use App\Support\SearchTerm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,10 +24,14 @@ class ProductController extends Controller
     {
         $this->authorize('viewAny', Product::class);
 
+        $validated = $request->validate(['q' => ['sometimes', 'nullable', 'string', 'max:120']]);
+
         $products = Product::query()
             ->with(['activeVariants.prices', 'cover'])
+            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'name'))
             ->orderBy('name')
-            ->paginate(50);
+            ->paginate(50)
+            ->withQueryString();
 
         return ProductResource::collection($products);
     }

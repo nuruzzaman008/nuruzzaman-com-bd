@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { PriceTag } from '@/components/ui/price';
 import { EmptyState } from '@/components/ui/states';
+import { AdminSearchForm } from '@/features/admin/admin-search-form';
 import { sessionApi } from '@/lib/api/server';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
@@ -16,23 +17,49 @@ export async function generateMetadata(): Promise<Metadata> {
   return privateMetadata(t.admin.nav.products);
 }
 
-export default async function DashboardProductsPage() {
-  const { t } = await adminDictionary();
-  const products = await sessionApi<{ data: Product[] }>('/admin/products');
+export default async function DashboardProductsPage(props: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { locale, t } = await adminDictionary();
+  const bn = locale === 'bn';
+  const q = (await props.searchParams).q?.trim() || undefined;
+  const products = await sessionApi<{ data: Product[]; meta?: { total?: number } }>(
+    '/admin/products',
+    { query: { q } },
+  );
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
-        {t.admin.nav.products}
-      </h1>
+      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.products}</h1>
       <p className="mt-2 text-muted">{t.admin.products.priceRule}</p>
+
+      <AdminSearchForm
+        id="product-search"
+        basePath="/dashboard/products"
+        value={q}
+        total={products.meta?.total ?? products.data.length}
+        label={bn ? 'প্রোডাক্ট খুঁজুন' : 'Search products'}
+        placeholder={bn ? 'প্রোডাক্টের নাম বা URL slug…' : 'Product name or URL slug…'}
+        searchLabel={t.admin.common.search}
+        locale={locale}
+      />
 
       <div className="mt-6">
         <DataTable
           caption={t.admin.products.caption}
           rows={products.data}
           getRowKey={(product) => product.slug}
-          empty={<EmptyState title={t.admin.products.empty} />}
+          empty={
+            <EmptyState
+              title={
+                q
+                  ? bn
+                    ? `“${q}” নামে বা slug-এ কোনো প্রোডাক্ট পাওয়া যায়নি`
+                    : `No product matches “${q}”`
+                  : t.admin.products.empty
+              }
+            />
+          }
           columns={[
             {
               key: 'name',
@@ -40,7 +67,9 @@ export default async function DashboardProductsPage() {
               render: (product) => (
                 <span>
                   <Link
-                    href={product.id ? `/dashboard/products/${product.id}` : `/products/${product.slug}`}
+                    href={
+                      product.id ? `/dashboard/products/${product.id}` : `/products/${product.slug}`
+                    }
                     data-authored="true"
                     className="block font-medium text-blue hover:underline"
                   >

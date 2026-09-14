@@ -64,6 +64,8 @@ jobs:
           php artisan key:generate --no-interaction
       # LessonDeletionTest: deleting a lesson or section also removes the files
       # it kept on the hosting, and nobody without edit rights can delete.
+      # AdminListSearchTest / ProductListingTest: the admin lists' title and
+      # slug search, and the products page leaving courses out.
       - name: Verify upload permissions, attachment behavior and lesson deletion
         working-directory: apps/api
         env:
@@ -74,7 +76,7 @@ jobs:
           DB_DATABASE: nuruzzaman_test
           DB_USERNAME: root
           DB_PASSWORD: devroot
-        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest'
+        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest'
 
   deploy:
     needs: upload-api-tests

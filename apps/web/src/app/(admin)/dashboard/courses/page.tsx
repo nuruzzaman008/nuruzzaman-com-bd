@@ -5,6 +5,7 @@ import type { Course } from '@nuruzzaman/contracts';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
+import { AdminSearchForm } from '@/features/admin/admin-search-form';
 import { sessionApi } from '@/lib/api/server';
 import { number } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
@@ -17,22 +18,55 @@ export async function generateMetadata(): Promise<Metadata> {
   return privateMetadata(t.admin.nav.courses);
 }
 
-export default async function DashboardCoursesPage() {
+export default async function DashboardCoursesPage(props: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const { locale, t } = await adminDictionary();
-  const courses = await sessionApi<{ data: Course[] }>('/admin/courses');
+  const bn = locale === 'bn';
+  const q = (await props.searchParams).q?.trim() || undefined;
+  const courses = await sessionApi<{ data: Course[]; meta?: { total?: number } }>(
+    '/admin/courses',
+    { query: { q } },
+  );
 
   return (
     <div>
       <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.courses}</h1>
       <p className="mt-2 text-muted">{t.admin.courses.publishRule}</p>
-      <Link href="/dashboard/courses/new" className="mt-4 inline-block rounded-lg bg-blue px-5 py-3 font-semibold text-white">{locale === 'bn' ? '+ নতুন কোর্স' : '+ New course'}</Link>
+      <Link
+        href="/dashboard/courses/new"
+        className="mt-4 inline-block rounded-lg bg-blue px-5 py-3 font-semibold text-white"
+      >
+        {bn ? '+ নতুন কোর্স' : '+ New course'}
+      </Link>
+
+      <AdminSearchForm
+        id="course-search"
+        basePath="/dashboard/courses"
+        value={q}
+        total={courses.meta?.total ?? courses.data.length}
+        label={bn ? 'কোর্স খুঁজুন' : 'Search courses'}
+        placeholder={bn ? 'কোর্সের নাম বা URL slug…' : 'Course title or URL slug…'}
+        searchLabel={t.admin.common.search}
+        locale={locale}
+      />
 
       <div className="mt-6">
         <DataTable
           caption={t.admin.courses.caption}
           rows={courses.data}
           getRowKey={(course) => course.slug}
-          empty={<EmptyState title={t.admin.courses.empty} />}
+          empty={
+            <EmptyState
+              title={
+                q
+                  ? bn
+                    ? `“${q}” নামে বা slug-এ কোনো কোর্স পাওয়া যায়নি`
+                    : `No course matches “${q}”`
+                  : t.admin.courses.empty
+              }
+            />
+          }
           columns={[
             {
               key: 'title',

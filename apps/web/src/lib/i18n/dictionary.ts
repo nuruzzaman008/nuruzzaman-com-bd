@@ -174,7 +174,7 @@ const bn = {
     },
     '/products': {
       title: 'প্রোডাক্ট',
-      description: 'NB Engineering Tools লাইসেন্স, NB Credit ও কোর্স।',
+      description: 'NB Engineering Tools লাইসেন্স, NB Credit ও অন্যান্য ডিজিটাল পণ্য।',
     },
     '/resources': {
       title: 'রিসোর্স',
@@ -366,7 +366,7 @@ const bn = {
   shop: {
     heading: 'প্রোডাক্ট',
     intro:
-      'সব পণ্য ডিজিটাল। ক্রয়ের পরে ডাউনলোড ও কোর্স অ্যাক্সেস আপনার অ্যাকাউন্টের সঙ্গে যুক্ত থাকে।',
+      'সব পণ্য ডিজিটাল। ক্রয়ের পরে ডাউনলোড ও লাইসেন্স আপনার অ্যাকাউন্টের সঙ্গে যুক্ত থাকে। কোর্সগুলো পাবেন কোর্স মেনুতে।',
     priceNotice:
       'যে পণ্যের দাম এখনো প্রকাশ করা হয়নি, সেখানে “দাম জানতে যোগাযোগ করুন” দেখানো হয় — কোনো অনুমানভিত্তিক দাম দেখানো হয় না।',
     emptyTitle: 'এখনো কোনো পণ্য প্রকাশ করা হয়নি',
@@ -1948,7 +1948,7 @@ const en: Dictionary = {
     },
     '/products': {
       title: 'Products',
-      description: 'NB Engineering Tools licences, NB Credit and courses.',
+      description: 'NB Engineering Tools licences, NB Credit and other digital products.',
     },
     '/resources': {
       title: 'Resources',
@@ -2126,7 +2126,7 @@ const en: Dictionary = {
   shop: {
     heading: 'Products',
     intro:
-      'Everything here is digital. After purchase, downloads and course access are tied to your account.',
+      'Everything here is digital. After purchase, downloads and licences are tied to your account. Courses are under the Courses menu.',
     priceNotice:
       'Where a price has not been published, the page says “contact us for pricing” — no estimated figure is ever shown.',
     emptyTitle: 'No products published yet',

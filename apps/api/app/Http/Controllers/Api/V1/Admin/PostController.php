@@ -10,6 +10,7 @@ use App\Models\Post;
 use App\Models\PostRevision;
 use App\Services\Content\PublishingService;
 use App\Support\Markdown;
+use App\Support\SearchTerm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,14 +26,14 @@ class PostController extends Controller
 
         $validated = $request->validate([
             'status' => ['sometimes', 'string', 'in:'.implode(',', ContentStatus::values())],
-            'q' => ['sometimes', 'string', 'max:120'],
+            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
         $posts = Post::query()
             ->with(['author', 'categories'])
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-            ->when($validated['q'] ?? null, fn ($query, $term) => $query->where('title', 'like', '%'.$term.'%'))
+            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
             ->latest('id')
             ->paginate($validated['per_page'] ?? 20);
 

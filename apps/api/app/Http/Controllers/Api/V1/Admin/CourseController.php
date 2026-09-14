@@ -10,6 +10,7 @@ use App\Services\Content\PublishingService;
 use App\Services\Content\RevalidationService;
 use App\Services\Lms\CoursePricingService;
 use App\Support\CourseTracks;
+use App\Support\SearchTerm;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +27,14 @@ class CourseController extends Controller
     {
         $this->authorize('viewAny', Course::class);
 
-        $courses = Course::query()->withCount('lessons')->orderBy('title')->paginate(50);
+        $validated = $request->validate(['q' => ['sometimes', 'nullable', 'string', 'max:120']]);
+
+        $courses = Course::query()
+            ->withCount('lessons')
+            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
+            ->orderBy('title')
+            ->paginate(50)
+            ->withQueryString();
 
         return CourseResource::collection($courses);
     }

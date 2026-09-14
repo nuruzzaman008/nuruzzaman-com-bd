@@ -15,6 +15,8 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'type' => ['sometimes', 'string', 'in:software_license,credit_refill,course,bundle,digital_resource'],
+            // The products page leaves courses out: they have a menu of their own.
+            'exclude_type' => ['sometimes', 'string', 'in:software_license,credit_refill,course,bundle,digital_resource'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -22,6 +24,7 @@ class ProductController extends Controller
             ->published()
             ->with(['cover', 'activeVariants.prices', 'activeVariants.course'])
             ->when($validated['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->when($validated['exclude_type'] ?? null, fn ($query, $type) => $query->where('type', '!=', $type))
             ->orderBy('name')
             ->paginate($validated['per_page'] ?? 24)
             ->withQueryString();

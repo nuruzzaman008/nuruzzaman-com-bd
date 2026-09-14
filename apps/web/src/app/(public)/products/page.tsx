@@ -12,9 +12,9 @@ import { buildMetadata, itemListSchema, jsonLd } from '@/lib/seo';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
 export const metadata: Metadata = buildMetadata({
-  title: 'প্রোডাক্ট — সফটওয়্যার, ক্রেডিট ও কোর্স',
+  title: 'প্রোডাক্ট — সফটওয়্যার ও ক্রেডিট',
   description:
-    'NB Engineering Tools লাইসেন্স, NB Credit রিফিল এবং কোর্স — সবকিছু এক জায়গায়।',
+    'NB Engineering Tools লাইসেন্স, NB Credit রিফিল ও অন্যান্য ডিজিটাল পণ্য — সবকিছু এক জায়গায়।',
   path: '/products',
 });
 
@@ -30,7 +30,14 @@ export default async function ProductsPage(
     data: ProductSummary[];
     meta?: { current_page?: number; last_page?: number };
   }>('/products', {
-    query: { page: searchParams.page, type: searchParams.type, per_page: 24, locale },
+    // Courses have their own menu and page, so they are not listed again here.
+    query: {
+      page: searchParams.page,
+      type: searchParams.type,
+      exclude_type: 'course',
+      per_page: 24,
+      locale,
+    },
     tags: ['products', `products:${locale}`],
   });
 
@@ -62,9 +69,7 @@ export default async function ProductsPage(
 
         <header className="mt-6 max-w-3xl">
           <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.shop.heading}</h1>
-          <p className="mt-3 text-muted">
-            {t.shop.intro}
-          </p>
+          <p className="mt-3 text-muted">{t.shop.intro}</p>
         </header>
 
         <Callout tone="info" className="mt-6 max-w-3xl">

@@ -930,6 +930,21 @@
             }
           },
           {
+            "name": "exclude_type",
+            "in": "query",
+            "description": "Leave out one product type. The products page leaves out courses, which have their own menu.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "software_license",
+                "credit_refill",
+                "course",
+                "bundle",
+                "digital_resource"
+              ]
+            }
+          },
+          {
             "$ref": "#/components/parameters/Page"
           },
           {
@@ -8636,6 +8651,20 @@
             "sessionCookie": []
           }
         ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Part of the product name or URL slug.",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -9867,6 +9896,20 @@
         "security": [
           {
             "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Part of the course title or URL slug.",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
           }
         ],
         "responses": {
