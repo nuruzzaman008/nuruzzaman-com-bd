@@ -307,12 +307,28 @@ if [ "$DEPLOY_WEB" = 1 ]; then
   # so they come from the deploy config rather than the repository; the entry
   # script reads them back and refuses to start without INTERNAL_API_URL.
   # Written every deploy, so the setting cannot be lost by deploying again.
-  cat > "$NB_WEB_ROOT/runtime.env.json.$RELEASE" <<JSON
+  #
+  # The revalidation secret is shared with the API's .env so a publish can
+  # refresh cached pages at once. It lives in its own owner-only file beside
+  # the releases, never in the repository or a release, and is carried into
+  # every runtime.env.json from there. Hex only, so it needs no JSON escaping.
+  REVALIDATE_LINE=''
+  if [ -s "$NB_WEB_ROOT/.revalidate-secret" ]; then
+    REVALIDATE_SECRET="$(tr -d '[:space:]' < "$NB_WEB_ROOT/.revalidate-secret")"
+    case "$REVALIDATE_SECRET" in
+      *[!0-9a-f]*|'') echo 'Warning: .revalidate-secret is not hex; revalidation stays off for this release.' ;;
+      *) REVALIDATE_LINE=",
+  \"NEXT_REVALIDATE_SECRET\": \"$REVALIDATE_SECRET\"" ;;
+    esac
+  fi
+  ( umask 077
+    cat > "$NB_WEB_ROOT/runtime.env.json.$RELEASE" <<JSON
 {
   "INTERNAL_API_URL": "$NB_INTERNAL_API_URL",
-  "NEXT_PUBLIC_SITE_URL": "$NB_PUBLIC_SITE_URL"
+  "NEXT_PUBLIC_SITE_URL": "$NB_PUBLIC_SITE_URL"$REVALIDATE_LINE
 }
 JSON
+  )
   mv -f "$NB_WEB_ROOT/runtime.env.json.$RELEASE" "$NB_WEB_ROOT/runtime.env.json"
   ln -s "$WEB_RELEASE" "$NB_WEB_ROOT/current.$RELEASE"
   mv -Tf "$NB_WEB_ROOT/current.$RELEASE" "$NB_WEB_ROOT/current"
