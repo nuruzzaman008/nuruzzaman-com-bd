@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Api\V1\Commerce;
 use App\Http\Controllers\Api\V1\LessonVideoController;
 use App\Http\Controllers\Api\V1\PublicApi;
+use App\Http\Controllers\Api\V1\UploadLibraryController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\Middleware\StartSession;
@@ -112,6 +113,11 @@ Route::prefix('v1')->group(function () {
 
     Route::post('auth/verify-email/resend', [Auth\EmailVerificationController::class, 'resend'])
         ->middleware(['auth:sanctum', 'throttle:auth']);
+
+    Route::middleware(['auth:sanctum', 'active', 'throttle:api'])->group(function () {
+        Route::get('uploads/library', [UploadLibraryController::class, 'index']);
+        Route::get('uploads/library/{source}/{id}', [UploadLibraryController::class, 'download'])->whereNumber('id');
+    });
 
     // ------------------------------------------------------------------ cart
     Route::middleware('throttle:api')->prefix('cart')->group(function () {

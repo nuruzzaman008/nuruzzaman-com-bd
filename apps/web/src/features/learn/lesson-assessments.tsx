@@ -1,5 +1,7 @@
 'use client';
 
+import { MediaFileInput } from '@/components/ui/media-file-input';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api/browser';
@@ -29,7 +31,7 @@ export function LessonAssessments({ quizId, assignmentId }: { quizId?: number | 
     </div> : null}
     {assignment ? <div className="rounded-xl border border-line p-5"><h2 className="text-xl font-bold text-navy">{assignment.title}</h2><Prose className="mt-3" html={assignment.brief_html} />{assignment.submission ? <div className="mt-4 rounded-lg bg-blue-soft p-3"><p>{bn ? 'জমার অবস্থা' : 'Submission'}: {assignment.submission.status}{assignment.submission.score_percent !== null ? ` · ${assignment.submission.score_percent}%` : ''}</p><p className="mt-1 whitespace-pre-wrap">{assignment.submission.feedback}</p></div> : null}
       <form className="mt-4 space-y-3" onSubmit={(event) => { event.preventDefault(); const form = event.currentTarget; const body = new FormData(form); const file = body.get('file'); if (file instanceof File && !file.size) body.delete('file'); void action(async () => { await api(`/assignments/${assignment.id}/submissions`, { method: 'POST', body }); const result = await api<{ data: Assignment }>(`/assignments/${assignment.id}`); setAssignment(result.data); form.reset(); setMessage(bn ? 'কাজ জমা হয়েছে। শিক্ষকের মূল্যায়নের জন্য অপেক্ষা করুন।' : 'Submitted. Awaiting instructor review.'); }); }}>
-        <label className="block text-sm font-semibold">{bn ? 'আপনার উত্তর / নোট' : 'Your answer / notes'}<textarea name="notes" rows={4} maxLength={2000} className="mt-2 w-full rounded-lg border border-line p-3" /></label><label className="block text-sm font-semibold">{bn ? 'কাজের ফাইল (ঐচ্ছিক)' : 'Assignment file (optional)'}<input name="file" type="file" accept={assignment.allowed_mime_types.length ? assignment.allowed_mime_types.join(',') : '.pdf,.png,.jpg,.jpeg,.zip'} className="mt-2 block w-full" /></label><p className="text-xs text-muted">{bn ? 'সর্বোচ্চ ফাইলের আকার' : 'Maximum file size'}: {(assignment.max_file_size_kb / 1024).toFixed(0)} MB</p><Button type="submit" disabled={busy}>{bn ? 'কাজ জমা দিন' : 'Submit assignment'}</Button>
+        <label className="block text-sm font-semibold">{bn ? 'আপনার উত্তর / নোট' : 'Your answer / notes'}<textarea name="notes" rows={4} maxLength={2000} className="mt-2 w-full rounded-lg border border-line p-3" /></label><label className="block text-sm font-semibold">{bn ? 'কাজের ফাইল (ঐচ্ছিক)' : 'Assignment file (optional)'}<MediaFileInput name="file" type="file" accept={assignment.allowed_mime_types.length ? assignment.allowed_mime_types.join(',') : '.pdf,.png,.jpg,.jpeg,.zip'} className="mt-2 block w-full" /></label><p className="text-xs text-muted">{bn ? 'সর্বোচ্চ ফাইলের আকার' : 'Maximum file size'}: {(assignment.max_file_size_kb / 1024).toFixed(0)} MB</p><Button type="submit" disabled={busy}>{bn ? 'কাজ জমা দিন' : 'Submit assignment'}</Button>
       </form>
     </div> : null}
   </section>;

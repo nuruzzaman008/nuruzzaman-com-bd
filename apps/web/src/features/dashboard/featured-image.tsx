@@ -1,5 +1,7 @@
 'use client';
 
+import { MediaFileInput } from '@/components/ui/media-file-input';
+
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -195,7 +197,7 @@ export function FeaturedImageCard({
           </Field>
 
           <div className="flex flex-wrap items-center gap-3">
-            <input
+            <MediaFileInput scope="public"
               ref={fileInput}
               type="file"
               accept={ACCEPTED_TYPES.join(',')}

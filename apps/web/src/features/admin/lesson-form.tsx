@@ -1,5 +1,7 @@
 'use client';
 
+import { MediaFileInput } from '@/components/ui/media-file-input';
+
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -179,6 +181,7 @@ export function DocumentLinkAdder({
  * attached by the editor as soon as the lesson is saved.
  */
 export function LessonForm({
+  courseId,
   sections,
   lesson,
   courseLessonSlugs,
@@ -187,6 +190,7 @@ export function LessonForm({
   onSave,
   onCancel,
 }: {
+  courseId?: number;
   sections: { id: number; title: string }[];
   lesson: EditableLesson | null;
   /** Every lesson slug in the course, so a new one can be made unique. */
@@ -346,7 +350,7 @@ export function LessonForm({
               ? 'কম্পিউটার থেকে ফাইল বেছে নিন (একাধিক)'
               : 'Choose files from the computer (several at once)'}
           </label>
-          <input
+          <MediaFileInput scope="course" courseId={courseId}
             id={fileInputId}
             type="file"
             multiple

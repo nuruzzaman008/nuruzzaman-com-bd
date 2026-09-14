@@ -1,5 +1,7 @@
 'use client';
 
+import { MediaFileInput } from '@/components/ui/media-file-input';
+
 import {
   useEffect,
   useId,
@@ -1070,7 +1072,7 @@ function ImagePanel({
           <label htmlFor={fileId} className="text-sm font-medium text-navy">
             {words.imageFile}
           </label>
-          <input
+          <MediaFileInput scope="public"
             id={fileId}
             type="file"
             accept={ACCEPTED_TYPES.join(',')}

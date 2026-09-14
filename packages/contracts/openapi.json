@@ -69,6 +69,206 @@
     }
   ],
   "paths": {
+    "/uploads/library": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "listUploadLibrary",
+        "summary": "List previously uploaded files allowed for this upload destination",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "public",
+                "personal",
+                "course"
+              ]
+            }
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "description": "Required for course scope",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated authorized files; storage paths are never returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current_page": {
+                      "type": "integer"
+                    },
+                    "last_page": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "media",
+                              "lesson",
+                              "video",
+                              "photo",
+                              "assignment",
+                              "proof"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "mime_type": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "size_bytes": {
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
+                          "uploaded_at": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in required"
+          },
+          "403": {
+            "description": "This library is not accessible to this user"
+          }
+        }
+      }
+    },
+    "/uploads/library/{source}/{id}": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "downloadUploadLibraryFile",
+        "summary": "Download an authorized existing upload for reuse in an upload field",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "public",
+                "personal",
+                "course"
+              ]
+            }
+          },
+          {
+            "name": "course_id",
+            "in": "query",
+            "description": "Required for course scope",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private no-store file download; authorization is checked again",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in required"
+          },
+          "403": {
+            "description": "Library access denied"
+          },
+          "404": {
+            "description": "File missing or not accessible in the selected library"
+          }
+        }
+      }
+    },
     "/site/settings": {
       "get": {
         "tags": [
