@@ -291,6 +291,10 @@ if [ "$DEPLOY_API" = 1 ]; then
   [ -L "$NB_API_ROOT/public/storage" ] || "$PHP_BIN" "$NB_API_ROOT/artisan" storage:link
   "$PHP_BIN" "$NB_API_ROOT/artisan" queue:restart
   "$PHP_BIN" "$NB_API_ROOT/artisan" up
+  # The staged copy has done its job once the API is back up. Rolling back uses
+  # the API tar taken above, never this folder, and left inside every backup it
+  # added about 14,000 files and 107M per deploy.
+  rm -rf -- "$API_STAGE"
 fi
 if [ "$DEPLOY_WEB" = 1 ]; then
   [ ! -e "$NB_WEB_ROOT/server.js" ] || cp -p "$NB_WEB_ROOT/server.js" "$BACKUP/server.js"
