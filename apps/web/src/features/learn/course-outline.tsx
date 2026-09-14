@@ -10,29 +10,9 @@ import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
 import { classLabel } from '@/lib/learn/class-label';
 
 type OutlineLesson = CourseOutline['sections'][number]['lessons'][number];
-type Kind = 'video' | 'text' | 'file' | 'quiz' | 'assignment';
 type Words = ReturnType<typeof getDictionary>['learn'];
 
-const KIND_ICONS: Record<Kind, string> = {
-  video:
-    'M3.5 5.5h9a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM13.5 9l4-2.5v7l-4-2.5',
-  text: 'M5 3.5h10v13H5zM7.5 7h5M7.5 10h5M7.5 13h3',
-  file: 'M11.5 2.5H6a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6zM11.5 2.5V6H15M10 9v5M7.5 11.5 10 14l2.5-2.5',
-  quiz: 'M4 4.5h12v11H4zM7 8l1.2 1.2L10.5 7M12 8.5h2M7 12l1.2 1.2 2.3-2.2M12 12.5h2',
-  assignment: 'M12.5 3.5l4 4-8 8H4.5v-4zM10.5 5.5l4 4',
-};
-
 const LOCK = 'M6 9V6.5a4 4 0 0 1 8 0V9M5 9h10v8H5z';
-
-/** What a lesson mainly is, for its icon and label in the list. */
-function kindOf(lesson: OutlineLesson): Kind {
-  if (lesson.type === 'quiz' || lesson.has_quiz) return 'quiz';
-  if (lesson.type === 'assignment' || lesson.has_assignment) return 'assignment';
-  if (lesson.type === 'video' || lesson.has_video) return 'video';
-  if (lesson.type === 'download') return 'file';
-
-  return 'text';
-}
 
 function Svg({ path, className }: { path: string; className?: string }) {
   return (
@@ -100,18 +80,15 @@ function LessonRow({
   locale: Locale;
   words: Words;
 }) {
-  const kind = kindOf(lesson);
   const files = lesson.assets_count
     ? (lesson.assets_count === 1 ? words.fileCountOne : words.fileCount).replace(
         '{count}',
         number(lesson.assets_count, locale),
       )
     : null;
-  const meta = [
-    words.lessonKinds[kind],
-    files,
-    lesson.duration_seconds ? duration(lesson.duration_seconds, locale) : null,
-  ]
+  // Only what a title cannot say - how many files, how long - and nothing at
+  // all for a plain lesson, so most rows stay a single line.
+  const meta = [files, lesson.duration_seconds ? duration(lesson.duration_seconds, locale) : null]
     .filter(Boolean)
     .join(' · ');
 
@@ -122,16 +99,13 @@ function LessonRow({
         <span className="block leading-snug" data-authored="true">
           {lesson.title}
         </span>
-        {lesson.is_unlocked ? (
-          <span className="mt-0.5 flex items-center gap-1 text-xs font-normal text-muted">
-            <Svg path={KIND_ICONS[kind]} className="size-3.5" />
-            {meta}
-          </span>
-        ) : (
+        {!lesson.is_unlocked ? (
           // Shown once under the whole list rather than on every locked row;
           // a screen reader still hears it on the row itself.
           <span className="sr-only">{words.lockedLesson}</span>
-        )}
+        ) : meta ? (
+          <span className="mt-0.5 block text-xs font-normal text-muted">{meta}</span>
+        ) : null}
       </span>
     </>
   );

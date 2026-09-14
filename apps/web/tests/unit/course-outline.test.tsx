@@ -112,15 +112,17 @@ describe('CourseOutlineNav', () => {
     expect(screen.getByText('Final quiz')).toBeInTheDocument();
   });
 
-  it('says what each lesson holds', () => {
+  it('keeps each lesson to its title, adding only a file count or length when there is one', () => {
     render(<CourseOutlineNav outline={outline()} currentSlug="basics" locale="en" />);
 
-    expect(
-      within(screen.getByRole('link', { name: /Documents/ })).getByText('Document · 2 files'),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByRole('link', { name: /Basic principles/ })).getByText('Video'),
-    ).toBeInTheDocument();
+    const documents = screen.getByRole('link', { name: /Documents/ });
+    expect(within(documents).getByText('2 files')).toBeInTheDocument();
+    expect(within(documents).queryByText(/Document ·/)).not.toBeInTheDocument();
+
+    // A plain video lesson: the tick and the title - no "Video" label, no icon.
+    const video = screen.getByRole('link', { name: /Basic principles/ });
+    expect(within(video).queryByText('Video')).not.toBeInTheDocument();
+    expect(video.querySelectorAll('svg')).toHaveLength(1);
   });
 
   it('keeps a locked lesson to its lock and title, and explains the lock once under the list', () => {
