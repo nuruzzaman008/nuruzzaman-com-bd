@@ -77,6 +77,18 @@ class AdminListSearchTest extends TestCase
         $this->assertSame([], $this->slugs($this->getJson('/api/v1/admin/courses?q=_')));
     }
 
+    public function test_the_admin_products_list_can_leave_course_listings_out(): void
+    {
+        Product::factory()->ofType(ProductType::SoftwareLicense)->create(['name' => 'NB Engineering Tools', 'slug' => 'nb-engineering-tools']);
+        Product::factory()->ofType(ProductType::Course)->create(['name' => 'AutoCAD course', 'slug' => 'course-autocad']);
+
+        $this->actingAs($this->userWithRole(Role::SuperAdmin));
+
+        $this->assertSame(['course-autocad', 'nb-engineering-tools'], $this->slugs($this->getJson('/api/v1/admin/products')));
+        $this->assertSame(['nb-engineering-tools'], $this->slugs($this->getJson('/api/v1/admin/products?exclude_type=course')));
+        $this->assertSame([], $this->slugs($this->getJson('/api/v1/admin/products?exclude_type=course&q=autocad')));
+    }
+
     public function test_only_staff_can_search_the_admin_lists(): void
     {
         Product::factory()->create();

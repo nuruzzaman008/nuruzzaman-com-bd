@@ -1,18 +1,19 @@
 import type { Locale } from '@/lib/i18n/locale';
 
 /**
- * The FAQ published in the owner's product document
- * (NB Engineering Tools for AutoCAD.pdf, pages 13-15), rendered on the page and
- * emitted as FAQPage structured data.
+ * The FAQ on the engineering tools page, rendered there and emitted as FAQPage
+ * structured data.
  *
- * Answers are the owner's own. Nothing is added, softened or extrapolated here:
- * a question the document does not answer does not appear.
+ * From the owner's product document (NB Engineering Tools for AutoCAD.pdf,
+ * pages 13-15), with the owner's later decisions: AutoCAD 2024-2027, and
+ * 1,000 NB Credits with a single-PC licence. Questions the article already
+ * answers in its own sections - footing, pile cap, slab - are left to the
+ * article, and the three about reinstalling Windows are one question here.
  *
- * The English text is a translation of those same answers, kept beside the
- * Bengali rather than in the dictionary so the two can be read against each
- * other in one place. THE BENGALI IS THE RECORD: where the two could be read
- * differently - the token policy and the screenshot window especially - the
- * Bengali is what the owner published and what governs.
+ * The English text is a translation kept beside the Bengali so the two can be
+ * read against each other. THE BENGALI IS THE RECORD: where they could be read
+ * differently - the credit policy and the screenshot window especially - the
+ * Bengali governs.
  */
 export type Faq = {
   question: string;
@@ -29,104 +30,74 @@ export const PRODUCT_FAQ: Faq[] = [
     answerEn: 'No. The current version is an AutoCAD-based engineering productivity suite.',
   },
   {
-    question: 'কোন AutoCAD ভার্সন সমর্থন করে?',
+    question: 'কোন AutoCAD ও Windows ভার্সনে চলে?',
     answer:
-      'বর্তমান commercial build AutoCAD 2024, 2025, 2026 ও 2027-এর জন্য তৈরি, Windows 10/11 '
-      + '64-bit environment-এ। AutoCAD 2020–2023 বা এর আগের ভার্সন সমর্থিত নয়। কোন রিলিজে '
-      + 'রানটাইম পরীক্ষা সম্পন্ন হয়েছে তা আলাদাভাবে জানানো হয়।',
-    questionEn: 'Which AutoCAD versions does it support?',
+      'বর্তমান commercial build AutoCAD 2024, 2025, 2026 ও 2027-এর জন্য, Windows 10 ও Windows 11 ' +
+      '64-bit-এ। AutoCAD 2020–2023 বা এর আগের ভার্সন সমর্থিত নয়।',
+    questionEn: 'Which AutoCAD and Windows versions does it run on?',
     answerEn:
-      'The current commercial build is made for AutoCAD 2024, 2025, 2026 and 2027, in a '
-      + 'Windows 10/11 64-bit environment. AutoCAD 2020–2023 and earlier are not supported. '
-      + 'Which releases have completed runtime testing is stated separately.',
+      'The current commercial build is for AutoCAD 2024, 2025, 2026 and 2027, on Windows 10 and ' +
+      'Windows 11 64-bit. AutoCAD 2020–2023 and earlier are not supported.',
   },
   {
-    question: 'সফটওয়্যার কি Windows 11-এ চলে?',
-    answer: 'হ্যাঁ। বর্তমান target environment Windows 10/11 64-bit।',
-    questionEn: 'Does the software run on Windows 11?',
-    answerEn: 'Yes. The current target environment is Windows 10/11 64-bit.',
-  },
-  {
-    question: 'Footing design আছে?',
+    question: 'NB Credit (Token) কী?',
     answer:
-      'হ্যাঁ। NBFooting isolated footing design/drawing workflow সমর্থন করে, এবং combined '
-      + 'footing-এর জন্য আলাদা মডিউল রয়েছে।',
-    questionEn: 'Is there footing design?',
+      'NB Credit হলো সফটওয়্যারের নির্দিষ্ট paid operation ব্যবহারের ক্রেডিট। AutoCAD-এর ' +
+      'License & Tokens-এ এটি Token হিসেবে দেখায়।',
+    questionEn: 'What is an NB Credit (Token)?',
     answerEn:
-      'Yes. NBFooting supports an isolated footing design/drawing workflow, and there is a '
-      + 'separate module for combined footings.',
+      'An NB Credit pays for using a specific paid operation in the software. AutoCAD shows it as ' +
+      'a Token under License & Tokens.',
   },
   {
-    question: 'Pile cap design আছে?',
-    answer: 'হ্যাঁ। NBPileCap মডিউল pile-cap design/drawing ও reinforcement workflow সমর্থন করে।',
-    questionEn: 'Is there pile cap design?',
-    answerEn:
-      'Yes. The NBPileCap module supports a pile-cap design/drawing and reinforcement workflow.',
-  },
-  {
-    question: 'Slab reinforcement drawing করা যায়?',
-    answer: 'হ্যাঁ। NBSlabDraw slab reinforcement automation-এর জন্য তৈরি।',
-    questionEn: 'Can it draw slab reinforcement?',
-    answerEn: 'Yes. NBSlabDraw is made for slab reinforcement automation.',
-  },
-  {
-    question: 'Token কী?',
-    answer: 'Token হলো সফটওয়্যারের নির্দিষ্ট paid operation ব্যবহারের ক্রেডিট।',
-    questionEn: 'What is a token?',
-    answerEn: 'A token is credit for using a specific paid operation in the software.',
-  },
-  {
-    question: 'আমি কি custom পরিমাণের token কিনতে পারি?',
-    answer: 'হ্যাঁ। Vendor-approved custom token refill issue করা সম্ভব।',
-    questionEn: 'Can I buy a custom number of tokens?',
-    answerEn: 'Yes. A vendor-approved custom token refill can be issued.',
-  },
-  {
-    question: 'Windows setup দিলে token থাকবে?',
+    question: 'লাইসেন্সের সাথে কি credit পাওয়া যায়?',
     answer:
-      'Windows reinstall বা format করলে স্থানীয় token ডেটা হারাতে পারে। Token 0 হয়ে গেলে '
-      + 'standard policy অনুযায়ী নতুন token কিনতে হবে।',
-    questionEn: 'Do tokens survive a Windows reinstall?',
+      'হ্যাঁ। ১টি PC-র লাইসেন্সের সাথে 1,000 NB Credits দেওয়া হয়; activation সম্পন্ন হলে ' +
+      'admin এটি refill হিসেবে issue করেন।',
+    questionEn: 'Does a licence come with credits?',
     answerEn:
-      'Reinstalling or formatting Windows can lose the local token data. If the token count '
-      + 'reaches 0, standard policy is that new tokens have to be bought.',
+      'Yes. A single-PC licence comes with 1,000 NB Credits, which an admin issues as a refill ' +
+      'once activation is complete.',
   },
   {
-    question: 'Windows setup-এর আগে token balance-এর screenshot থাকলে কী হবে?',
+    question: 'আমি কি custom পরিমাণের credit কিনতে পারি?',
+    answer: 'হ্যাঁ। ভেন্ডরের অনুমোদনে custom পরিমাণের credit refill issue করা যায়।',
+    questionEn: 'Can I buy a custom number of credits?',
+    answerEn: 'Yes. A custom credit refill can be issued with vendor approval.',
+  },
+  {
+    question: 'Windows setup বা format দিলে credit থাকবে?',
     answer:
-      'Windows setup-এর সর্বোচ্চ ৩০ মিনিট আগে নেওয়া স্পষ্ট ও যাচাইযোগ্য screenshot থাকলে, '
-      + 'ভেন্ডর যাচাইয়ের পর সেখানে দেখানো অবশিষ্ট balance পুনরায় issue করা যেতে পারে।',
-    questionEn: 'What if I have a screenshot of the token balance from before the reinstall?',
+      'স্থানীয় credit ডেটা হারাতে পারে; balance 0 হলে standard policy অনুযায়ী নতুন credit ' +
+      'কিনতে হবে। Windows setup-এর সর্বোচ্চ ৩০ মিনিট আগে নেওয়া স্পষ্ট ও যাচাইযোগ্য ' +
+      'screenshot থাকলে, ভেন্ডর যাচাইয়ের পর সেখানে দেখানো অবশিষ্ট balance পুনরায় issue করা ' +
+      'যেতে পারে। Screenshot না থাকলে বিনামূল্যে restore করা হয় না।',
+    questionEn: 'Do my credits survive a Windows reinstall or format?',
     answerEn:
-      'If you have a clear, verifiable screenshot taken no more than 30 minutes before the '
-      + 'Windows setup, the remaining balance shown in it may be reissued after vendor '
-      + 'verification.',
-  },
-  {
-    question: 'Screenshot না থাকলে?',
-    answer: 'বিনামূল্যে token restore করা হবে না; নতুন token কিনতে হবে।',
-    questionEn: 'And without a screenshot?',
-    answerEn: 'Tokens are not restored free of charge; new tokens have to be bought.',
+      'The local credit data can be lost; if the balance reaches 0, standard policy is that new ' +
+      'credits have to be bought. With a clear, verifiable screenshot taken no more than 30 ' +
+      'minutes before the Windows setup, the remaining balance it shows may be reissued after ' +
+      'vendor verification. Without one, credits are not restored free of charge.',
   },
   {
     question: 'শুধু AutoCAD uninstall করলে?',
     answer:
-      'শুধু AutoCAD uninstall করলে এবং Windows-এর NB licensing ডেটা অক্ষত থাকলে '
-      + 'activation ও token সাধারণত থেকে যায়।',
+      'শুধু AutoCAD uninstall করলে এবং Windows-এর NB licensing ডেটা অক্ষত থাকলে ' +
+      'activation ও credit সাধারণত থেকে যায়।',
     questionEn: 'What if I only uninstall AutoCAD?',
     answerEn:
-      'If only AutoCAD is uninstalled and the NB licensing data in Windows is left intact, '
-      + 'the activation and the tokens usually remain.',
+      'If only AutoCAD is uninstalled and the NB licensing data in Windows is left intact, ' +
+      'the activation and the credits usually remain.',
   },
   {
     question: 'সফটওয়্যারের আউটপুট কি প্রকৌশলীকে যাচাই করতে হবে?',
     answer:
-      'অবশ্যই। NB Engineering Tools একটি automation ও productivity aid; চূড়ান্ত engineering '
-      + 'দায়িত্ব যোগ্য প্রকৌশলীর।',
+      'অবশ্যই। NB Engineering Tools একটি automation ও productivity aid; চূড়ান্ত engineering ' +
+      'দায়িত্ব যোগ্য প্রকৌশলীর।',
     questionEn: 'Does an engineer have to check the software’s output?',
     answerEn:
-      'Absolutely. NB Engineering Tools is an automation and productivity aid; the final '
-      + 'engineering responsibility rests with the qualified engineer.',
+      'Absolutely. NB Engineering Tools is an automation and productivity aid; the final ' +
+      'engineering responsibility rests with the qualified engineer.',
   },
 ];
 

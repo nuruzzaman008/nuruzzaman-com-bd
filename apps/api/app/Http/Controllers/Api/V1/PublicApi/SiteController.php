@@ -73,7 +73,9 @@ class SiteController extends Controller
                         'slug' => $page->slug,
                         'updated_at' => $page->updated_at?->toIso8601String(),
                     ]),
-                'products' => Product::query()->published()
+                // Course listings redirect to their course pages, which the
+                // sitemap lists under courses.
+                'products' => Product::query()->published()->where('type', '!=', 'course')
                     ->select('slug', 'updated_at')->get()
                     ->map(fn (Product $product) => [
                         'slug' => $product->slug,

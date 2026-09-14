@@ -24,11 +24,16 @@ class ProductController extends Controller
     {
         $this->authorize('viewAny', Product::class);
 
-        $validated = $request->validate(['q' => ['sometimes', 'nullable', 'string', 'max:120']]);
+        $validated = $request->validate([
+            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
+            // The dashboard leaves course listings out: they are managed under Courses.
+            'exclude_type' => ['sometimes', 'nullable', 'string', 'in:software_license,credit_refill,course,bundle,digital_resource'],
+        ]);
 
         $products = Product::query()
             ->with(['activeVariants.prices', 'cover'])
             ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'name'))
+            ->when($validated['exclude_type'] ?? null, fn ($query, $type) => $query->where('type', '!=', $type))
             ->orderBy('name')
             ->paginate(50)
             ->withQueryString();

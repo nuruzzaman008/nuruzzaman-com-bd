@@ -66,6 +66,9 @@ jobs:
       # it kept on the hosting, and nobody without edit rights can delete.
       # AdminListSearchTest / ProductListingTest: the admin lists' title and
       # slug search, and the products page leaving courses out.
+      # EngineeringToolsPriceTest / CreditPricingTest: the licence and NB Credit
+      # prices the catalogue commands publish. RetirePostTest: archiving a post
+      # from the command line through the publishing workflow.
       - name: Verify upload permissions, attachment behavior and lesson deletion
         working-directory: apps/api
         env:
@@ -76,7 +79,7 @@ jobs:
           DB_DATABASE: nuruzzaman_test
           DB_USERNAME: root
           DB_PASSWORD: devroot
-        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest'
+        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest|EngineeringToolsPriceTest|CreditPricingTest|RetirePostTest'
 
   deploy:
     needs: upload-api-tests

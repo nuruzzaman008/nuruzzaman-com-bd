@@ -25,13 +25,23 @@ export default async function DashboardProductsPage(props: {
   const q = (await props.searchParams).q?.trim() || undefined;
   const products = await sessionApi<{ data: Product[]; meta?: { total?: number } }>(
     '/admin/products',
-    { query: { q } },
+    // Course listings exist only so a course can be bought; they are managed under Courses.
+    { query: { q, exclude_type: 'course' } },
   );
 
   return (
     <div>
       <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.products}</h1>
       <p className="mt-2 text-muted">{t.admin.products.priceRule}</p>
+      <p className="mt-1 text-sm text-muted">
+        {bn
+          ? 'কোর্স বিক্রির listing এখানে দেখানো হয় না — সেগুলো '
+          : 'Course listings are not shown here — manage them under '}
+        <Link href="/dashboard/courses" className="font-semibold text-blue hover:underline">
+          {bn ? 'কোর্স' : 'Courses'}
+        </Link>
+        {bn ? ' থেকে চালান।' : '.'}
+      </p>
 
       <AdminSearchForm
         id="product-search"

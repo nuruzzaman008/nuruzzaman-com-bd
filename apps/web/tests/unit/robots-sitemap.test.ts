@@ -9,7 +9,10 @@ vi.mock('@/lib/api/server', () => ({
     data: {
       posts: [{ slug: 'published-article', updated_at: '2026-08-01T00:00:00Z' }],
       pages: [{ slug: 'about', updated_at: '2026-08-01T00:00:00Z' }],
-      products: [{ slug: 'nb-engineering-tools', updated_at: '2026-08-01T00:00:00Z' }],
+      products: [
+        { slug: 'nb-engineering-tools', updated_at: '2026-08-01T00:00:00Z' },
+        { slug: 'nb-credit-refill', updated_at: '2026-08-01T00:00:00Z' },
+      ],
       courses: [],
     },
   }),
@@ -41,7 +44,11 @@ describe('sitemap.xml', () => {
     const urls = entries.map((entry) => entry.url);
 
     expect(urls.some((url) => url.endsWith('/blog/published-article'))).toBe(true);
-    expect(urls.some((url) => url.endsWith('/products/nb-engineering-tools'))).toBe(true);
+    expect(urls.some((url) => url.endsWith('/products/nb-credit-refill'))).toBe(true);
+    // The software's listing names the engineering tools page as its canonical,
+    // so only that page is listed.
+    expect(urls.some((url) => url.endsWith('/products/nb-engineering-tools'))).toBe(false);
+    expect(urls.some((url) => url.endsWith('/engineering-tools'))).toBe(true);
 
     for (const path of PRIVATE_PATHS) {
       expect(urls.some((url) => url.includes(path))).toBe(false);

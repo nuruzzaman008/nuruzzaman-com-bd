@@ -15,7 +15,11 @@ import { localizePath } from '@/lib/i18n/locale';
  * the owner published that was not also hard-coded in STATIC_ROUTES below never
  * reached the sitemap at all.
  */
-const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
+const STATIC_ROUTES: {
+  path: string;
+  priority: number;
+  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'];
+}[] = [
   { path: '/', priority: 1, changeFrequency: 'weekly' },
   { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/courses', priority: 0.8, changeFrequency: 'weekly' },
@@ -72,7 +76,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return entries;
   }
 
-  const dynamic: [keyof SitemapFeed, string, number, MetadataRoute.Sitemap[number]['changeFrequency']][] = [
+  const dynamic: [
+    keyof SitemapFeed,
+    string,
+    number,
+    MetadataRoute.Sitemap[number]['changeFrequency'],
+  ][] = [
     ['posts', '/blog', 0.8, 'monthly'],
     ['pages', '', 0.5, 'monthly'],
     ['products', '/products', 0.8, 'weekly'],
@@ -85,6 +94,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const [key, prefix, priority, changeFrequency] of dynamic) {
     for (const item of feed.data[key] ?? []) {
+      // The software's listing names the engineering tools page as its
+      // canonical, and that page is already a static route above.
+      if (key === 'products' && item.slug === 'nb-engineering-tools') {
+        continue;
+      }
+
       const url = absoluteUrl(`${prefix}/${item.slug}`);
 
       if (listed.has(url)) {

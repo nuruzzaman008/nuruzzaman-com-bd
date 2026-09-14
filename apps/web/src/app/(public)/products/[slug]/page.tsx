@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ApiError, type Product } from '@nuruzzaman/contracts';
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
@@ -11,7 +11,7 @@ import { Container } from '@/components/ui/container';
 import { LocaleLink } from '@/components/ui/locale-link';
 import { Prose } from '@/components/ui/prose';
 import { publicApi } from '@/lib/api/server';
-import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n/locale';
+import { DEFAULT_LOCALE, localizePath, type Locale } from '@/lib/i18n/locale';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 import { buildMetadata, jsonLd, productSchema } from '@/lib/seo';
 
@@ -32,6 +32,13 @@ async function loadProduct(slug: string, locale: Locale = DEFAULT_LOCALE): Promi
   }
 }
 
+/**
+ * The software's listing: its one full article is the engineering tools page,
+ * so this page keeps only what a buyer needs and points there, and search
+ * engines are told the article is the page to show.
+ */
+const TOOLS_SLUG = 'nb-engineering-tools';
+
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
@@ -41,7 +48,7 @@ export async function generateMetadata(props: {
   return buildMetadata({
     title: product.name,
     description: product.tagline,
-    path: `/products/${product.slug}`,
+    path: product.slug === TOOLS_SLUG ? '/engineering-tools' : `/products/${product.slug}`,
     image: product.cover_url,
     seo: product.seo,
   });
@@ -53,6 +60,19 @@ export default async function ProductPage(
   const { locale, t } = pageDictionary(props.locale);
   const { slug } = await props.params;
   const product = await loadProduct(slug, locale);
+
+  // A course is described and bought on its own page; its catalogue listing
+  // exists only so checkout has something to sell.
+  const courseSlug =
+    product.type === 'course'
+      ? product.variants?.find((variant) => variant.course_slug)?.course_slug
+      : null;
+
+  if (courseSlug) {
+    permanentRedirect(localizePath(`/courses/${courseSlug}`, locale));
+  }
+
+  const isTools = product.slug === TOOLS_SLUG;
 
   const cheapest = (product.variants ?? [])
     .map((variant) => variant.price)
@@ -113,7 +133,20 @@ export default async function ProductPage(
               />
             ) : null}
 
-            {product.description_html ? (
+            {isTools ? (
+              <Callout tone="info" className="mt-8">
+                {locale === 'en'
+                  ? 'Modules, workflows, licences, NB Credits, installation and the FAQ are all on one page: '
+                  : 'মডিউল, workflow, লাইসেন্স, NB Credits, ইনস্টলেশন ও সাধারণ জিজ্ঞাসা — সব এক পাতায়: '}
+                <LocaleLink href="/engineering-tools" className="font-semibold underline">
+                  {locale === 'en'
+                    ? 'NB Engineering Tools — full details'
+                    : 'NB Engineering Tools — সম্পূর্ণ বিবরণ'}
+                </LocaleLink>
+              </Callout>
+            ) : null}
+
+            {!isTools && product.description_html ? (
               <div className="mt-8">
                 {product.copy_translated ? null : (
                   <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
@@ -124,7 +157,7 @@ export default async function ProductPage(
               </div>
             ) : null}
 
-            {product.feature_groups?.length ? (
+            {!isTools && product.feature_groups?.length ? (
               <section className="mt-10">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
                   {t.product.featureGroups}
@@ -142,7 +175,7 @@ export default async function ProductPage(
               </section>
             ) : null}
 
-            {product.specs && Object.keys(product.specs).length > 0 ? (
+            {!isTools && product.specs && Object.keys(product.specs).length > 0 ? (
               <section className="mt-10">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
                   {t.product.specifications}
@@ -154,8 +187,8 @@ export default async function ProductPage(
                         {key.replace(/_/g, ' ')}
                       </dt>
                       <dd data-authored="true" className="text-sm text-muted">
-                      {value}
-                    </dd>
+                        {value}
+                      </dd>
                     </div>
                   ))}
                 </dl>

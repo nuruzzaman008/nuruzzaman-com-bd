@@ -14,6 +14,9 @@ class PublishCreditPrices extends Command
 
     protected $description = 'Publish the four owner-approved NB Credit packs while preserving price history.';
 
+    /** Credits => BDT, from the owner's price analysis. */
+    private const PACKS = [500 => 499, 2000 => 1499, 5000 => 2999, 15000 => 6999];
+
     public function handle(): int
     {
         $product = Product::where('slug', 'nb-credit-refill')->where('type', 'credit_refill')->first();
@@ -24,7 +27,7 @@ class PublishCreditPrices extends Command
         }
         DB::transaction(function () use ($product) {
             Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
-            foreach ([500 => 499, 2000 => 1499, 5000 => 2999, 15000 => 6999] as $credits => $bdt) {
+            foreach (self::PACKS as $credits => $bdt) {
                 $variant = $product->variants()->firstOrCreate(['sku' => 'NBC-'.$credits], ['name' => number_format($credits).' NB Credits', 'credit_amount' => $credits, 'is_active' => true, 'position' => $credits]);
                 $variant->update(['credit_amount' => $credits, 'is_active' => true]);
                 $current = $variant->currentPrice();
@@ -34,6 +37,12 @@ class PublishCreditPrices extends Command
                 $variant->prices()->where('currency', 'BDT')->where('is_active', true)->update(['is_active' => false, 'ends_at' => now()]);
                 $variant->prices()->create(['currency' => 'BDT', 'amount_minor' => $bdt * 100, 'starts_at' => now(), 'is_active' => true]);
             }
+            // Packs no longer on sale (1,000 and 2,500) stay on record for the
+            // orders that bought them, but can no longer be bought.
+            $product->variants()
+                ->where('sku', 'like', 'NBC-%')
+                ->whereNotIn('sku', array_map(fn (int $credits) => 'NBC-'.$credits, array_keys(self::PACKS)))
+                ->update(['is_active' => false]);
             $product->update(['is_price_public' => true]);
         });
         try {

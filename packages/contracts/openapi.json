@@ -8662,6 +8662,21 @@
             }
           },
           {
+            "name": "exclude_type",
+            "in": "query",
+            "description": "Leave out one product type. The dashboard leaves out course listings, which are managed under Courses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "software_license",
+                "credit_refill",
+                "course",
+                "bundle",
+                "digital_resource"
+              ]
+            }
+          },
+          {
             "$ref": "#/components/parameters/Page"
           }
         ],

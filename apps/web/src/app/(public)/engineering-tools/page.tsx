@@ -4,7 +4,13 @@ import type { DownloadAsset, Product, SiteSettings } from '@nuruzzaman/contracts
 
 import { AddToCart } from '@/features/catalog/add-to-cart';
 import { CreditGuide } from '@/features/catalog/credit-guide';
-import { ToolsArticle, ToolsPurchasePolicies } from '@/features/catalog/tools-article';
+import {
+  ToolsInstallation,
+  ToolsLicensing,
+  ToolsOverview,
+  ToolsResponsibility,
+  ToolsWorkflows,
+} from '@/features/catalog/tools-article';
 import { productFaq } from '@/features/catalog/product-faq';
 import { MODULE_COUNT, PRODUCT_MODULES } from '@/features/catalog/product-modules';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +18,6 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Container, Section } from '@/components/ui/container';
-import { Prose } from '@/components/ui/prose';
 import { tryPublicApi } from '@/lib/api/server';
 import {
   breadcrumbSchema,
@@ -26,19 +31,16 @@ import { navItemLabel, supportNav } from '@/lib/site';
 import { localizePath } from '@/lib/i18n/locale';
 import { pageDictionary, type LocalizedPageProps } from '@/lib/i18n/page';
 
-// Title and description are the owner's own, from the product document. The
-// AutoCAD version numbers are deliberately left out of the title: which
-// releases the current build supports is still unconfirmed, and a title is the
-// last place to put a claim that might be wrong.
+// The one complete article about NB Engineering Tools - the page in the main
+// menu. Title and description follow the owner's product document.
 export const metadata: Metadata = buildMetadata({
   title:
-    'NB Engineering Tools for AutoCAD | Structural Design, Footing, Pile Cap, Beam & Slab Automation Software',
+    'NB Engineering Tools for AutoCAD 2024–2027 | Structural Design, Footing, Pile Cap, Beam & Slab Automation Software',
   description:
-    'AutoCAD-এর জন্য professional engineering automation suite — footing, combined footing, pile cap, beam, slab, column, grid, geotechnical, reinforcement ও estimate workflow। ২৬টি compiled VLX module, machine activation ও token licensing। ডেভেলপার: Engr. Md. Nuruzzaman, RSE।',
+    'AutoCAD 2024–2027-এর জন্য professional engineering automation suite — footing, combined footing, pile cap, beam, slab, column, grid, geotechnical, reinforcement ও estimate workflow। ২৬টি compiled VLX module, machine activation ও NB Credits। ডেভেলপার: Engr. Md. Nuruzzaman, RSE।',
   path: '/engineering-tools',
 });
 
-/** Facts stated in the owner's published product document, and nothing else. */
 const GROUP_ORDER = [
   'Layout, Grid & Schedule',
   'Footing & Foundation',
@@ -49,8 +51,20 @@ const GROUP_ORDER = [
   'License & System',
 ];
 
+/** The article's sections in page order, for the contents list. */
+const CONTENTS = [
+  { id: 'overview', bn: 'NB Engineering Tools কী', en: 'What it is' },
+  { id: 'workflows', bn: 'প্রধান workflow', en: 'Main workflows' },
+  { id: 'modules', bn: 'মডিউল তালিকা', en: 'Module list' },
+  { id: 'licensing', bn: 'লাইসেন্স ও NB Credits', en: 'Licences and NB Credits' },
+  { id: 'installation', bn: 'ইনস্টলেশন', en: 'Installation' },
+  { id: 'faq', bn: 'সাধারণ জিজ্ঞাসা', en: 'FAQ' },
+  { id: 'credit-pricing', bn: 'দাম ও কেনার নিয়ম', en: 'Prices and how to buy' },
+];
+
 export default async function EngineeringToolsPage({ locale }: LocalizedPageProps) {
   const { locale: active, t } = pageDictionary(locale);
+  const en = active === 'en';
   const faq = productFaq(active);
   const [product, release, settings] = await Promise.all([
     tryPublicApi<{ data: Product }>('/products/nb-engineering-tools', {
@@ -64,9 +78,9 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
   ]);
 
   const tools = product?.data ?? null;
-  const tested = settings?.data?.product?.tested_autocad_versions ?? null;
-  const designedFor = settings?.data?.product?.designed_for ?? 'AutoCAD 2024';
   const supportEmail = settings?.data?.support_email ?? null;
+  const launch = tools?.variants?.find((variant) => variant.sku === 'NBET-V6-SINGLE')?.price
+    ?.compare_at_minor;
 
   const cheapest = (tools?.variants ?? [])
     .map((variant) => variant.price)
@@ -121,50 +135,55 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
       <Section tone="white" className="pt-8">
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
-            <div>
+            <article>
               <Badge tone="warning">NB Engineering Tools v6.0</Badge>
               <h1 className="mt-3 text-[length:var(--step-h1)] leading-tight font-bold text-navy">
-                Structural &amp; Engineering Design Tools for AutoCAD
+                NB Engineering Tools for AutoCAD
               </h1>
-              <Link href="/connect-autocad" className="mt-4 inline-block font-medium text-blue underline">
-                {locale === 'en' ? 'Connect AutoCAD for online activation and token refills' : 'Online activation ও token refill-এর জন্য AutoCAD সংযোগ করুন'}
-              </Link>
-              <Link href="#credit-pricing" className="mt-3 block font-semibold text-blue underline">{active === 'en' ? 'NB Credit prices & payment guide' : 'NB Credit-এর দাম ও payment-এর নিয়ম'}</Link>
-              <p className="mt-4 text-lg text-muted">
-                {t.tools.lede}
+              <p className="font-latin mt-2 text-xl font-semibold text-teal">
+                Structural &amp; Engineering Design Tools
+              </p>
+              <p className="mt-4 text-lg text-muted">{t.tools.lede}</p>
+
+              <p className="mt-4 rounded-[--radius-card] border border-line bg-surface px-4 py-3 text-sm text-navy">
+                <strong>{en ? 'Supported:' : 'সমর্থিত:'}</strong>{' '}
+                {en
+                  ? 'AutoCAD 2024, 2025, 2026 and 2027 · Windows 10/11, 64-bit'
+                  : 'AutoCAD 2024, 2025, 2026 ও 2027 · Windows 10/11, 64-bit'}
               </p>
 
-              <Callout tone="warning" className="mt-6">
-                <p>
-                  <strong>{t.tools.compatibilityLabel}</strong> {t.tools.compatibilityBody}{' '}
-                  {designedFor}
-                  {t.tools.compatibilitySuffix}
-                </p>
-                <p className="mt-2">
-                  {tested
-                    ? `${t.tools.testedVersions}: ${tested}.`
-                    : t.tools.untested}
-                </p>
-              </Callout>
+              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+                <Link href="#credit-pricing" className="text-blue underline">
+                  {en ? 'Prices and how to buy' : 'দাম ও কেনার নিয়ম'}
+                </Link>
+                <Link href="/connect-autocad" className="text-blue underline">
+                  {en
+                    ? 'Connect AutoCAD for online activation and refills'
+                    : 'Online activation ও refill-এর জন্য AutoCAD সংযোগ করুন'}
+                </Link>
+              </div>
 
-              <ToolsArticle locale={active} />
-
-              <section className="mt-10">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.verifiedFacts}</h2>
-                <ul className="mt-4 space-y-2 text-sm">
-                  {t.tools.verifiedFactsList.map((fact) => (
-                    <li key={fact} className="flex gap-2">
-                      <span
-                        aria-hidden="true"
-                        className="mt-2 size-1.5 shrink-0 rounded-full bg-teal"
-                      />
-                      <span>{fact}</span>
+              <nav
+                aria-label={en ? 'On this page' : 'এই পাতায়'}
+                className="mt-8 rounded-[--radius-card] border border-line p-4"
+              >
+                <p className="text-sm font-bold text-navy">{en ? 'On this page' : 'এই পাতায়'}</p>
+                <ol className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+                  {CONTENTS.map((item, index) => (
+                    <li key={item.id}>
+                      <a href={`#${item.id}`} className="text-blue hover:underline">
+                        <span className="font-latin text-muted">{index + 1}.</span>{' '}
+                        {en ? item.en : item.bn}
+                      </a>
                     </li>
                   ))}
-                </ul>
-              </section>
+                </ol>
+              </nav>
 
-              <section className="mt-12">
+              <ToolsOverview locale={active} />
+              <ToolsWorkflows locale={active} />
+
+              <section id="modules" className="mt-12 scroll-mt-24">
                 <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
                   {t.tools.moduleList}
                 </h2>
@@ -189,9 +208,7 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                               {module.name}
                             </dt>
                             <dd data-authored="true" className="text-sm text-muted">
-                              {active === 'en'
-                                ? (module.purposeEn ?? module.purpose)
-                                : module.purpose}
+                              {en ? (module.purposeEn ?? module.purpose) : module.purpose}
                             </dd>
                           </div>
                         ))}
@@ -200,97 +217,14 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                   ))}
                 </div>
 
-                <p className="mt-4 text-xs text-muted">
-                  {t.tools.moduleNote}
-                </p>
+                <p className="mt-4 text-xs text-muted">{t.tools.moduleNote}</p>
               </section>
 
-              <section className="mt-12">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  {t.tools.licensing}
-                </h2>
+              <ToolsLicensing locale={active} />
+              <ToolsInstallation locale={active} />
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <Card className="p-5">
-                    <h3 className="font-bold text-navy">{t.tools.machineActivation}</h3>
-                    <p className="mt-2 text-sm text-muted">
-                      {t.tools.machineActivationBody}
-                    </p>
-                    <p className="font-latin mt-3 rounded-md bg-surface px-3 py-2 text-xs text-navy">
-                      NBM-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX
-                    </p>
-                  </Card>
-
-                  <Card className="p-5">
-                    <h3 className="font-bold text-navy">{t.tools.tokenCredit}</h3>
-                    <p className="mt-2 text-sm text-muted">
-                      {t.tools.tokenCreditBody}
-                    </p>
-                  </Card>
-                </div>
-
-                <h3 className="mt-8 font-bold text-navy">{t.tools.tokenSpendHeading}</h3>
-                <ul className="mt-3 space-y-2 text-sm text-muted">
-                  <li>{t.tools.tokenSpend1}</li>
-                  <li>{t.tools.tokenSpend2}</li>
-                  <li>
-                    {t.tools.tokenSpend3Prefix} <strong>{t.tools.tokenSpend3Strong}</strong>{' '}
-                    {t.tools.tokenSpend3Suffix}
-                  </li>
-                  <li>{t.tools.tokenSpend4}</li>
-                </ul>
-
-                <Callout tone="warning" className="mt-6">
-                  <p>
-                    <strong>{t.tools.reinstallLabel}</strong> {t.tools.reinstallBody}
-                  </p>
-                  <p className="mt-2">
-                    {t.tools.screenshotBody}{' '}
-                    <Link href="/support/license-recovery" className="text-blue underline">
-                      {t.tools.recoveryLink}
-                    </Link>
-                    {t.tools.screenshotSuffix}
-                  </p>
-                </Callout>
-              </section>
-
-              <ToolsPurchasePolicies locale={active} />
-
-              <section className="mt-12">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.installation}</h2>
-                <p className="font-latin mt-3 rounded-[--radius-card] border border-line bg-surface px-4 py-3 text-sm text-navy">
-                  Welcome → System Check → License Agreement → Install → Finish
-                </p>
-                <p className="mt-3 text-sm text-muted">
-                  {t.tools.installationBody}
-                </p>
-                <ol className="mt-4 space-y-2 text-sm">
-                  {t.tools.installSteps.map((step, index) => (
-                    <li key={step} className="flex gap-3">
-                      <span className="font-latin flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-soft text-xs font-bold text-blue">
-                        {index + 1}
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-
-              {tools?.description_html ? (
-                <div className="mt-12">
-                  {tools.copy_translated ? null : (
-                    <Callout tone="info" title={t.cms.untranslatedTitle} role="status">
-                      {t.cms.untranslatedBody}
-                    </Callout>
-                  )}
-                  <Prose html={tools.description_html} data-authored="true" />
-                </div>
-              ) : null}
-
-              <section className="mt-12">
-                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">
-                  {t.tools.faq}
-                </h2>
+              <section id="faq" className="mt-12 scroll-mt-24">
+                <h2 className="text-[length:var(--step-h2)] font-bold text-navy">{t.tools.faq}</h2>
                 <dl className="mt-5 divide-y divide-line rounded-[--radius-card] border border-line">
                   {faq.map((item) => (
                     <div key={item.question} className="px-5 py-4">
@@ -301,21 +235,26 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                 </dl>
               </section>
 
-              <Callout tone="info" className="mt-10">
-                <p>
-                  <strong>{t.tools.responsibilityLabel}</strong> {t.tools.responsibilityBody}
-                </p>
-              </Callout>
-            </div>
+              <ToolsResponsibility locale={active} />
+            </article>
 
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <Card className="p-6">
                 {tools ? (
-                  <AddToCart variants={tools.variants ?? []} />
+                  <>
+                    <AddToCart variants={tools.variants ?? []} />
+                    <p className="mt-3 text-xs text-muted">
+                      {launch
+                        ? en
+                          ? 'Single-PC launch price for the first 100 engineers. It includes 1,000 NB Credits, issued after activation.'
+                          : '১টি PC-র লঞ্চ দাম, প্রথম ১০০ জন ইঞ্জিনিয়ারের জন্য। সাথে 1,000 NB Credits, activation-এর পর issue করা হয়।'
+                        : en
+                          ? 'A single-PC licence includes 1,000 NB Credits, issued after activation.'
+                          : '১টি PC-র লাইসেন্সের সাথে 1,000 NB Credits, activation-এর পর issue করা হয়।'}
+                    </p>
+                  </>
                 ) : (
-                  <Callout tone="info">
-                    {t.tools.loadFailed}
-                  </Callout>
+                  <Callout tone="info">{t.tools.loadFailed}</Callout>
                 )}
 
                 <dl className="mt-6 space-y-3 border-t border-line pt-5 text-sm">
@@ -324,6 +263,10 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                     <dd className="font-latin font-medium text-navy">
                       {release?.data?.version ?? 'v6.0'}
                     </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">AutoCAD</dt>
+                    <dd className="font-latin font-medium text-navy">2024–2027</dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted">{t.tools.platform}</dt>
@@ -335,7 +278,7 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                   </div>
                   <div>
                     <dt className="text-muted">SHA-256</dt>
-                    <dd className="font-latin mt-1 break-all text-xs text-navy">
+                    <dd className="font-latin mt-1 text-xs break-all text-navy">
                       {release?.data?.checksum_sha256 ?? t.tools.checksumPending}
                     </dd>
                   </div>
@@ -357,7 +300,10 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
                 {supportEmail ? (
                   <p className="mt-5 border-t border-line pt-5 text-sm text-muted">
                     {t.tools.supportLine}{' '}
-                    <a href={`mailto:${supportEmail}`} className="font-latin text-blue hover:underline">
+                    <a
+                      href={`mailto:${supportEmail}`}
+                      className="font-latin text-blue hover:underline"
+                    >
                       {supportEmail}
                     </a>
                   </p>
@@ -367,7 +313,11 @@ export default async function EngineeringToolsPage({ locale }: LocalizedPageProp
           </div>
         </Container>
       </Section>
-      <Section><Container><CreditGuide locale={active} /></Container></Section>
+      <Section>
+        <Container>
+          <CreditGuide locale={active} />
+        </Container>
+      </Section>
     </>
   );
 }

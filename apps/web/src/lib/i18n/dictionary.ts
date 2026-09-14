@@ -421,74 +421,19 @@ const bn = {
   /* ---- Engineering tools product page ---- */
   tools: {
     heading: 'ইঞ্জিনিয়ারিং টুলস',
-    productTitle: 'Structural & Engineering Design Tools for AutoCAD',
     lede:
       'Footing, combined footing, pile cap, beam, slab, column, grid ও geotechnical workflow-এর জন্য একটি professional AutoCAD automation suite। Ribbon এবং classic pull-down menu — দুইভাবেই কাজ করে।',
-    compatibilityLabel: 'সামঞ্জস্য:',
-    compatibilityBody: 'মালিকের প্রকাশিত নথি অনুযায়ী বর্তমান commercial build',
-    compatibilitySuffix: ', Windows 10/11 64-bit-এর জন্য প্রস্তুত।',
-    testedVersions: 'রানটাইম-টেস্ট করা ভার্সন',
-    untested:
-      'ভিন্ন AutoCAD ভার্সনের সামঞ্জস্য আলাদাভাবে নিশ্চিত করতে হবে। রানটাইম-টেস্টের প্রমাণ ছাড়া কোনো ভার্সনকে পরীক্ষিত বলা হয় না।',
-    verifiedFacts: 'যাচাই করা তথ্য',
     moduleList: 'মডিউল তালিকা',
     moduleIntro:
       'টি compiled মডিউল, কাজ অনুযায়ী সাজানো। নিচে প্রতিটি মডিউলের ঘোষিত ব্যবহার লেখা আছে — ভেতরের কমান্ডের নির্ভুলতা, গতি বা কোড-সামঞ্জস্য নিয়ে এমন কোনো দাবি করা হচ্ছে না যা পরীক্ষা করা হয়নি।',
     moduleNote: 'মডিউলের কার্যকারিতা ভার্সন অনুযায়ী পরিবর্তিত ও উন্নত হতে পারে।',
-    licensing: 'লাইসেন্স, Machine ID ও টোকেন',
-    machineActivation: 'Machine activation',
-    machineActivationBody:
-      'প্রতিটি সমর্থিত কম্পিউটার একটি Machine ID তৈরি করে এবং লাইসেন্স তার সাথে bind হয়।',
-    tokenCredit: 'Token / credit',
-    tokenCreditBody:
-      'Activation ব্যবহারের অনুমতি দেয়; token নির্দিষ্ট paid operation চালানোর ক্রেডিট। সক্রিয় লাইসেন্স থাকলেও paid operation-এর জন্য পর্যাপ্ত token লাগতে পারে।',
-    tokenSpendHeading: 'টোকেন কীভাবে খরচ হয়',
-    tokenSpend1: 'প্রতিটি টুলের token cost এক নয়।',
-    tokenSpend2: 'কিছু টুল সফল command session অনুযায়ী charge করে।',
-    tokenSpend3Prefix: 'কিছু design টুল সফল',
-    tokenSpend3Strong: 'unique design',
-    tokenSpend3Suffix:
-      'অনুযায়ী charge করে — যেমন ২৪টি ফুটিং নির্বাচন করেও unique design ২টি হলে ২টিই গোনা হয়।',
-    tokenSpend4:
-      'বাতিল বা ব্যর্থ operation-এ প্রযোজ্য টুলের যুক্তি অনুযায়ী charge না-ও হতে পারে।',
-    reinstallLabel: 'Windows reinstall বা format:',
-    reinstallBody:
-      'স্থানীয় license/token ডেটা মুছে যেতে পারে। Token শূন্য হয়ে গেলে আগের token স্বয়ংক্রিয়ভাবে ফিরে পাওয়ার নিশ্চয়তা নেই।',
-    screenshotBody:
-      'Windows setup-এর সর্বোচ্চ ৩০ মিনিট আগে তোলা স্পষ্ট screenshot থাকলে ভেন্ডর যাচাইয়ের পর অবশিষ্ট balance পুনরায় issue করা যেতে পারে। বিস্তারিত শর্ত ও ব্যতিক্রম',
-    recoveryLink: 'লাইসেন্স রিকভারি পাতায়',
-    screenshotSuffix: 'দেখুন।',
-    installation: 'ইনস্টলেশন',
-    installationBody:
-      'ইনস্টল শেষে AutoCAD চালু করলে NB Engineering Tools Ribbon পাওয়া যায়। এরপর:',
     faq: 'সাধারণ জিজ্ঞাসা',
-    responsibilityLabel: 'ইঞ্জিনিয়ারিং দায়িত্ব:',
-    responsibilityBody:
-      'সফটওয়্যারটি design ও drawing automation দেয়, কিন্তু চূড়ান্ত engineering সিদ্ধান্ত, ডিজাইন যাচাই, কোড সঙ্গতি, কাঠামোগত নিরাপত্তা ও ড্রয়িংয়ের নির্ভুলতার দায়িত্ব যোগ্য প্রকৌশলীর। কোনো স্বয়ংক্রিয় ফলাফল স্বাধীন engineering review ছাড়া চূড়ান্ত নির্মাণ-সিদ্ধান্ত হিসেবে ব্যবহার করা উচিত নয়।',
     loadFailed: 'পণ্যের তথ্য লোড করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
     version: 'ভার্সন',
     platform: 'প্ল্যাটফর্ম',
     modules: 'মডিউল',
     checksumPending: 'ফাইল প্রকাশের পর দেওয়া হবে',
     supportLine: 'টেকনিক্যাল ও লাইসেন্স সাপোর্ট:',
-    verifiedFactsList: [
-      'NB Engineering Tools v6.0',
-      'Structural & Engineering Design Tools for AutoCAD',
-      'Windows 10 / 11, 64-bit',
-      '২৫টি engineering/productivity মডিউল + ১টি core/security মডিউল = মোট ২৬টি compiled VLX মডিউল',
-      'AutoCAD Ribbon এবং classic pull-down menu',
-      'Machine activation, token/credit licensing, signed activation ও refill workflow',
-      'Professional Windows Setup EXE',
-      'Vendor-verified license recovery',
-      'ডেভেলপার: Engr. Md. Nuruzzaman, RSE',
-    ],
-    installSteps: [
-      'Machine ID নিন',
-      'লাইসেন্স ক্রয় ও অ্যাক্টিভেশন সম্পন্ন করুন',
-      'Signed activation key প্রয়োগ করুন',
-      'প্রয়োজন অনুযায়ী token refill নিন',
-      'ইঞ্জিনিয়ারিং টুল ব্যবহার শুরু করুন',
-    ],
   },
 
   /** Article page. */
@@ -2180,74 +2125,19 @@ const en: Dictionary = {
 
   tools: {
     heading: 'Engineering Tools',
-    productTitle: 'Structural & Engineering Design Tools for AutoCAD',
     lede:
       'A professional AutoCAD automation suite for footing, combined footing, pile cap, beam, slab, column, grid and geotechnical workflows. Works from the Ribbon and the classic pull-down menu alike.',
-    compatibilityLabel: 'Compatibility:',
-    compatibilityBody:
-      'Per the published product document, the current commercial build targets',
-    compatibilitySuffix: ' on Windows 10/11 64-bit.',
-    testedVersions: 'Runtime-tested versions',
-    untested:
-      'Compatibility with other AutoCAD versions must be confirmed separately. No version is called tested without evidence of a runtime test.',
-    verifiedFacts: 'Verified facts',
     moduleList: 'Module list',
     moduleIntro:
       ' compiled modules, grouped by the work they do. Each states its declared purpose — no claim is made about the accuracy, speed or code-compliance of what it produces, because none of that has been tested here.',
     moduleNote: 'Module behaviour may change and improve between versions.',
-    licensing: 'Licensing, Machine ID and tokens',
-    machineActivation: 'Machine activation',
-    machineActivationBody:
-      'Each supported computer generates a Machine ID, and the licence is bound to it.',
-    tokenCredit: 'Token / credit',
-    tokenCreditBody:
-      'Activation grants the right to use the software; a token is credit for running a specific paid operation. An active licence still needs enough tokens for a paid operation.',
-    tokenSpendHeading: 'How tokens are spent',
-    tokenSpend1: 'Token cost is not the same for every tool.',
-    tokenSpend2: 'Some tools charge per successful command session.',
-    tokenSpend3Prefix: 'Some design tools charge per successful',
-    tokenSpend3Strong: 'unique design',
-    tokenSpend3Suffix:
-      ' — selecting 24 footings that resolve to 2 unique designs is charged as 2.',
-    tokenSpend4: 'A cancelled or failed operation may not be charged, depending on the tool.',
-    reinstallLabel: 'Windows reinstall or format:',
-    reinstallBody:
-      'Local licence and token data may be erased. If the balance reaches zero there is no guarantee the previous tokens return automatically.',
-    screenshotBody:
-      'A clear screenshot taken no more than 30 minutes before the Windows setup may, after vendor verification, allow the remaining balance to be reissued. For the full conditions and exceptions see the',
-    recoveryLink: 'licence recovery page',
-    screenshotSuffix: '.',
-    installation: 'Installation',
-    installationBody:
-      'After installing, opening AutoCAD gives you the NB Engineering Tools Ribbon. Then:',
     faq: 'Frequently asked questions',
-    responsibilityLabel: 'Engineering responsibility:',
-    responsibilityBody:
-      'The software provides design and drawing automation, but the final engineering decision, design verification, code compliance, structural safety and drawing accuracy remain the responsibility of a qualified engineer. No automated result should be used as a final construction decision without independent engineering review.',
     loadFailed: 'Product information could not be loaded. Please try again shortly.',
     version: 'Version',
     platform: 'Platform',
     modules: 'Modules',
     checksumPending: 'Published once the file is released',
     supportLine: 'Technical and licence support:',
-    verifiedFactsList: [
-      'NB Engineering Tools v6.0',
-      'Structural & Engineering Design Tools for AutoCAD',
-      'Windows 10 / 11, 64-bit',
-      '25 engineering/productivity modules + 1 core/security module = 26 compiled VLX modules',
-      'AutoCAD Ribbon and classic pull-down menu',
-      'Machine activation, token/credit licensing, signed activation and refill workflow',
-      'Professional Windows Setup EXE',
-      'Vendor-verified licence recovery',
-      'Developer: Engr. Md. Nuruzzaman, RSE',
-    ],
-    installSteps: [
-      'Get your Machine ID',
-      'Complete the purchase and activation',
-      'Apply the signed activation key',
-      'Buy a token refill if you need one',
-      'Start using the engineering tools',
-    ],
   },
 
   post: {

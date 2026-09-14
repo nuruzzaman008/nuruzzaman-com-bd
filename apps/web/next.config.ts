@@ -108,6 +108,18 @@ const nextConfig: NextConfig = {
         destination: '/engineering-tools',
         permanent: true,
       },
+      // A workflow outline that stood in for an article about the same software;
+      // everything it promised is on the engineering tools page.
+      {
+        source: '/blog/nb-engineering-tools-workflow-overview',
+        destination: '/engineering-tools',
+        permanent: true,
+      },
+      {
+        source: '/en/blog/nb-engineering-tools-workflow-overview',
+        destination: '/en/engineering-tools',
+        permanent: true,
+      },
       // The catalogue lived at /shop until it took the name the header, the
       // dashboard and its schema.org type already used. Anything indexed or
       // linked at the old address follows it here; the query string (a page
