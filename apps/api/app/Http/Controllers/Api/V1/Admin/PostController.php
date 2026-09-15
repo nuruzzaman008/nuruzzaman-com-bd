@@ -6,6 +6,7 @@ use App\Enums\ContentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PostRequest;
 use App\Http\Resources\PostResource;
+use App\Jobs\RevalidateFrontend;
 use App\Models\Post;
 use App\Models\PostRevision;
 use App\Services\Content\PublishingService;
@@ -70,6 +71,8 @@ class PostController extends Controller
     {
         $this->authorize('update', $post);
 
+        $previousSlug = $post->slug;
+
         DB::transaction(function () use ($request, $post) {
             $this->publishing->snapshot($post, $request->user(), 'Auto-snapshot before edit');
 
@@ -81,7 +84,17 @@ class PostController extends Controller
             $this->syncRelations($post, $request);
         });
 
-        return new PostResource($post->fresh()->load(['author', 'categories', 'tags', 'seo']));
+        $post = $post->fresh();
+
+        // A published article is edited in place, so its cached page has to be
+        // dropped on save - not only on publish - or readers keep seeing the
+        // old text until the cache runs out. The old address too, if it moved.
+        RevalidateFrontend::dispatch(array_values(array_unique([
+            ...$this->publishing->tagsFor($post),
+            'post:'.$previousSlug,
+        ])));
+
+        return new PostResource($post->load(['author', 'categories', 'tags', 'seo']));
     }
 
     public function transition(Request $request, Post $post): PostResource

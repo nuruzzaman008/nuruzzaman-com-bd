@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
@@ -17,6 +17,7 @@ import { MarkdownTextarea } from '@/components/ui/markdown-editor';
 import { ApiError, api } from '@/lib/api/browser';
 import type { Dictionary } from '@/lib/i18n/dictionary';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { statusLabel } from '@/lib/status';
 
 type Transition = keyof Dictionary['admin']['postEditor'];
 
@@ -66,12 +67,23 @@ const SEO_FIELDS = {
  * Every save snapshots a revision on the server first.
  */
 export function PostEditor({ post }: { post: EditablePost }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  // Set by the sidebar's Publish button just before it submits the form, so
+  // one click saves the words and then publishes them, as WordPress does.
+  const intent = useRef<'save' | 'publish'>('save');
+
+  const published = post.status === 'published';
+  const canPublish = (TRANSITIONS[post.status] ?? []).some((option) => option.to === 'published');
+
+  function submit(next: 'save' | 'publish') {
+    intent.current = next;
+    (document.getElementById('post-editor') as HTMLFormElement | null)?.requestSubmit();
+  }
 
   const image = useFeaturedImage({
     initialCover: post.cover_media_id
@@ -84,10 +96,13 @@ export function PostEditor({ post }: { post: EditablePost }) {
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const publishing = intent.current === 'publish';
+    intent.current = 'save';
+
     setBusy(true);
     setErrors({});
     setMessage(null);
-    setSaved(false);
+    setSaved(null);
 
     const form = new FormData(event.currentTarget);
 
@@ -115,7 +130,20 @@ export function PostEditor({ post }: { post: EditablePost }) {
         },
       });
 
-      setSaved(true);
+      if (publishing) {
+        await api<{ data: Post }>(`/admin/posts/${post.id}/transition`, {
+          method: 'POST',
+          body: { status: 'published' },
+        });
+      }
+
+      setSaved(
+        publishing
+          ? t.admin.postEditor.publishedDone
+          : published
+            ? t.admin.postEditor.updated
+            : t.admin.postEditor.saved,
+      );
       router.refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
@@ -144,9 +172,7 @@ export function PostEditor({ post }: { post: EditablePost }) {
 
       router.refresh();
     } catch (caught) {
-      setMessage(
-        caught instanceof ApiError ? caught.message : t.admin.postEditor.statusFailed,
-      );
+      setMessage(caught instanceof ApiError ? caught.message : t.admin.postEditor.statusFailed);
     } finally {
       setBusy(false);
     }
@@ -165,7 +191,7 @@ export function PostEditor({ post }: { post: EditablePost }) {
 
         {saved ? (
           <Callout tone="success" role="status">
-            {t.admin.postEditor.saved}
+            {saved}
           </Callout>
         ) : null}
 
@@ -254,10 +280,7 @@ export function PostEditor({ post }: { post: EditablePost }) {
         <fieldset className="space-y-5 border-t border-line pt-5">
           <legend className="font-bold text-navy">SEO</legend>
 
-          <Field
-            label={t.admin.postEditor.focusKeyword}
-            hint={t.admin.postEditor.focusHint}
-          >
+          <Field label={t.admin.postEditor.focusKeyword} hint={t.admin.postEditor.focusHint}>
             {(props) => (
               <Input name="focus_keyword" defaultValue={post.seo?.focus_keyword ?? ''} {...props} />
             )}
@@ -281,28 +304,71 @@ export function PostEditor({ post }: { post: EditablePost }) {
         </fieldset>
 
         <Button type="submit" size="lg" disabled={busy}>
-          {busy ? t.admin.common.saving : t.admin.common.save}
+          {busy
+            ? t.admin.common.saving
+            : published
+              ? t.admin.postEditor.update
+              : t.admin.postEditor.saveDraft}
         </Button>
       </form>
 
       <aside className="space-y-4">
         <Card className="p-5">
           <p className="text-sm text-muted">{t.admin.postEditor.currentStatus}</p>
-          <Badge tone={post.status === 'published' ? 'success' : 'neutral'}>{post.status}</Badge>
+          <Badge tone={published ? 'success' : 'neutral'}>
+            {statusLabel('content', post.status, locale)}
+          </Badge>
+
+          {published ? (
+            <p className="mt-3 text-sm text-muted">
+              {t.admin.postEditor.liveNote}{' '}
+              <a
+                href={`/blog/${post.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-blue underline"
+              >
+                {t.admin.postEditor.viewPost}
+              </a>
+            </p>
+          ) : null}
 
           <div className="mt-4 space-y-2">
-            {(TRANSITIONS[post.status] ?? []).map((option) => (
+            {published ? (
               <Button
-                key={option.to}
                 type="button"
-                variant="secondary"
                 className="w-full"
                 disabled={busy}
-                onClick={() => void transition(option.to)}
+                onClick={() => submit('save')}
               >
-                {t.admin.postEditor[option.label]}
+                {busy ? t.admin.common.saving : t.admin.postEditor.update}
               </Button>
-            ))}
+            ) : canPublish ? (
+              <Button
+                type="button"
+                className="w-full"
+                disabled={busy}
+                onClick={() => submit('publish')}
+              >
+                {busy ? t.admin.postEditor.publishing : t.admin.postEditor.publish}
+              </Button>
+            ) : null}
+
+            {/* Publishing is the button above; these are the other moves. */}
+            {(TRANSITIONS[post.status] ?? [])
+              .filter((option) => option.to !== 'published')
+              .map((option) => (
+                <Button
+                  key={option.to}
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={() => void transition(option.to)}
+                >
+                  {t.admin.postEditor[option.label]}
+                </Button>
+              ))}
           </div>
 
           {!post.reviewed_at ? (

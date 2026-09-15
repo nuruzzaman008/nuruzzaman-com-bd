@@ -118,7 +118,7 @@ describe('PostEditor featured image', () => {
     expect(screen.getByRole('img')).toHaveAttribute('src', 'https://example.test/existing.webp');
 
     fireEvent.change(screen.getByLabelText(/^Title/), { target: { value: 'A new title' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
 
     await waitFor(() => expect(postPatch()).toBeDefined());
     const body = postPatch()![1].body;
@@ -131,7 +131,7 @@ describe('PostEditor featured image', () => {
   it('keeps the generated cover when a post without an upload is saved', async () => {
     render(<PostEditor post={postWith()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
 
     await waitFor(() => expect(postPatch()).toBeDefined());
     expect('cover_media_id' in postPatch()![1].body).toBe(false);
@@ -148,7 +148,7 @@ describe('PostEditor featured image', () => {
     expect(screen.getByRole('img')).toHaveAttribute('src', uploaded.url);
     expect(screen.queryByText(/Generated cover/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
 
     await waitFor(() => expect(postPatch()).toBeDefined());
     expect(postPatch()![1].body.cover_media_id).toBe(42);
@@ -169,7 +169,7 @@ describe('PostEditor featured image', () => {
 
     expect(screen.getByText(/Generated cover/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
 
     await waitFor(() => expect(postPatch()).toBeDefined());
     // null, not left out: this time the change is the point.
@@ -180,5 +180,48 @@ describe('PostEditor featured image', () => {
     render(<PostEditor post={postWith()} />);
 
     expect(await screen.findByText(/generated cover art/)).toBeInTheDocument();
+  });
+});
+
+describe('PostEditor publishing', () => {
+  it('saves a draft and publishes it from one Publish button', async () => {
+    render(<PostEditor post={postWith()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('/admin/posts/19/transition', {
+        method: 'POST',
+        body: { status: 'published' },
+      }),
+    );
+
+    const order = request.mock.calls.map(
+      ([path, options]) => `${options?.method ?? 'GET'} ${path}`,
+    );
+    // The words are saved first, so what goes live is what was typed.
+    expect(order.indexOf('PATCH /admin/posts/19')).toBeLessThan(
+      order.indexOf('POST /admin/posts/19/transition'),
+    );
+    expect(await screen.findByText('Published.')).toBeInTheDocument();
+  });
+
+  it('offers Update and a link to the live article once published, not Publish', async () => {
+    render(<PostEditor post={postWith({ status: 'published' })} />);
+
+    expect(screen.getAllByRole('button', { name: 'Update' })).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View post' })).toHaveAttribute(
+      'href',
+      '/blog/steel-connection-bolt-shear-bangla',
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Update' })[0]);
+
+    await waitFor(() => expect(postPatch()).toBeDefined());
+    expect(request.mock.calls.some(([path]) => String(path).endsWith('/transition'))).toBe(false);
+    expect(
+      await screen.findByText(/Updated — the site shows it within a minute/),
+    ).toBeInTheDocument();
   });
 });
