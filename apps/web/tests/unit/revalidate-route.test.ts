@@ -3,8 +3,10 @@ import { createHmac } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const revalidateTag = vi.fn();
+const bumpVersions = vi.fn();
 
 vi.mock('next/cache', () => ({ revalidateTag }));
+vi.mock('@/lib/cache-versions', () => ({ bumpVersions }));
 vi.mock('@/lib/env.server', () => ({
   serverEnv: { internalApiUrl: 'http://api/api/v1', revalidateSecret: 'test-secret' },
   assertRevalidateSecret: () => 'test-secret',
@@ -28,16 +30,33 @@ function signed(body: unknown, secret = 'test-secret'): Request {
 describe('POST /api/revalidate', () => {
   beforeEach(() => {
     revalidateTag.mockClear();
+    bumpVersions.mockClear();
   });
 
-  it('revalidates the tags in a correctly signed request', async () => {
+  it('expires the tags at once and bumps their shared versions', async () => {
     const response = await POST(signed({ tags: ['posts', 'post:footing-basics'] }));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       revalidated: ['posts', 'post:footing-basics'],
     });
-    expect(revalidateTag).toHaveBeenCalledWith('posts', 'max');
+    // Not 'max': the next visit must show the update, not the page before it.
+    expect(revalidateTag).toHaveBeenCalledWith('posts', { expire: 0 });
+    // Every server process sees these, not only the one this request reached.
+    expect(bumpVersions).toHaveBeenCalledWith(['posts', 'post:footing-basics']);
+  });
+
+  it('still answers when the versions file cannot be written', async () => {
+    bumpVersions.mockImplementationOnce(() => {
+      throw new Error('read-only disk');
+    });
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const response = await POST(signed({ tags: ['posts'] }));
+
+    expect(response.status).toBe(200);
+    expect(revalidateTag).toHaveBeenCalledWith('posts', { expire: 0 });
+    quiet.mockRestore();
   });
 
   it('rejects a request signed with the wrong secret', async () => {
@@ -45,6 +64,7 @@ describe('POST /api/revalidate', () => {
 
     expect(response.status).toBe(401);
     expect(revalidateTag).not.toHaveBeenCalled();
+    expect(bumpVersions).not.toHaveBeenCalled();
   });
 
   it('rejects a request with no signature at all', async () => {

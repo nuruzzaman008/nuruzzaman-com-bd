@@ -1,6 +1,7 @@
 import { revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 
+import { bumpVersions } from '@/lib/cache-versions';
 import { serverEnv } from '@/lib/env.server';
 
 /**
@@ -78,10 +79,24 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   for (const tag of tags) {
     if (typeof tag === 'string' && TAG_PATTERN.test(tag)) {
-      // 'max' asks for stale-while-revalidate semantics: readers keep seeing
-      // the old page while the new one is generated.
-      revalidateTag(tag, 'max');
+      // Expired at once rather than 'max': with 'max' the next reader was still
+      // served the old page while the new one was built, so an Update did not
+      // show on the first visit after it.
+      revalidateTag(tag, { expire: 0 });
       accepted.push(tag);
+    }
+  }
+
+  // revalidateTag only reaches the process this request landed in; the
+  // versions file reaches every process. See lib/cache-versions.ts.
+  if (accepted.length > 0) {
+    try {
+      bumpVersions(accepted);
+    } catch (error) {
+      console.error(
+        'Could not record content versions; other processes refresh on their own schedule.',
+        error,
+      );
     }
   }
 

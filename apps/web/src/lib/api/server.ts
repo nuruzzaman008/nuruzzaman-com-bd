@@ -3,6 +3,7 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { createClient, type RequestOptions } from '@nuruzzaman/contracts';
 
+import { contentVersion } from '@/lib/cache-versions';
 import { serverEnv } from '@/lib/env.server';
 
 /**
@@ -29,8 +30,14 @@ export type PublicFetchOptions = {
 
 /** Cached read for public pages. Never send a signed-in visitor's data here. */
 export async function publicApi<T>(path: string, options: PublicFetchOptions = {}): Promise<T> {
+  // Part of Next's fetch cache key (headers are), so once the webhook bumps one
+  // of these tags every server process misses its cached copy at once, not
+  // only the process the webhook reached. See lib/cache-versions.ts.
+  const version = contentVersion(options.tags);
+
   return client.request<T>(path, {
     query: options.query,
+    ...(version ? { headers: { 'X-NB-Content-Version': version } } : {}),
     next: {
       tags: options.tags,
       revalidate: options.revalidate ?? 300,
