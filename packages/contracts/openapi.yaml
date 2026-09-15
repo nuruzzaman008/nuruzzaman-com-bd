@@ -919,12 +919,16 @@ components:
 
     SitemapFeed:
       type: object
-      required: [posts, pages, products, courses]
+      required: [posts, pages, products, courses, attachments]
       properties:
         posts: { type: array, items: { $ref: '#/components/schemas/SitemapEntry' } }
         pages: { type: array, items: { $ref: '#/components/schemas/SitemapEntry' } }
         products: { type: array, items: { $ref: '#/components/schemas/SitemapEntry' } }
         courses: { type: array, items: { $ref: '#/components/schemas/SitemapEntry' } }
+        attachments:
+          type: array
+          description: Attachment pages not excluded from the sitemap; the slug is the file id.
+          items: { $ref: '#/components/schemas/SitemapEntry' }
 
     SitemapEntry:
       type: object
@@ -1000,17 +1004,40 @@ components:
 
     MediaItem:
       type: object
-      required: [id, url, original_name, mime_type, size_bytes, width, height, alt_text, caption, credit, focal, uploaded_at]
+      required:
+        - id
+        - url
+        - original_name
+        - title
+        - mime_type
+        - size_bytes
+        - width
+        - height
+        - duration_seconds
+        - alt_text
+        - caption
+        - description
+        - credit
+        - focal
+        - exclude_from_sitemap
+        - editable
+        - edited
+        - attachment_path
+        - uploaded_by
+        - uploaded_at
       properties:
         id: { type: integer }
-        url: { type: [string, 'null'] }
+        url: { type: [string, 'null'], description: 'Carries ?v= after an in-place edit, so caches refetch.' }
         original_name: { type: string }
+        title: { type: [string, 'null'] }
         mime_type: { type: string }
         size_bytes: { type: integer }
         width: { type: [integer, 'null'] }
         height: { type: [integer, 'null'] }
+        duration_seconds: { type: [integer, 'null'], description: A video's length. }
         alt_text: { type: [string, 'null'] }
         caption: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
         credit: { type: [string, 'null'] }
         focal:
           type: object
@@ -1018,7 +1045,64 @@ components:
           properties:
             x: { type: number }
             y: { type: number }
+        exclude_from_sitemap: { type: boolean }
+        editable: { type: boolean, description: 'A JPEG, PNG or WebP on the public disk.' }
+        edited: { type: boolean, description: The original is kept and can be restored. }
+        attachment_path: { type: [string, 'null'], description: 'The public attachment page, /attachment/{id}.' }
+        uploaded_by:
+          type: [object, 'null']
+          required: [id, name]
+          properties:
+            id: { type: integer }
+            name: { type: string }
         uploaded_at: { type: [string, 'null'], format: date-time }
+
+    MediaDetail:
+      allOf:
+        - $ref: '#/components/schemas/MediaItem'
+        - type: object
+          required: [used_in, shared_as_social_image, focus_keywords]
+          properties:
+            used_in:
+              type: array
+              description: Content using the file as a cover or inside its text.
+              items:
+                type: object
+                required: [label, title, edit_path]
+                properties:
+                  label: { type: string }
+                  title: { type: string }
+                  edit_path: { type: [string, 'null'] }
+            shared_as_social_image: { type: integer }
+            focus_keywords:
+              type: array
+              description: Focus keywords of that content, offered as the alt text.
+              items:
+                type: object
+                required: [keyword, source]
+                properties:
+                  keyword: { type: string }
+                  source: { type: string }
+
+    Attachment:
+      type: object
+      required: [id, url, title, original_name, mime_type, size_bytes, width, height, duration_seconds, alt_text, caption, description, exclude_from_sitemap, uploaded_at, updated_at]
+      properties:
+        id: { type: integer }
+        url: { type: [string, 'null'] }
+        title: { type: string }
+        original_name: { type: string }
+        mime_type: { type: string }
+        size_bytes: { type: integer }
+        width: { type: [integer, 'null'] }
+        height: { type: [integer, 'null'] }
+        duration_seconds: { type: [integer, 'null'] }
+        alt_text: { type: [string, 'null'] }
+        caption: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        exclude_from_sitemap: { type: boolean }
+        uploaded_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
 
     Setting:
       type: object
@@ -1760,6 +1844,26 @@ paths:
                       posts: { type: array, items: { $ref: '#/components/schemas/SearchHit' } }
                       courses: { type: array, items: { $ref: '#/components/schemas/SearchHit' } }
                       products: { type: array, items: { $ref: '#/components/schemas/SearchHit' } }
+
+  /media/{medium}:
+    get:
+      tags: [Content]
+      operationId: getAttachment
+      summary: An attachment page's file, title, caption and description
+      description: Only files on the public disk have a page.
+      parameters:
+        - { name: medium, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Attachment' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /affiliate-visits:
     post:
@@ -3499,7 +3603,7 @@ paths:
       security: [{ sessionCookie: [] }]
       parameters:
         - { name: q, in: query, required: false, schema: { type: string, maxLength: 120 } }
-        - { name: type, in: query, required: false, schema: { type: string, enum: [image, pdf] } }
+        - { name: type, in: query, required: false, schema: { type: string, enum: [image, video, pdf] } }
         - { name: month, in: query, required: false, schema: { type: string, pattern: '^\d{4}-\d{2}$' } }
         - $ref: '#/components/parameters/Page'
       responses:
@@ -3529,16 +3633,35 @@ paths:
         generated name so a crafted filename cannot traverse a path.
       requestBody:
         required: true
+        description: |
+          The file directly, or - for anything over the host's 2 MB request
+          limit, every video - the upload_id, part count and file name of parts
+          already sent to /admin/uploads/chunks. Images and PDFs up to 20 MB;
+          MP4 and WebM videos up to 300 MB.
         content:
           multipart/form-data:
             schema:
               type: object
-              required: [file]
               properties:
                 file: { type: string, format: binary }
+                title: { type: string }
                 alt_text: { type: string }
                 caption: { type: string }
                 credit: { type: string }
+                duration_seconds: { type: integer }
+          application/json:
+            schema:
+              type: object
+              required: [upload_id, total, filename]
+              properties:
+                upload_id: { type: string, format: uuid }
+                total: { type: integer, minimum: 1 }
+                filename: { type: string }
+                title: { type: [string, 'null'] }
+                alt_text: { type: [string, 'null'] }
+                caption: { type: [string, 'null'] }
+                credit: { type: [string, 'null'] }
+                duration_seconds: { type: [integer, 'null'], description: "A video's length, read by the browser." }
       responses:
         '201':
           description: Uploaded
@@ -4723,6 +4846,25 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /admin/media/{medium}:
+    get:
+      tags: [Admin]
+      operationId: adminShowMedia
+      summary: One file's attachment details, with where it is used
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: medium, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/MediaDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [Admin]
       operationId: adminUpdateMedia
@@ -4737,9 +4879,12 @@ paths:
             schema:
               type: object
               properties:
-                alt_text: { type: string }
-                caption: { type: string }
-                credit: { type: string }
+                title: { type: [string, 'null'] }
+                alt_text: { type: [string, 'null'] }
+                caption: { type: [string, 'null'] }
+                description: { type: [string, 'null'], maxLength: 5000 }
+                credit: { type: [string, 'null'] }
+                exclude_from_sitemap: { type: boolean }
                 focal_x: { type: number }
                 focal_y: { type: number }
       responses:
@@ -4777,6 +4922,75 @@ paths:
                 properties:
                   message: { type: string }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/media/{medium}/edit:
+    post:
+      tags: [Admin]
+      operationId: adminEditImage
+      summary: Flip, rotate, crop or scale an image in place
+      description: |
+        Applied in this order: flip, rotate clockwise, crop (in the rotated
+        image's pixels), scale down. The file keeps its path, so pages using
+        it show the edit; the untouched original is kept for restore. JPEG,
+        PNG and WebP only.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: medium, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rotate]
+              properties:
+                rotate: { type: integer, enum: [0, 90, 180, 270] }
+                flip_horizontal: { type: boolean }
+                flip_vertical: { type: boolean }
+                crop:
+                  type: [object, 'null']
+                  required: [x, y, width, height]
+                  properties:
+                    x: { type: integer, minimum: 0 }
+                    y: { type: integer, minimum: 0 }
+                    width: { type: integer, minimum: 1 }
+                    height: { type: integer, minimum: 1 }
+                scale_width: { type: [integer, 'null'], minimum: 1 }
+      responses:
+        '200':
+          description: The edited file's details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/MediaDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /admin/media/{medium}/restore:
+    post:
+      tags: [Admin]
+      operationId: adminRestoreImage
+      summary: Put an edited image's original back
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: medium, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: The restored file's details
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/MediaDetail' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
   /admin/redirects:

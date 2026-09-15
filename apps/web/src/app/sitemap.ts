@@ -85,6 +85,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['pages', '', 0.5, 'monthly'],
     ['products', '/products', 0.8, 'weekly'],
     ['courses', '/courses', 0.8, 'weekly'],
+    // Attachment pages the owner has not left out; the slug is the file id.
+    ['attachments', '/attachment', 0.3, 'yearly'],
   ];
 
   // A CMS page whose slug is already a static route above would otherwise be

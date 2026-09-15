@@ -3,19 +3,23 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { MediaItem } from '@nuruzzaman/contracts';
 
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
-import { Field, Input, Textarea } from '@/components/ui/form';
+import { AttachmentDetails } from '@/features/dashboard/attachment-details';
+import { deleteMediaFiles } from '@/features/dashboard/media-delete';
 import {
+  isImage,
+  isVideo,
+  lengthLabel,
   mediaHref,
   mediaTitle,
   monthLabel,
   type MediaFilters,
 } from '@/features/dashboard/media-filters';
-import { ApiError, api } from '@/lib/api/browser';
+import { MediaUploader } from '@/features/dashboard/media-uploader';
 import { cn } from '@/lib/cn';
 import { date, fileSize } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -25,11 +29,7 @@ type Notice = { tone: 'success' | 'danger'; text: string };
 const control =
   'h-10 rounded-md border border-line bg-white px-3 text-sm text-navy focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue';
 
-function isImage(item: MediaItem): boolean {
-  return Boolean(item.url) && item.mime_type.startsWith('image/');
-}
-
-/** The picture inside a tile or a row; a document shows its kind instead. */
+/** The picture inside a tile or a row; a video shows its first frame, a document its kind. */
 function Thumb({ item, sizes }: { item: MediaItem; sizes: string }) {
   if (isImage(item) && item.url) {
     return (
@@ -41,6 +41,27 @@ function Thumb({ item, sizes }: { item: MediaItem; sizes: string }) {
         unoptimized={item.mime_type === 'image/svg+xml'}
         className="object-cover"
       />
+    );
+  }
+
+  if (isVideo(item) && item.url) {
+    return (
+      <>
+        <video
+          src={item.url}
+          preload="metadata"
+          muted
+          playsInline
+          tabIndex={-1}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 size-full bg-navy object-cover"
+        />
+        <span aria-hidden="true" className="absolute inset-0 grid place-items-center">
+          <span className="grid size-10 place-items-center rounded-full bg-black/55 text-base text-white">
+            ▶
+          </span>
+        </span>
+      </>
     );
   }
 
@@ -90,10 +111,10 @@ function ListIcon() {
 }
 
 /**
- * The media library, laid out like a WordPress library: a toolbar of view,
- * type and date filters with bulk select and a search box, then a dense grid
- * of square thumbnails titled along the bottom. A tile opens the file's
- * details - alt text, caption, address, delete.
+ * The media library, laid out like WordPress's: "Add New Media File", a
+ * toolbar of view, type and date filters with bulk select and a search box,
+ * then a dense grid of square thumbnails titled along the bottom. A tile opens
+ * its attachment details, with arrows to the neighbouring files.
  *
  * Filters live in the address (see media-filters.ts); the server page reads
  * them, so paging, reloading and the back button all keep them.
@@ -113,12 +134,16 @@ export function MediaLibrary({
   const bn = locale === 'bn';
   const router = useRouter();
   const [search, setSearch] = useState(filters.q ?? '');
+  const [uploading, setUploading] = useState(false);
   const [bulk, setBulk] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
-  const [open, setOpen] = useState<MediaItem | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const view = filters.view ?? 'grid';
+
+  const openIndex = openId === null ? -1 : items.findIndex((item) => item.id === openId);
+  const open = openIndex >= 0 ? items[openIndex] : null;
 
   // Searches as the admin types, a moment after they stop.
   useEffect(() => {
@@ -156,56 +181,12 @@ export function MediaLibrary({
     setSelected(new Set());
   }
 
-  /**
-   * Deletes the files one by one. Any the API refuses because they are still
-   * in use are listed together, and deleted only if the admin says so again.
-   */
-  async function deleteFiles(files: MediaItem[]): Promise<boolean> {
-    const inUse: { item: MediaItem; message: string }[] = [];
-    const failed: string[] = [];
-    let deleted = 0;
-
+  async function remove(files: MediaItem[]): Promise<boolean> {
     setBusy(true);
     setNotice(null);
 
     try {
-      for (const item of files) {
-        try {
-          await api(`/admin/media/${item.id}`, { method: 'DELETE' });
-          deleted += 1;
-        } catch (caught) {
-          if (caught instanceof ApiError && caught.status === 409) {
-            inUse.push({ item, message: caught.message });
-          } else {
-            failed.push(`${item.original_name}: ${caught instanceof Error ? caught.message : ''}`);
-          }
-        }
-      }
-
-      if (inUse.length > 0) {
-        const list = inUse
-          .map(({ item, message }) => `• ${item.original_name} — ${message}`)
-          .join('\n');
-
-        const anyway = window.confirm(
-          bn
-            ? `এই ফাইলগুলো এখনো ব্যবহার হচ্ছে:\n${list}\n\nমুছলে ওই জায়গাগুলোতে এগুলো আর দেখা যাবে না। তবুও মুছবেন?`
-            : `These files are still in use:\n${list}\n\nThose places will lose them. Delete anyway?`,
-        );
-
-        if (anyway) {
-          for (const { item } of inUse) {
-            try {
-              await api(`/admin/media/${item.id}`, { method: 'DELETE', query: { force: 1 } });
-              deleted += 1;
-            } catch (caught) {
-              failed.push(
-                `${item.original_name}: ${caught instanceof Error ? caught.message : ''}`,
-              );
-            }
-          }
-        }
-      }
+      const { deleted, failed } = await deleteMediaFiles(files, bn);
 
       if (failed.length > 0) {
         setNotice({
@@ -246,7 +227,7 @@ export function MediaLibrary({
       return;
     }
 
-    await deleteFiles(files);
+    await remove(files);
     endBulk();
   }
 
@@ -254,7 +235,24 @@ export function MediaLibrary({
 
   return (
     <div className="mt-6">
-      <div className="flex flex-wrap items-center gap-3 rounded-[--radius-card] border border-line bg-white p-4 shadow-[--shadow-card]">
+      <Button
+        type="button"
+        size="sm"
+        variant={uploading ? 'secondary' : 'primary'}
+        onClick={() => setUploading((value) => !value)}
+      >
+        {uploading
+          ? bn
+            ? 'আপলোড বন্ধ করুন'
+            : 'Close uploader'
+          : bn
+            ? 'নতুন ফাইল যোগ করুন'
+            : 'Add New Media File'}
+      </Button>
+
+      {uploading ? <MediaUploader onUploaded={() => router.refresh()} /> : null}
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[--radius-card] border border-line bg-white p-4 shadow-[--shadow-card]">
         <div
           className="flex items-center gap-1"
           role="group"
@@ -296,6 +294,7 @@ export function MediaLibrary({
         >
           <option value="">{bn ? 'সব মিডিয়া' : 'All media items'}</option>
           <option value="image">{bn ? 'ছবি' : 'Images'}</option>
+          <option value="video">{bn ? 'ভিডিও' : 'Video'}</option>
           <option value="pdf">{bn ? 'PDF ডকুমেন্ট' : 'PDF documents'}</option>
         </select>
 
@@ -391,13 +390,15 @@ export function MediaLibrary({
               <li key={item.id}>
                 <button
                   type="button"
-                  onClick={() => (bulk ? toggle(item.id) : setOpen(item))}
+                  onClick={() => (bulk ? toggle(item.id) : setOpenId(item.id))}
                   aria-pressed={bulk ? chosen : undefined}
                   aria-label={`${bulk ? (bn ? 'বাছাই' : 'Select') : bn ? 'বিস্তারিত' : 'Details'}: ${title}`}
                   className={cn(
                     'relative block aspect-square w-full overflow-hidden border bg-surface text-start',
                     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue',
-                    chosen ? 'border-blue ring-2 ring-blue' : 'border-line hover:border-blue',
+                    chosen || openId === item.id
+                      ? 'border-blue ring-2 ring-blue'
+                      : 'border-line hover:border-blue',
                   )}
                 >
                   <Thumb
@@ -408,6 +409,12 @@ export function MediaLibrary({
                   {isImage(item) && !item.alt_text ? (
                     <span className="absolute start-1.5 top-1.5 rounded bg-danger px-1.5 py-0.5 text-[10px] font-semibold text-white">
                       {bn ? 'Alt নেই' : 'No alt'}
+                    </span>
+                  ) : null}
+
+                  {isVideo(item) && item.duration_seconds ? (
+                    <span className="font-latin absolute start-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      {lengthLabel(item.duration_seconds, false)}
                     </span>
                   ) : null}
 
@@ -475,7 +482,7 @@ export function MediaLibrary({
                         <span className="min-w-0">
                           <button
                             type="button"
-                            onClick={() => setOpen(item)}
+                            onClick={() => setOpenId(item.id)}
                             aria-label={`${bn ? 'বিস্তারিত' : 'Details'}: ${title}`}
                             className="block max-w-72 truncate text-start font-semibold text-blue hover:underline"
                           >
@@ -490,10 +497,12 @@ export function MediaLibrary({
                     <td className="px-3 py-2">
                       {item.alt_text ? (
                         <span className="text-muted">{item.alt_text}</span>
-                      ) : (
+                      ) : isImage(item) ? (
                         <span className="text-xs font-medium text-danger">
                           {t.admin.media.noAlt}
                         </span>
+                      ) : (
+                        <span className="text-muted">—</span>
                       )}
                     </td>
                     <td className="font-latin px-3 py-2 text-muted">{item.mime_type}</td>
@@ -530,252 +539,26 @@ export function MediaLibrary({
       ) : null}
 
       {open ? (
-        <MediaDetails
+        <AttachmentDetails
           key={open.id}
           item={open}
-          busy={busy}
-          onClose={() => setOpen(null)}
-          onSaved={(updated) => {
-            setOpen(updated);
-            router.refresh();
-          }}
+          onClose={() => setOpenId(null)}
+          onPrev={openIndex > 0 ? () => setOpenId(items[openIndex - 1].id) : undefined}
+          onNext={
+            openIndex < items.length - 1 ? () => setOpenId(items[openIndex + 1].id) : undefined
+          }
+          onChanged={() => router.refresh()}
           onDelete={async () => {
             const question = bn
               ? `“${open.original_name}” ফাইলটি স্থায়ীভাবে মুছে ফেলবেন?`
               : `Delete “${open.original_name}” permanently?`;
 
-            if (window.confirm(question) && (await deleteFiles([open]))) {
-              setOpen(null);
+            if (window.confirm(question) && (await remove([open]))) {
+              setOpenId(null);
             }
           }}
         />
       ) : null}
-    </div>
-  );
-}
-
-/** One file's details: a larger preview, its facts, alt text and caption, delete. */
-function MediaDetails({
-  item,
-  busy,
-  onClose,
-  onSaved,
-  onDelete,
-}: {
-  item: MediaItem;
-  busy: boolean;
-  onClose: () => void;
-  onSaved: (item: MediaItem) => void;
-  onDelete: () => Promise<void>;
-}) {
-  const { locale } = useLocale();
-  const bn = locale === 'bn';
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [message, setMessage] = useState<Notice | null>(null);
-
-  useEffect(() => {
-    closeRef.current?.focus();
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    window.addEventListener('keydown', onKey);
-
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  async function save(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-
-    setSaving(true);
-    setMessage(null);
-
-    try {
-      const response = await api<{ data: MediaItem }>(`/admin/media/${item.id}`, {
-        method: 'PATCH',
-        body: {
-          alt_text: String(form.get('alt_text') ?? '').trim() || null,
-          caption: String(form.get('caption') ?? '').trim() || null,
-        },
-      });
-
-      onSaved(response.data);
-      setMessage({ tone: 'success', text: bn ? 'সংরক্ষণ হয়েছে।' : 'Saved.' });
-    } catch (caught) {
-      setMessage({
-        tone: 'danger',
-        text:
-          caught instanceof Error && caught.message
-            ? caught.message
-            : bn
-              ? 'সংরক্ষণ করা যায়নি।'
-              : 'Could not save.',
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function copy() {
-    if (!item.url) return;
-
-    try {
-      await navigator.clipboard.writeText(item.url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
-
-  const facts = [
-    { label: bn ? 'ফাইল' : 'File', value: item.original_name, latin: true },
-    { label: bn ? 'ধরন' : 'Type', value: item.mime_type, latin: true },
-    { label: bn ? 'আকার' : 'Size', value: fileSize(item.size_bytes) ?? '—', latin: true },
-    ...(item.width && item.height
-      ? [{ label: bn ? 'মাপ' : 'Dimensions', value: `${item.width} × ${item.height}`, latin: true }]
-      : []),
-    {
-      label: bn ? 'আপলোড' : 'Uploaded',
-      value: date(item.uploaded_at, locale) ?? '—',
-      latin: false,
-    },
-  ];
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="media-details-title"
-        className="grid max-h-[90dvh] w-full max-w-5xl overflow-hidden rounded-[--radius-card] bg-white shadow-[--shadow-raised] md:grid-cols-[minmax(0,1fr)_22rem]"
-      >
-        <div className="relative flex min-h-60 items-center justify-center bg-surface p-4">
-          {isImage(item) && item.url ? (
-            <Image
-              src={item.url}
-              alt={item.alt_text ?? ''}
-              width={item.width ?? 1200}
-              height={item.height ?? 900}
-              sizes="(min-width: 768px) 60vw, 100vw"
-              unoptimized={item.mime_type === 'image/svg+xml'}
-              className="max-h-[80dvh] w-auto object-contain"
-            />
-          ) : (
-            <span className="font-latin text-2xl font-bold text-muted">
-              {item.mime_type === 'application/pdf' ? 'PDF' : item.mime_type}
-            </span>
-          )}
-        </div>
-
-        <div className="overflow-y-auto p-5">
-          <div className="flex items-start justify-between gap-3">
-            <h2 id="media-details-title" className="text-lg font-bold text-navy">
-              {bn ? 'ফাইলের বিস্তারিত' : 'Attachment details'}
-            </h2>
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={onClose}
-              aria-label={bn ? 'বন্ধ করুন' : 'Close'}
-              className="rounded px-2 text-xl leading-none text-muted hover:bg-surface hover:text-navy"
-            >
-              ×
-            </button>
-          </div>
-
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-            {facts.map((fact) => (
-              <div key={fact.label} className="contents">
-                <dt className="text-muted">{fact.label}</dt>
-                <dd className={cn('min-w-0 break-all text-navy', fact.latin && 'font-latin')}>
-                  {fact.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          <form onSubmit={save} className="mt-5 space-y-3">
-            <Field
-              label={bn ? 'Alt টেক্সট' : 'Alt text'}
-              hint={
-                bn
-                  ? 'ছবিতে কী আছে, যারা দেখতে পান না তাদের জন্য লিখুন।'
-                  : 'Describe the image for people who cannot see it.'
-              }
-            >
-              {(props) => (
-                <Input
-                  name="alt_text"
-                  defaultValue={item.alt_text ?? ''}
-                  maxLength={255}
-                  {...props}
-                />
-              )}
-            </Field>
-            <Field label={bn ? 'ক্যাপশন' : 'Caption'}>
-              {(props) => (
-                <Textarea
-                  name="caption"
-                  rows={2}
-                  defaultValue={item.caption ?? ''}
-                  maxLength={512}
-                  {...props}
-                />
-              )}
-            </Field>
-            {message ? (
-              <Callout tone={message.tone} role={message.tone === 'danger' ? 'alert' : 'status'}>
-                {message.text}
-              </Callout>
-            ) : null}
-            <Button type="submit" size="sm" disabled={saving}>
-              {bn ? 'সংরক্ষণ' : 'Save'}
-            </Button>
-          </form>
-
-          {item.url ? (
-            <div className="mt-5">
-              <label htmlFor="media-details-url" className="text-sm text-muted">
-                {bn ? 'ফাইলের URL' : 'File URL'}
-              </label>
-              <div className="mt-1 flex gap-2">
-                <input
-                  id="media-details-url"
-                  readOnly
-                  value={item.url}
-                  onFocus={(event) => event.currentTarget.select()}
-                  className={cn(control, 'font-latin min-w-0 flex-1 text-xs')}
-                />
-                <Button type="button" size="sm" variant="secondary" onClick={() => void copy()}>
-                  {copied ? (bn ? 'কপি হয়েছে ✓' : 'Copied ✓') : bn ? 'কপি' : 'Copy'}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="mt-6 border-t border-line pt-4">
-            <Button
-              type="button"
-              size="sm"
-              variant="danger"
-              disabled={busy}
-              onClick={() => void onDelete()}
-            >
-              {bn ? 'স্থায়ীভাবে মুছুন' : 'Delete permanently'}
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

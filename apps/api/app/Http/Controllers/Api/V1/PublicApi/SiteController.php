@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\PublicApi;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\Media;
 use App\Models\Page;
 use App\Models\Post;
 use App\Models\Product;
@@ -86,6 +87,18 @@ class SiteController extends Controller
                     ->map(fn (Course $course) => [
                         'slug' => $course->slug,
                         'updated_at' => $course->updated_at?->toIso8601String(),
+                    ]),
+                // Attachment pages, unless the owner left one out. The slug is
+                // the file's id, as in /attachment/{id}.
+                'attachments' => Media::query()
+                    ->where('disk', 'public')
+                    ->where('exclude_from_sitemap', false)
+                    ->select('id', 'updated_at')
+                    ->orderByDesc('id')
+                    ->get()
+                    ->map(fn (Media $media) => [
+                        'slug' => (string) $media->id,
+                        'updated_at' => $media->updated_at?->toIso8601String(),
                     ]),
             ],
         ]);

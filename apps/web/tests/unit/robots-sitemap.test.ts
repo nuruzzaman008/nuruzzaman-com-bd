@@ -14,6 +14,7 @@ vi.mock('@/lib/api/server', () => ({
         { slug: 'nb-credit-refill', updated_at: '2026-08-01T00:00:00Z' },
       ],
       courses: [],
+      attachments: [{ slug: '7', updated_at: '2026-08-01T00:00:00Z' }],
     },
   }),
   publicApi: async () => ({ data: [] }),
@@ -45,6 +46,8 @@ describe('sitemap.xml', () => {
 
     expect(urls.some((url) => url.endsWith('/blog/published-article'))).toBe(true);
     expect(urls.some((url) => url.endsWith('/products/nb-credit-refill'))).toBe(true);
+    // An attachment page the owner did not leave out of the sitemap.
+    expect(urls.some((url) => url.endsWith('/attachment/7'))).toBe(true);
     // The software's product page is its one article; the old address redirects.
     expect(urls.some((url) => url.endsWith('/products/nb-engineering-tools'))).toBe(true);
     expect(

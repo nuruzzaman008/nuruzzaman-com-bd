@@ -55,6 +55,8 @@ Route::prefix('v1')->group(function () {
         Route::get('releases/{slug}', [PublicApi\ReleaseController::class, 'show']);
 
         Route::get('verify/{verificationId}', PublicApi\CertificateVerificationController::class);
+
+        Route::get('media/{medium:id}', [PublicApi\MediaController::class, 'show']);
     });
 
     Route::get('search', PublicApi\SearchController::class)->middleware('throttle:search');

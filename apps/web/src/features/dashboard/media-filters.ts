@@ -1,3 +1,5 @@
+import type { MediaItem } from '@nuruzzaman/contracts';
+
 /**
  * The media library's filters live in the address, so a search or a month can
  * be reloaded, bookmarked and paged through. Kept out of the client component
@@ -5,9 +7,16 @@
  */
 export type MediaFilters = {
   q?: string;
-  type?: 'image' | 'pdf';
+  type?: 'image' | 'video' | 'pdf';
   month?: string;
   view?: 'grid' | 'list';
+};
+
+/** One file's attachment details: the list item plus where it is used. */
+export type MediaDetail = MediaItem & {
+  used_in: { label: string; title: string; edit_path: string | null }[];
+  shared_as_social_image: number;
+  focus_keywords: { keyword: string; source: string }[];
 };
 
 export const MEDIA_BASE_PATH = '/dashboard/media';
@@ -38,7 +47,7 @@ export function mediaFiltersFrom(params: Record<string, string | string[] | unde
   return {
     filters: {
       q: one('q').trim() || undefined,
-      type: type === 'image' || type === 'pdf' ? type : undefined,
+      type: type === 'image' || type === 'video' || type === 'pdf' ? type : undefined,
       month: /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : undefined,
       view: one('view') === 'list' ? 'list' : 'grid',
     },
@@ -46,9 +55,21 @@ export function mediaFiltersFrom(params: Record<string, string | string[] | unde
   };
 }
 
-/** What a tile shows: the alt text when there is one, otherwise the file name. */
-export function mediaTitle(item: { alt_text: string | null; original_name: string }): string {
-  return item.alt_text?.trim() || item.original_name.replace(/\.[^.]+$/, '');
+/** What a tile shows: the title, else the alt text, else the file's own name. */
+export function mediaTitle(item: {
+  title?: string | null;
+  alt_text: string | null;
+  original_name: string;
+}): string {
+  return item.title?.trim() || item.alt_text?.trim() || item.original_name.replace(/\.[^.]+$/, '');
+}
+
+export function isImage(item: { url: string | null; mime_type: string }): boolean {
+  return Boolean(item.url) && item.mime_type.startsWith('image/');
+}
+
+export function isVideo(item: { url: string | null; mime_type: string }): boolean {
+  return Boolean(item.url) && item.mime_type.startsWith('video/');
 }
 
 export function monthLabel(month: string, bn: boolean): string {
@@ -59,4 +80,24 @@ export function monthLabel(month: string, bn: boolean): string {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(year, number - 1, 1)));
+}
+
+/** A video's length the way WordPress says it: "4 minutes, 13 seconds". */
+export function lengthLabel(seconds: number | null | undefined, bn: boolean): string | null {
+  if (!seconds || seconds <= 0) {
+    return null;
+  }
+
+  const parts: [number, string, string, string][] = [
+    [Math.floor(seconds / 3600), 'hour', 'hours', 'ঘণ্টা'],
+    [Math.floor((seconds % 3600) / 60), 'minute', 'minutes', 'মিনিট'],
+    [seconds % 60, 'second', 'seconds', 'সেকেন্ড'],
+  ];
+
+  return parts
+    .filter(([value]) => value > 0)
+    .map(([value, one, many, bengali]) =>
+      bn ? `${value.toLocaleString('bn-BD')} ${bengali}` : `${value} ${value === 1 ? one : many}`,
+    )
+    .join(', ');
 }

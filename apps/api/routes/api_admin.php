@@ -52,7 +52,10 @@ Route::middleware([
 
     Route::get('media', [Admin\MediaController::class, 'index']);
     Route::post('media', [Admin\MediaController::class, 'store']);
+    Route::get('media/{medium:id}', [Admin\MediaController::class, 'show']);
     Route::patch('media/{medium:id}', [Admin\MediaController::class, 'update']);
+    Route::post('media/{medium:id}/edit', [Admin\MediaController::class, 'edit']);
+    Route::post('media/{medium:id}/restore', [Admin\MediaController::class, 'restore']);
     Route::delete('media/{medium:id}', [Admin\MediaController::class, 'destroy']);
 
     Route::get('seo/keyword-usage', Admin\SeoKeywordController::class);
