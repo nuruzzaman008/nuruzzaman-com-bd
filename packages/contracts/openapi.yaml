@@ -1280,6 +1280,7 @@ paths:
                         name: { type: string }
                         mime_type: { type: [string, 'null'] }
                         size_bytes: { type: [integer, 'null'] }
+                        url: { type: [string, 'null'], description: 'A public library file''s address; null for private files.' }
                         uploaded_at: { type: [string, 'null'] }
         '401': { description: Sign-in required }
         '403': { description: This library is not accessible to this user }

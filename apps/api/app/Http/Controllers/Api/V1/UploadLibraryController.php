@@ -23,7 +23,9 @@ class UploadLibraryController extends Controller
         return response()->json($rows->through(function ($row) {
             return ['id' => $row->id, 'source' => $row->source, 'name' => $this->filename($row),
                 'mime_type' => $row->mime_type, 'size_bytes' => $row->size_bytes,
-                'uploaded_at' => $row->uploaded_at];
+                'uploaded_at' => $row->uploaded_at,
+                // Only a public library file has an address; the editor inserts it as is.
+                'url' => $row->source === 'media' && $row->disk === 'public' ? Storage::disk('public')->url($row->path) : null];
         })->toArray())->header('Cache-Control', 'private, no-store');
     }
 

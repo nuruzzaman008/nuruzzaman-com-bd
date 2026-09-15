@@ -22,10 +22,18 @@ type Item = {
   name: string;
   mime_type: string | null;
   size_bytes: number | null;
+  /** A public library file's address; null for anything private. */
+  url?: string | null;
 };
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   scope?: 'public' | 'personal' | 'course';
   courseId?: number;
+  /**
+   * Receives a chosen public file's address instead of a copy of the file, so
+   * a field that only needs the address (the article editor) neither
+   * downloads nor uploads it again - a video would be duplicated otherwise.
+   */
+  onPickExisting?: (item: { url: string; name: string; mime_type: string | null }) => void;
   /** The button's words, where the default "Choose from Media / Upload" is not enough. */
   triggerLabel?: string;
   /** Extra classes for a larger, more prominent button. */
@@ -54,7 +62,16 @@ export function acceptsFile(name: string, mime: string, accept = ''): boolean {
 
 /** Keeps the existing upload field and its validation; only changes how files are chosen. */
 export const MediaFileInput = forwardRef<HTMLInputElement, Props>(function MediaFileInput(
-  { scope = 'personal', courseId, className, onChange, triggerLabel, triggerClassName, ...props },
+  {
+    scope = 'personal',
+    courseId,
+    className,
+    onChange,
+    onPickExisting,
+    triggerLabel,
+    triggerClassName,
+    ...props
+  },
   ref,
 ) {
   const { locale } = useLocale();
@@ -118,6 +135,16 @@ export const MediaFileInput = forwardRef<HTMLInputElement, Props>(function Media
     setOpen(false);
   }
   async function attach() {
+    const picked = selected[0];
+
+    if (onPickExisting && !props.multiple && picked?.url) {
+      onPickExisting({ url: picked.url, name: picked.name, mime_type: picked.mime_type });
+      setNames(picked.name);
+      setOpen(false);
+
+      return;
+    }
+
     setBusy(true);
     setError('');
     try {

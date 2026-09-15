@@ -25,9 +25,26 @@ final class Markdown
 
         // Underline, colour, size and font survive as a closed list of our own
         // tags; every other piece of raw HTML is still stripped.
-        return MarkdownFormatting::restore(
+        return self::embedVideos(MarkdownFormatting::restore(
             Str::markdown(MarkdownFormatting::protect($markdown), self::OPTIONS),
-        );
+        ));
+    }
+
+    /**
+     * A video inserted from the media library is written as an image -
+     * `![description](…/walkthrough.mp4)` - so the Markdown stays portable and
+     * its address passes the same unsafe-link filter as any image. Only the
+     * rendered <img> of an .mp4 or .webm address becomes a player; raw HTML
+     * was already stripped, and both attributes arrive escaped.
+     */
+    private static function embedVideos(string $html): string
+    {
+        return preg_replace_callback(
+            '#<img src="([^"]+\.(?:mp4|webm)(?:\?[^"]*)?)" alt="([^"]*)"(?: title="[^"]*")? />#i',
+            fn (array $match) => '<video controls preload="metadata" src="'.$match[1].'" aria-label="'.$match[2].'">'
+                .'<a href="'.$match[1].'">'.$match[2].'</a></video>',
+            $html,
+        ) ?? $html;
     }
 
     public static function toPlainText(?string $markdown): string

@@ -49,7 +49,9 @@ export function Dialog({
       aria-describedby={description ? 'dialog-description' : undefined}
       onClose={onClose}
       onCancel={onClose}
-      className="w-[min(32rem,calc(100vw-2rem))] rounded-[--radius-card] border border-line bg-white p-0 text-ink backdrop:bg-navy/50"
+      // m-auto: Tailwind's reset zeroes the margin a modal <dialog> is centred
+      // with, which pinned every dialog to the top-left corner.
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto rounded-[--radius-card] border border-line bg-white p-0 text-ink backdrop:bg-navy/50"
     >
       <div className="p-6">
         <h2 id="dialog-title" className="text-lg font-bold text-navy">

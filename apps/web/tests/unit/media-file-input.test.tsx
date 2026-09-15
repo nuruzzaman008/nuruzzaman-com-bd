@@ -72,12 +72,10 @@ describe('Media file picker', () => {
   it('attaches an authorized existing file through the original file field', async () => {
     const changed = vi.fn();
     const input = field(changed);
-    const fetcher = vi
-      .fn()
-      .mockResolvedValue({
-        ok: true,
-        blob: async () => new Blob(['notes'], { type: 'application/pdf' }),
-      });
+    const fetcher = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['notes'], { type: 'application/pdf' }),
+    });
     vi.stubGlobal('fetch', fetcher);
     fireEvent.click(screen.getByRole('button', { name: 'Choose from Media / Upload' }));
     fireEvent.click(await screen.findByRole('checkbox'));
@@ -98,6 +96,48 @@ describe('Media file picker', () => {
     fireEvent.click(await screen.findByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Attach selected' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Cannot open');
+    expect(changed).not.toHaveBeenCalled();
+  });
+
+  it('hands over an existing public file’s address instead of copying the file', async () => {
+    request.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          source: 'media',
+          name: 'walkthrough.mp4',
+          mime_type: 'video/mp4',
+          size_bytes: 3_000_000,
+          url: 'https://cdn.test/walkthrough.mp4',
+        },
+      ],
+      last_page: 1,
+    });
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const picked = vi.fn();
+    const changed = vi.fn();
+
+    render(
+      <MediaFileInput
+        aria-label="Article file"
+        scope="public"
+        accept="image/png,video/mp4"
+        className="block"
+        onChange={changed}
+        onPickExisting={picked}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Choose from Media / Upload' }));
+    fireEvent.click(await screen.findByRole('radio'));
+    fireEvent.click(screen.getByRole('button', { name: 'Attach selected' }));
+
+    expect(picked).toHaveBeenCalledWith({
+      url: 'https://cdn.test/walkthrough.mp4',
+      name: 'walkthrough.mp4',
+      mime_type: 'video/mp4',
+    });
+    expect(fetcher).not.toHaveBeenCalled();
     expect(changed).not.toHaveBeenCalled();
   });
 

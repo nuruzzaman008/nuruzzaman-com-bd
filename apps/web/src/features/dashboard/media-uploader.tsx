@@ -6,6 +6,7 @@ import { api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
 import { fileSize } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { readVideoDuration } from '@/lib/media/video-duration';
 import { uploadInParts } from '@/lib/uploads/chunked-upload';
 
 /** The same list the API accepts; see Admin\MediaController. */
@@ -30,35 +31,6 @@ type Row = {
   state: 'waiting' | 'uploading' | 'done' | 'failed';
   message?: string;
 };
-
-/**
- * A video's length, read from its own metadata before it is sent: the host
- * cannot run a video probe, so the browser is the only place that can tell.
- */
-export function readVideoDuration(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
-    if (typeof URL.createObjectURL !== 'function') {
-      resolve(null);
-
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    const video = document.createElement('video');
-    const finish = (value: number | null) => {
-      window.clearTimeout(timer);
-      URL.revokeObjectURL(url);
-      resolve(value);
-    };
-    const timer = window.setTimeout(() => finish(null), 8000);
-
-    video.preload = 'metadata';
-    video.onloadedmetadata = () =>
-      finish(Number.isFinite(video.duration) ? Math.round(video.duration) : null);
-    video.onerror = () => finish(null);
-    video.src = url;
-  });
-}
 
 /**
  * WordPress's "Add New Media File": drop files or pick them. Every file goes

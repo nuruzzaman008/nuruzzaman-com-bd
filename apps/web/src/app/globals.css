@@ -330,6 +330,16 @@
     border: 1px solid var(--color-line);
   }
 
+  /* A video inserted from the media library; see App\Support\Markdown::embedVideos. */
+  .prose-nb video {
+    display: block;
+    width: 100%;
+    max-height: 80vh;
+    background: #000;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
+  }
+
   .prose-nb hr {
     border: 0;
     border-top: 1px solid var(--color-line);

@@ -171,6 +171,13 @@
                               "null"
                             ]
                           },
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "A public library file's address; null for private files."
+                          },
                           "uploaded_at": {
                             "type": [
                               "string",

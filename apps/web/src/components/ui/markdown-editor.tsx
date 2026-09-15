@@ -29,6 +29,8 @@ import { date, number } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
 import * as md from '@/lib/markdown-format';
 import { ACCEPTED_TYPES, prepareImageForUpload } from '@/lib/media/prepare-upload';
+import { readVideoDuration } from '@/lib/media/video-duration';
+import { uploadInParts } from '@/lib/uploads/chunked-upload';
 
 type Snapshot = { value: string; start: number; end: number };
 type Panel = 'link' | 'image' | 'table' | 'character' | 'count' | 'help';
@@ -962,6 +964,14 @@ function LinkPanel({
   );
 }
 
+/**
+ * Videos go into an article the way images do - `![description](…/clip.mp4)` -
+ * and the API renders that as a player (App\Support\Markdown::embedVideos).
+ */
+const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+
+const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
+
 function ImagePanel({
   onInsert,
   onClose,
@@ -1006,6 +1016,28 @@ function ImagePanel({
     setBusy(true);
 
     try {
+      if (VIDEO_TYPES.includes(file.type)) {
+        if (file.size > MAX_VIDEO_BYTES) {
+          setError(words.videoTooLarge);
+
+          return;
+        }
+
+        // Far over the host's 2 MB request limit, so it goes up in parts.
+        const duration = await readVideoDuration(file);
+        const parts = await uploadInParts(file);
+        const response = await api<{ data: { url: string | null } }>('/admin/media', {
+          method: 'POST',
+          body: { ...parts, duration_seconds: duration, title: description },
+        });
+
+        if (!response.data.url || !onInsert(response.data.url, description)) {
+          setError(t.admin.products.uploadFailed);
+        }
+
+        return;
+      }
+
       // Resized in the browser first: the host's PHP refuses files over 2 MB.
       const prepared = await prepareImageForUpload(file);
 
@@ -1072,12 +1104,18 @@ function ImagePanel({
           <label htmlFor={fileId} className="text-sm font-medium text-navy">
             {words.imageFile}
           </label>
-          <MediaFileInput scope="public"
+          <MediaFileInput
+            scope="public"
             id={fileId}
             type="file"
-            accept={ACCEPTED_TYPES.join(',')}
+            accept={[...ACCEPTED_TYPES, ...VIDEO_TYPES].join(',')}
             className="block w-full text-sm text-ink file:me-3 file:rounded-md file:border file:border-line file:bg-surface file:px-3 file:py-1.5 file:text-navy"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            // A file already in Media is inserted by its address, not uploaded again.
+            onPickExisting={(item) => {
+              setFile(null);
+              setUrl(item.url);
+            }}
           />
         </div>
         <div className="space-y-1">

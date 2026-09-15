@@ -16,6 +16,9 @@ vi.mock('@/lib/media/prepare-upload', () => ({
   ACCEPTED_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
   prepareImageForUpload: async (file: File) => ({ ok: true, file, resized: false }),
 }));
+const uploadInParts = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/uploads/chunked-upload', () => ({ uploadInParts }));
+vi.mock('@/lib/media/video-duration', () => ({ readVideoDuration: async () => 253 }));
 
 function setup(value = 'Loads') {
   const onInput = vi.fn();
@@ -34,6 +37,7 @@ const click = (name: string) => fireEvent.click(screen.getByRole('button', { nam
 
 beforeEach(() => {
   request.mockReset();
+  uploadInParts.mockReset();
 });
 
 describe('MarkdownTextarea inline formatting', () => {
@@ -311,7 +315,7 @@ describe('MarkdownTextarea panels', () => {
     box.setSelectionRange(0, 0);
 
     click('Image');
-    fireEvent.change(screen.getByLabelText('Image address (URL)'), {
+    fireEvent.change(screen.getByLabelText('Image or video address (URL)'), {
       target: { value: 'https://x.test/b.png' },
     });
     click('Insert image');
@@ -332,7 +336,7 @@ describe('MarkdownTextarea panels', () => {
 
     click('Image');
     fireEvent.change(screen.getByLabelText('Alt text'), { target: { value: 'Beam' } });
-    fireEvent.change(screen.getByLabelText('Choose an image file'), {
+    fireEvent.change(screen.getByLabelText('Choose an image or video file'), {
       target: { files: [new File(['x'], 'beam.png', { type: 'image/png' })] },
     });
 
@@ -346,13 +350,44 @@ describe('MarkdownTextarea panels', () => {
     expect(box.value).toBe('![Beam](https://cdn.test/beam.webp)\n\n');
   });
 
+  it('uploads a video in parts and inserts it for the page to play', async () => {
+    uploadInParts.mockResolvedValue({ upload_id: 'u-1', total: 3, filename: 'walkthrough.mp4' });
+    request.mockResolvedValue({ data: { id: 10, url: 'https://cdn.test/walkthrough.mp4' } });
+    const { box } = setup('');
+    box.setSelectionRange(0, 0);
+
+    click('Image');
+    fireEvent.change(screen.getByLabelText('Alt text'), {
+      target: { value: 'Triplex walkthrough' },
+    });
+    fireEvent.change(screen.getByLabelText('Choose an image or video file'), {
+      target: { files: [new File(['x'], 'walkthrough.mp4', { type: 'video/mp4' })] },
+    });
+
+    await act(async () => {
+      click('Insert image');
+    });
+
+    expect(request).toHaveBeenCalledWith('/admin/media', {
+      method: 'POST',
+      body: {
+        upload_id: 'u-1',
+        total: 3,
+        filename: 'walkthrough.mp4',
+        duration_seconds: 253,
+        title: 'Triplex walkthrough',
+      },
+    });
+    expect(box.value).toBe('![Triplex walkthrough](https://cdn.test/walkthrough.mp4)\n\n');
+  });
+
   it('says why an upload failed', async () => {
     request.mockRejectedValue(new Error('You do not have permission.'));
     setup('');
 
     click('Image');
     fireEvent.change(screen.getByLabelText('Alt text'), { target: { value: 'Beam' } });
-    fireEvent.change(screen.getByLabelText('Choose an image file'), {
+    fireEvent.change(screen.getByLabelText('Choose an image or video file'), {
       target: { files: [new File(['x'], 'beam.png', { type: 'image/png' })] },
     });
 

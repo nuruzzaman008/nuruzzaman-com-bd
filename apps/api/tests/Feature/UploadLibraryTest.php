@@ -32,7 +32,9 @@ class UploadLibraryTest extends TestCase
         $this->actingAs($other)->getJson('/api/v1/uploads/library?scope=personal')->assertOk()->assertJsonCount(0, 'data');
         $this->get($url)->assertNotFound();
         $this->actingAs($owner)->getJson('/api/v1/uploads/library?scope=personal')->assertOk()
-            ->assertJsonPath('data.0.name', 'Example.pdf')->assertJsonMissingPath('data.0.path')->assertJsonMissingPath('data.0.disk');
+            ->assertJsonPath('data.0.name', 'Example.pdf')->assertJsonMissingPath('data.0.path')->assertJsonMissingPath('data.0.disk')
+            // A private file has no address to hand out.
+            ->assertJsonPath('data.0.url', null);
         $this->get($url)->assertOk()->assertDownload('Example.pdf');
     }
 
@@ -42,7 +44,8 @@ class UploadLibraryTest extends TestCase
         $private = $this->medium($admin);
         $public = $this->medium($admin, 'public');
         $this->actingAs($admin)->getJson('/api/v1/uploads/library?scope=public')->assertOk()
-            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $public->id);
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $public->id)
+            ->assertJsonPath('data.0.url', fn (?string $url) => str_ends_with((string) $url, 'example.pdf'));
         $this->get('/api/v1/uploads/library/media/'.$private->id.'?scope=public')->assertNotFound();
         $this->actingAs($this->customer())->getJson('/api/v1/uploads/library?scope=public')->assertForbidden();
     }
