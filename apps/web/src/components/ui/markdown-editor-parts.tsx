@@ -74,6 +74,12 @@ const ICONS = {
       <path d="m21 16-5-5-9 8" />
     </>
   ),
+  video: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path {...filled} d="M10 9.2v5.6l4.8-2.8z" />
+    </>
+  ),
   help: (
     <>
       <circle cx="12" cy="12" r="9" />

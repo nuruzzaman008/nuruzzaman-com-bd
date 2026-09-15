@@ -33,7 +33,7 @@ import { readVideoDuration } from '@/lib/media/video-duration';
 import { uploadInParts } from '@/lib/uploads/chunked-upload';
 
 type Snapshot = { value: string; start: number; end: number };
-type Panel = 'link' | 'image' | 'table' | 'character' | 'count' | 'help';
+type Panel = 'link' | 'image' | 'video' | 'table' | 'character' | 'count' | 'help';
 
 /** The menu bar, in the classic editor's order. */
 const MENUS = ['edit', 'view', 'insert', 'format', 'tools', 'table'] as const;
@@ -382,6 +382,7 @@ export function MarkdownTextarea({
       case 'insert':
         return [
           { key: 'image', label: words.image, disabled: off, onSelect: () => openPanel('image') },
+          { key: 'video', label: words.video, disabled: off, onSelect: () => openPanel('video') },
           {
             key: 'link',
             label: words.link,
@@ -702,6 +703,9 @@ export function MarkdownTextarea({
           <ToolButton label={words.image} disabled={off} onClick={() => openPanel('image')}>
             <Icon name="image" />
           </ToolButton>
+          <ToolButton label={words.video} disabled={off} onClick={() => openPanel('video')}>
+            <Icon name="video" />
+          </ToolButton>
           <ToolButton label={words.help} onClick={() => openPanel('help')}>
             <Icon name="help" />
           </ToolButton>
@@ -755,6 +759,21 @@ export function MarkdownTextarea({
           onClose={closePanel}
           onInsert={(url, alt) => {
             const done = run((value, start, end) => md.image(value, start, end, url, alt));
+            if (done) {
+              setPanel(null);
+            }
+
+            return done;
+          }}
+        />
+      ) : null}
+
+      {panel === 'video' ? (
+        <VideoPanel
+          onClose={closePanel}
+          onInsert={(url, description) => {
+            // Written the way an image is; the API renders it as a player.
+            const done = run((value, start, end) => md.image(value, start, end, url, description));
             if (done) {
               setPanel(null);
             }
@@ -964,14 +983,6 @@ function LinkPanel({
   );
 }
 
-/**
- * Videos go into an article the way images do - `![description](…/clip.mp4)` -
- * and the API renders that as a player (App\Support\Markdown::embedVideos).
- */
-const VIDEO_TYPES = ['video/mp4', 'video/webm'];
-
-const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
-
 function ImagePanel({
   onInsert,
   onClose,
@@ -1016,28 +1027,6 @@ function ImagePanel({
     setBusy(true);
 
     try {
-      if (VIDEO_TYPES.includes(file.type)) {
-        if (file.size > MAX_VIDEO_BYTES) {
-          setError(words.videoTooLarge);
-
-          return;
-        }
-
-        // Far over the host's 2 MB request limit, so it goes up in parts.
-        const duration = await readVideoDuration(file);
-        const parts = await uploadInParts(file);
-        const response = await api<{ data: { url: string | null } }>('/admin/media', {
-          method: 'POST',
-          body: { ...parts, duration_seconds: duration, title: description },
-        });
-
-        if (!response.data.url || !onInsert(response.data.url, description)) {
-          setError(t.admin.products.uploadFailed);
-        }
-
-        return;
-      }
-
       // Resized in the browser first: the host's PHP refuses files over 2 MB.
       const prepared = await prepareImageForUpload(file);
 
@@ -1108,7 +1097,7 @@ function ImagePanel({
             scope="public"
             id={fileId}
             type="file"
-            accept={[...ACCEPTED_TYPES, ...VIDEO_TYPES].join(',')}
+            accept={ACCEPTED_TYPES.join(',')}
             className="block w-full text-sm text-ink file:me-3 file:rounded-md file:border file:border-line file:bg-surface file:px-3 file:py-1.5 file:text-navy"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             // A file already in Media is inserted by its address, not uploaded again.
@@ -1143,6 +1132,175 @@ function ImagePanel({
           onClick={() => void insert()}
         >
           {busy ? words.uploading : words.insertImage}
+        </button>
+        <PanelError message={error} />
+      </div>
+    </EditorPanel>
+  );
+}
+
+/**
+ * Videos go in the way images do - `![description](…/clip.mp4)` - and the API
+ * renders that as a player (App\Support\Markdown::embedVideos). These are the
+ * formats every browser plays, and the only addresses it turns into one.
+ */
+const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+
+const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
+
+/** An address the renderer will play: it ends in .mp4 or .webm, with at most a query. */
+export function isVideoAddress(address: string): boolean {
+  return /\.(mp4|webm)(\?[^#\s]*)?$/i.test(address.trim());
+}
+
+function VideoPanel({
+  onInsert,
+  onClose,
+}: {
+  onInsert: (url: string, description: string) => boolean;
+  onClose: () => void;
+}) {
+  const { t } = useLocale();
+  const words = t.admin.markdownEditor;
+  const [description, setDescription] = useState('');
+  const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const descriptionId = useId();
+  const descriptionHintId = useId();
+  const fileId = useId();
+  const urlId = useId();
+  const busy = progress !== null;
+
+  async function insert() {
+    const text = description.trim();
+    setError(null);
+
+    // Read out by screen readers, and shown as the link when a browser cannot
+    // play the file, so it is required just as an image's alt text is.
+    if (!text) {
+      setError(words.videoDescriptionRequired);
+
+      return;
+    }
+
+    if (!file) {
+      const address = url.trim();
+
+      if (!address) {
+        setError(words.videoNeeded);
+      } else if (!isVideoAddress(address)) {
+        setError(words.videoUrlInvalid);
+      } else if (!onInsert(address, text)) {
+        setError(words.invalidUrl);
+      }
+
+      return;
+    }
+
+    if (!VIDEO_TYPES.includes(file.type)) {
+      setError(words.videoWrongType);
+
+      return;
+    }
+
+    if (file.size > MAX_VIDEO_BYTES) {
+      setError(words.videoTooLarge);
+
+      return;
+    }
+
+    setProgress(0);
+
+    try {
+      // Far over the host's 2 MB request limit, so it goes up in parts.
+      const duration = await readVideoDuration(file);
+      const parts = await uploadInParts(file, (fraction) => setProgress(fraction));
+      const response = await api<{ data: { url: string | null } }>('/admin/media', {
+        method: 'POST',
+        body: { ...parts, duration_seconds: duration, title: text },
+      });
+
+      if (!response.data.url || !onInsert(response.data.url, text)) {
+        setError(words.videoUploadFailed);
+      }
+    } catch (caught) {
+      const reason = caught instanceof Error ? caught.message : '';
+      setError(reason ? `${words.videoUploadFailed} ${reason}` : words.videoUploadFailed);
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  return (
+    <EditorPanel
+      title={words.video}
+      closeLabel={words.close}
+      onClose={onClose}
+      onSubmit={() => void insert()}
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1 sm:col-span-2">
+          <label htmlFor={descriptionId} className="text-sm font-medium text-navy">
+            {words.videoDescription}
+          </label>
+          <input
+            id={descriptionId}
+            type="text"
+            autoComplete="off"
+            aria-describedby={descriptionHintId}
+            className={INPUT}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+          <p id={descriptionHintId} className="text-xs text-muted">
+            {words.videoDescriptionHint}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={fileId} className="text-sm font-medium text-navy">
+            {words.videoFile}
+          </label>
+          <MediaFileInput
+            scope="public"
+            id={fileId}
+            type="file"
+            accept={VIDEO_TYPES.join(',')}
+            className="block w-full text-sm text-ink"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            // A video already in Media is inserted by its address, not uploaded again.
+            onPickExisting={(item) => {
+              setFile(null);
+              setUrl(item.url);
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={urlId} className="text-sm font-medium text-navy">
+            {words.videoUrl}
+          </label>
+          <input
+            id={urlId}
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            placeholder="https://…/video.mp4"
+            disabled={file !== null}
+            className={cn(INPUT, 'font-latin disabled:bg-surface')}
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+          />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          className={cn(TOOL_BUTTON, 'bg-blue px-4 font-semibold text-white hover:bg-navy')}
+          onClick={() => void insert()}
+        >
+          {busy ? `${words.uploading} ${Math.round((progress ?? 0) * 100)}%` : words.insertVideo}
         </button>
         <PanelError message={error} />
       </div>

@@ -315,7 +315,7 @@ describe('MarkdownTextarea panels', () => {
     box.setSelectionRange(0, 0);
 
     click('Image');
-    fireEvent.change(screen.getByLabelText('Image or video address (URL)'), {
+    fireEvent.change(screen.getByLabelText('Image address (URL)'), {
       target: { value: 'https://x.test/b.png' },
     });
     click('Insert image');
@@ -336,7 +336,7 @@ describe('MarkdownTextarea panels', () => {
 
     click('Image');
     fireEvent.change(screen.getByLabelText('Alt text'), { target: { value: 'Beam' } });
-    fireEvent.change(screen.getByLabelText('Choose an image or video file'), {
+    fireEvent.change(screen.getByLabelText('Choose an image file'), {
       target: { files: [new File(['x'], 'beam.png', { type: 'image/png' })] },
     });
 
@@ -350,22 +350,22 @@ describe('MarkdownTextarea panels', () => {
     expect(box.value).toBe('![Beam](https://cdn.test/beam.webp)\n\n');
   });
 
-  it('uploads a video in parts and inserts it for the page to play', async () => {
+  it('has its own Video button that uploads a video in parts and inserts it to play', async () => {
     uploadInParts.mockResolvedValue({ upload_id: 'u-1', total: 3, filename: 'walkthrough.mp4' });
     request.mockResolvedValue({ data: { id: 10, url: 'https://cdn.test/walkthrough.mp4' } });
     const { box } = setup('');
     box.setSelectionRange(0, 0);
 
-    click('Image');
-    fireEvent.change(screen.getByLabelText('Alt text'), {
+    click('Video');
+    fireEvent.change(screen.getByLabelText('Video description'), {
       target: { value: 'Triplex walkthrough' },
     });
-    fireEvent.change(screen.getByLabelText('Choose an image or video file'), {
+    fireEvent.change(screen.getByLabelText('Video from your computer or Media (MP4, WebM)'), {
       target: { files: [new File(['x'], 'walkthrough.mp4', { type: 'video/mp4' })] },
     });
 
     await act(async () => {
-      click('Insert image');
+      click('Insert video');
     });
 
     expect(request).toHaveBeenCalledWith('/admin/media', {
@@ -381,13 +381,58 @@ describe('MarkdownTextarea panels', () => {
     expect(box.value).toBe('![Triplex walkthrough](https://cdn.test/walkthrough.mp4)\n\n');
   });
 
+  it('inserts a video by its address only when it is one the site can play', () => {
+    const { box } = setup('');
+    box.setSelectionRange(0, 0);
+
+    click('Video');
+    fireEvent.change(screen.getByLabelText('Or the video address (URL)'), {
+      target: { value: 'https://x.test/clip.mp4' },
+    });
+    click('Insert video');
+    expect(screen.getByRole('alert')).toHaveTextContent('Write the video description first.');
+
+    fireEvent.change(screen.getByLabelText('Video description'), { target: { value: 'Clip' } });
+    fireEvent.change(screen.getByLabelText('Or the video address (URL)'), {
+      target: { value: 'https://x.test/clip.mov' },
+    });
+    click('Insert video');
+    expect(screen.getByRole('alert')).toHaveTextContent('The address must end in .mp4 or .webm.');
+
+    fireEvent.change(screen.getByLabelText('Or the video address (URL)'), {
+      target: { value: 'https://x.test/clip.webm?v=3' },
+    });
+    click('Insert video');
+
+    expect(box.value).toBe('![Clip](https://x.test/clip.webm?v=3)\n\n');
+  });
+
+  it('refuses a video that is not MP4 or WebM', async () => {
+    const { box } = setup('');
+    box.setSelectionRange(0, 0);
+
+    click('Video');
+    fireEvent.change(screen.getByLabelText('Video description'), { target: { value: 'Clip' } });
+    fireEvent.change(screen.getByLabelText('Video from your computer or Media (MP4, WebM)'), {
+      target: { files: [new File(['x'], 'clip.mov', { type: 'video/quicktime' })] },
+    });
+
+    await act(async () => {
+      click('Insert video');
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Only MP4 or WebM videos can be used.');
+    expect(uploadInParts).not.toHaveBeenCalled();
+    expect(box.value).toBe('');
+  });
+
   it('says why an upload failed', async () => {
     request.mockRejectedValue(new Error('You do not have permission.'));
     setup('');
 
     click('Image');
     fireEvent.change(screen.getByLabelText('Alt text'), { target: { value: 'Beam' } });
-    fireEvent.change(screen.getByLabelText('Choose an image or video file'), {
+    fireEvent.change(screen.getByLabelText('Choose an image file'), {
       target: { files: [new File(['x'], 'beam.png', { type: 'image/png' })] },
     });
 
