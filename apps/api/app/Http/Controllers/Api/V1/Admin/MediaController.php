@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Models\Media;
+use App\Services\Media\MediaUsage;
 use App\Support\Audit;
+use App\Support\SearchTerm;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,9 +28,45 @@ class MediaController extends Controller
     {
         abort_unless($request->user()->hasPermission('media.manage'), 403);
 
-        $media = Media::query()->latest('id')->paginate(40);
+        $term = trim((string) $request->query('q', ''));
+        $type = (string) $request->query('type', '');
+        $month = (string) $request->query('month', '');
+        $monthStart = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)
+            ? CarbonImmutable::createFromFormat('!Y-m', $month)
+            : null;
 
-        return response()->json($media->through(fn (Media $item) => $this->present($item))->toArray());
+        $media = Media::query()
+            ->when($term !== '', fn ($query) => $query->where(fn ($inner) => $inner
+                ->where('original_name', 'like', SearchTerm::contains($term))
+                ->orWhere('alt_text', 'like', SearchTerm::contains($term))
+                ->orWhere('caption', 'like', SearchTerm::contains($term))))
+            ->when($type === 'image', fn ($query) => $query->where('mime_type', 'like', 'image/%'))
+            ->when($type === 'pdf', fn ($query) => $query->where('mime_type', 'application/pdf'))
+            ->when($monthStart, fn ($query, CarbonImmutable $start) => $query
+                ->whereBetween('created_at', [$start, $start->endOfMonth()]))
+            ->latest('id')
+            // Seven to a row on a wide screen, six rows.
+            ->paginate(42);
+
+        // Every month something was uploaded in, for the date filter.
+        $months = Media::query()
+            ->whereNotNull('created_at')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month")
+            ->distinct()
+            ->orderByDesc('month')
+            ->pluck('month')
+            ->all();
+
+        return response()->json([
+            'data' => collect($media->items())->map(fn (Media $item) => $this->present($item))->all(),
+            'meta' => [
+                'current_page' => $media->currentPage(),
+                'last_page' => $media->lastPage(),
+                'per_page' => $media->perPage(),
+                'total' => $media->total(),
+            ],
+            'filters' => ['months' => $months],
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -81,9 +121,21 @@ class MediaController extends Controller
         return response()->json(['data' => $this->present($medium->fresh())]);
     }
 
-    public function destroy(Request $request, Media $medium): JsonResponse
+    /**
+     * A file still in use is refused, naming where, until the admin confirms
+     * with `force`: deleting it empties those covers and breaks those images.
+     */
+    public function destroy(Request $request, Media $medium, MediaUsage $usage): JsonResponse
     {
         abort_unless($request->user()->hasPermission('media.manage'), 403);
+
+        if (! $request->boolean('force')) {
+            $places = $usage->placesFor($medium);
+
+            if ($places !== []) {
+                throw DomainException::conflict('This file is still used by: '.implode('; ', $places).'.');
+            }
+        }
 
         Storage::disk($medium->disk)->delete($medium->path);
         Audit::record('media.deleted', $medium, ['path' => $medium->path]);

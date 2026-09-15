@@ -5602,9 +5602,45 @@
         ],
         "operationId": "adminListMedia",
         "summary": "Admin list media",
+        "description": "Newest first, 42 a page. `q` matches part of the file name, alt text or\ncaption; `type` narrows to images or PDFs; `month` (YYYY-MM) to one\nupload month. `filters.months` lists every month with uploads.\n",
         "security": [
           {
             "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "image",
+                "pdf"
+              ]
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
           }
         ],
         "responses": {
@@ -5626,6 +5662,20 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Pagination"
+                    },
+                    "filters": {
+                      "type": "object",
+                      "required": [
+                        "months"
+                      ],
+                      "properties": {
+                        "months": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -8642,6 +8692,7 @@
         ],
         "operationId": "adminDeleteMedia",
         "summary": "Delete a media file",
+        "description": "Refused with 409, naming the places, while the file is still a cover or\nwritten into an article, page, description or lesson - unless `force`\nis set. Deleting it anyway empties those covers.\n",
         "security": [
           {
             "sessionCookie": []
@@ -8654,6 +8705,14 @@
             "required": true,
             "schema": {
               "type": "integer"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -8678,6 +8737,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }

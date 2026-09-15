@@ -3492,7 +3492,16 @@ paths:
       tags: [Admin]
       operationId: adminListMedia
       summary: Admin list media
+      description: |
+        Newest first, 42 a page. `q` matches part of the file name, alt text or
+        caption; `type` narrows to images or PDFs; `month` (YYYY-MM) to one
+        upload month. `filters.months` lists every month with uploads.
       security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 120 } }
+        - { name: type, in: query, required: false, schema: { type: string, enum: [image, pdf] } }
+        - { name: month, in: query, required: false, schema: { type: string, pattern: '^\d{4}-\d{2}$' } }
+        - $ref: '#/components/parameters/Page'
       responses:
         '200':
           description: OK
@@ -3504,6 +3513,11 @@ paths:
                 properties:
                   data: { type: array, items: { $ref: '#/components/schemas/MediaItem' } }
                   meta: { $ref: '#/components/schemas/Pagination' }
+                  filters:
+                    type: object
+                    required: [months]
+                    properties:
+                      months: { type: array, items: { type: string } }
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Admin]
@@ -4744,9 +4758,14 @@ paths:
       tags: [Admin]
       operationId: adminDeleteMedia
       summary: Delete a media file
+      description: |
+        Refused with 409, naming the places, while the file is still a cover or
+        written into an article, page, description or lesson - unless `force`
+        is set. Deleting it anyway empties those covers.
       security: [{ sessionCookie: [] }]
       parameters:
         - { name: medium, in: path, required: true, schema: { type: integer } }
+        - { name: force, in: query, required: false, schema: { type: boolean } }
       responses:
         '200':
           description: OK
@@ -4758,6 +4777,7 @@ paths:
                 properties:
                   message: { type: string }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /admin/redirects:
     get:
