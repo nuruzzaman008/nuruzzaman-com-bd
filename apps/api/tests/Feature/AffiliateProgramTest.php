@@ -163,8 +163,11 @@ class AffiliateProgramTest extends TestCase
         $this->assertSame(50000, AffiliateCommission::query()->where('order_id', $first->id)->value('amount_minor'));
 
         // An affiliate's own rate applies to later orders; earlier ones keep theirs.
-        $this->actingAs($admin)->patchJson("/api/v1/admin/affiliates/{$affiliate->id}", ['commission_rate' => 20])
-            ->assertOk()->assertJsonPath('data.rate', 20.0)->assertJsonPath('data.commission_rate', 20.0);
+        // Compared by value: JSON writes a whole-number rate without its ".0".
+        $updated = $this->actingAs($admin)->patchJson("/api/v1/admin/affiliates/{$affiliate->id}", ['commission_rate' => 20])
+            ->assertOk();
+        $this->assertEquals(20, $updated->json('data.rate'));
+        $this->assertEquals(20, $updated->json('data.commission_rate'));
         $second = $this->checkoutWith('rahim-eng', 100000);
         $this->pay($second);
         $this->assertSame(20000, AffiliateCommission::query()->where('order_id', $second->id)->value('amount_minor'));
