@@ -22,6 +22,9 @@ class CheckoutRequest extends FormRequest
             'accepts_privacy' => ['accepted'],
             'accepts_refund_policy' => ['accepted'],
             'accepts_eula' => ['sometimes', 'accepted'],
+            // The referral code the browser remembered. An unknown or expired
+            // code is ignored rather than refused: it must never block a sale.
+            'ref' => ['nullable', 'string', 'max:64'],
         ];
     }
 

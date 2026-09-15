@@ -38,7 +38,7 @@ export function AccountSidebar({ user }: { user: User }) {
 
       <nav aria-label={t.account.navigation} className="mt-5">
         <ul className="space-y-1"><li><Link className="block rounded-lg px-3 py-2.5 text-sm font-medium text-navy hover:bg-blue-soft" href="/account/profile">{locale === 'bn' ? 'আমার প্রোফাইল / ছবি' : 'My profile / Photo'}</Link></li>
-          {accountNav.filter((item) => user.account_mode === 'student' ? ['overview', 'courses', 'support'].includes(item.key) : item.key !== 'courses').map((item) => (
+          {accountNav.filter((item) => user.account_mode === 'student' ? ['overview', 'courses', 'affiliate', 'support'].includes(item.key) : item.key !== 'courses').map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}

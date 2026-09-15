@@ -90,6 +90,12 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('search', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
 
+        // One call per page opened through a referral link.
+        RateLimiter::for('referrals', fn (Request $request) => Limit::perMinute(20)->by($request->ip()));
+
+        RateLimiter::for('affiliates', fn (Request $request) => Limit::perMinute(10)
+            ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
+
         // Deliberately generous: the gateway may retry an IPN several times.
         RateLimiter::for('ipn', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
     }

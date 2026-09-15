@@ -59,6 +59,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('search', PublicApi\SearchController::class)->middleware('throttle:search');
     Route::post('contact', PublicApi\ContactController::class)->middleware('throttle:public-forms');
+    Route::post('affiliate-visits', PublicApi\AffiliateVisitController::class)->middleware('throttle:referrals');
 
     // ------------------------------------------------------------------ auth
     Route::middleware('throttle:auth')->group(function () {

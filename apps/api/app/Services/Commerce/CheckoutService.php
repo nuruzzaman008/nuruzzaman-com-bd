@@ -7,6 +7,7 @@ use App\Exceptions\DomainException;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Affiliates\AffiliateProgram;
 use App\Support\Audit;
 use App\Support\Reference;
 use Illuminate\Support\Facades\DB;
@@ -20,13 +21,15 @@ class CheckoutService
     public function __construct(
         private readonly PricingService $pricing,
         private readonly OrderStateMachine $states,
+        private readonly AffiliateProgram $affiliates,
     ) {}
 
     /**
      * @param  array{name?:string,email?:string,phone?:string}  $billing
      * @param  array<int, string>  $acceptedTerms
+     * @param  string|null  $referralCode  the affiliate code remembered from a referral link
      */
-    public function createOrder(Cart $cart, User $user, array $billing, array $acceptedTerms, ?string $ip = null): Order
+    public function createOrder(Cart $cart, User $user, array $billing, array $acceptedTerms, ?string $ip = null, ?string $referralCode = null): Order
     {
         $totals = $this->pricing->totalsFor($cart, $user);
 
@@ -44,7 +47,9 @@ class CheckoutService
             throw new DomainException('This order total is zero, which the payment gateway cannot process.');
         }
 
-        return DB::transaction(function () use ($cart, $user, $billing, $acceptedTerms, $ip, $totals) {
+        $affiliate = $referralCode ? $this->affiliates->attributable($referralCode, $user) : null;
+
+        return DB::transaction(function () use ($cart, $user, $billing, $acceptedTerms, $ip, $totals, $affiliate) {
             $order = Order::create([
                 'number' => Reference::order(),
                 'user_id' => $user->getKey(),
@@ -55,6 +60,7 @@ class CheckoutService
                 'tax_minor' => $totals->tax->minor,
                 'total_minor' => $totals->total->minor,
                 'coupon_id' => $cart->coupon_id,
+                'affiliate_id' => $affiliate?->getKey(),
                 'billing_name' => $billing['name'] ?? $user->name,
                 'billing_email' => $billing['email'] ?? $user->email,
                 'billing_phone' => $billing['phone'] ?? $user->phone,

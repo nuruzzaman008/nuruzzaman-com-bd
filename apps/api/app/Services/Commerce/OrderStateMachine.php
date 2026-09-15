@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Exceptions\DomainException;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Affiliates\AffiliateLedger;
 use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
 
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\DB;
  */
 class OrderStateMachine
 {
+    public function __construct(private readonly AffiliateLedger $affiliates) {}
+
     public function transition(Order $order, OrderStatus $to, ?string $reason = null, ?User $actor = null): Order
     {
         return DB::transaction(function () use ($order, $to, $reason, $actor) {
@@ -48,6 +51,10 @@ class OrderStateMachine
                 'to' => $to->value,
                 'reason' => $reason,
             ], $actor?->getKey());
+
+            // Every way an order gets paid or refunded passes through here, so
+            // this is the one place a referral commission is earned or undone.
+            $this->affiliates->orderMovedTo($locked, $to);
 
             return $locked;
         });

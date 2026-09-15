@@ -105,6 +105,14 @@ Route::middleware([
     Route::patch('download-assets/{downloadAsset:id}', [Admin\DownloadAssetController::class, 'update']);
     Route::post('download-assets/{downloadAsset:id}/file', [Admin\DownloadAssetController::class, 'upload']);
     Route::put('download-assets/{downloadAsset:id}/variants', [Admin\DownloadAssetController::class, 'syncVariants']);
+
+    Route::get('affiliate-settings', [Admin\AffiliateController::class, 'settings']);
+    Route::put('affiliate-settings', [Admin\AffiliateController::class, 'updateSettings']);
+    Route::get('affiliates', [Admin\AffiliateController::class, 'index']);
+    Route::get('affiliates/{affiliate:id}', [Admin\AffiliateController::class, 'show']);
+    Route::patch('affiliates/{affiliate:id}', [Admin\AffiliateController::class, 'update']);
+    Route::post('affiliates/{affiliate:id}/payouts', [Admin\AffiliateController::class, 'storePayout']);
+    Route::post('affiliate-commissions/{commission:id}/void', [Admin\AffiliateController::class, 'voidCommission']);
 });
 
 Route::middleware([

@@ -49,6 +49,10 @@ Route::middleware(['auth:sanctum', 'active', EnsureCustomerAccount::class])->gro
     Route::post('account/downloads/{slug}', [Account\DownloadController::class, 'store'])
         ->middleware(['throttle:downloads', 'verified']);
 
+    Route::get('account/affiliate', [Account\AffiliateController::class, 'show']);
+    Route::post('account/affiliate', [Account\AffiliateController::class, 'store'])->middleware('throttle:affiliates');
+    Route::patch('account/affiliate', [Account\AffiliateController::class, 'update'])->middleware('throttle:affiliates');
+
     Route::get('account/courses', [Account\EnrollmentController::class, 'index']);
     Route::get('account/certificates', [Account\EnrollmentController::class, 'certificates']);
     Route::get('account/licenses', [Account\LicenseController::class, 'index']);

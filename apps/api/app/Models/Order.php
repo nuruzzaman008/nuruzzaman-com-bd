@@ -15,7 +15,7 @@ class Order extends Model
 
     protected $fillable = [
         'number', 'user_id', 'status', 'currency', 'subtotal_minor', 'discount_minor',
-        'tax_minor', 'total_minor', 'refunded_minor', 'coupon_id', 'billing_name',
+        'tax_minor', 'total_minor', 'refunded_minor', 'coupon_id', 'affiliate_id', 'billing_name',
         'billing_email', 'billing_phone', 'accepted_terms', 'terms_accepted_at',
         'placed_ip', 'placed_at', 'paid_at', 'fulfilled_at', 'cancelled_at',
     ];
@@ -71,6 +71,12 @@ class Order extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    /** The affiliate whose link brought this order, if any. */
+    public function affiliate(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class);
     }
 
     public function getRouteKeyName(): string

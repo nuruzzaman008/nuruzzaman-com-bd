@@ -13,6 +13,7 @@ import { EmptyState, LoadingRegion } from '@/components/ui/states';
 import { ApiError, api } from '@/lib/api/browser';
 import { number, price } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { readReferralCode } from '@/lib/referral';
 
 /**
  * Checkout.
@@ -77,6 +78,8 @@ export function CheckoutForm() {
           accepts_privacy: form.get('accepts_privacy') === 'on',
           accepts_refund_policy: form.get('accepts_refund_policy') === 'on',
           accepts_eula: form.get('accepts_eula') === 'on',
+          // The affiliate whose link brought this customer, if any.
+          ref: readReferralCode(document.cookie),
         },
       });
 

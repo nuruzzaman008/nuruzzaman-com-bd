@@ -32,6 +32,7 @@ class RoleSeeder extends Seeder
             'orders.manage' => 'Change order status and re-run fulfilment',
             'orders.refund' => 'Request, approve and reject refunds',
             'downloads.manage' => 'Manage protected releases',
+            'affiliates.manage' => 'Run the affiliate program and record payouts',
         ],
         'lms' => [
             'courses.view' => 'See every course',

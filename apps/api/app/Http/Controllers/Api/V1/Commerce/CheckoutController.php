@@ -30,6 +30,7 @@ class CheckoutController extends Controller
             $request->safe()->only(['name', 'email', 'phone']),
             $request->acceptedTerms(),
             $request->ip(),
+            $request->validated('ref'),
         );
 
         return response()->json([

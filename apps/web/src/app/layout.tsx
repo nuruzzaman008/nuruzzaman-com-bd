@@ -4,6 +4,7 @@ import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 import { cookies, headers } from 'next/headers';
 
 import { SkipLink } from '@/components/layout/skip-link';
+import { ReferralTracker } from '@/features/affiliate/referral-tracker';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { LOCALE_HTML_LANG, documentLocale } from '@/lib/i18n/locale';
 import { PATHNAME_HEADER } from '@/lib/request-path';
@@ -91,6 +92,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             or screen-reader user meets, so it has to be in their language. */}
         <LocaleProvider locale={adminLocale}>
           <SkipLink />
+          {/* Every page can be the landing page of a referral link. */}
+          <ReferralTracker />
           {/* One `/me` and `/cart` request per page load, shared by the header
               and the footer's admin entrance. */}
           <SessionProvider>{children}</SessionProvider>

@@ -101,6 +101,7 @@ export const accountNav: AccountNavItem[] = [
   { href: '/account/downloads', key: 'downloads' },
   { href: '/account/courses', key: 'courses' },
   { href: '/account/activation-requests', key: 'activationRequests' },
+  { href: '/account/affiliate', key: 'affiliate' },
   { href: '/account/support', key: 'support' },
 ];
 
@@ -135,6 +136,7 @@ export const dashboardNav: {
       { href: '/dashboard/products', key: 'products' },
       { href: '/dashboard/orders', key: 'orders' },
       { href: '/dashboard/coupons', key: 'coupons' },
+      { href: '/dashboard/affiliates', key: 'affiliates' },
       { href: '/dashboard/releases', key: 'releases' },
     ],
   },

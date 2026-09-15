@@ -74,6 +74,7 @@ const bn = {
       downloads: 'ডাউনলোড',
       courses: 'আমার কোর্স',
       activationRequests: 'অ্যাক্টিভেশন রিকোয়েস্ট',
+      affiliate: 'অ্যাফিলিয়েট প্রোগ্রাম',
       support: 'সাপোর্ট টিকিট',
     },
     emailUnverified:
@@ -1181,6 +1182,7 @@ const bn = {
       orders: 'অর্ডার',
       releases: 'রিলিজ ও ডাউনলোড',
       coupons: 'কুপন',
+      affiliates: 'অ্যাফিলিয়েট',
       courses: 'কোর্স',
       activationRequests: 'অ্যাক্টিভেশন',
       tickets: 'টিকিট',
@@ -1802,6 +1804,7 @@ const en: Dictionary = {
       downloads: 'Downloads',
       courses: 'My courses',
       activationRequests: 'Activation requests',
+      affiliate: 'Affiliate program',
       support: 'Support tickets',
     },
     emailUnverified:
@@ -2864,6 +2867,7 @@ const en: Dictionary = {
       orders: 'Orders',
       releases: 'Releases & downloads',
       coupons: 'Coupons',
+      affiliates: 'Affiliates',
       courses: 'Courses',
       activationRequests: 'Activations',
       tickets: 'Tickets',
