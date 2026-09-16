@@ -59,7 +59,7 @@ export default async function AccountOrderPage(props: {
 
       {order.status === 'pending_payment' && <ButtonLink className="mt-5" href={`/checkout/payment/${order.number}`}>{locale === 'en' ? 'Payment options / verification status' : 'Payment option / যাচাইয়ের status'}</ButtonLink>}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mt-6 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
           <DataTable
             caption={t.customer.orders.itemsCaption}

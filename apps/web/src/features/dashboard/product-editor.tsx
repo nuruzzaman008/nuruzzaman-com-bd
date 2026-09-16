@@ -155,7 +155,7 @@ export function ProductEditor({ initial }: { initial: EditableProduct }) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_22rem]">
       <form id="product-editor" onSubmit={save} className="min-w-0 space-y-6">
         <ErrorSummary errors={errors} />
 

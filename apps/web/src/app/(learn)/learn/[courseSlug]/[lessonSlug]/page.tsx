@@ -89,7 +89,7 @@ export default async function LessonPage(props: {
   */
   return (
     <Container size="wide" className="py-6 sm:py-8">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="min-w-0 rounded-[--radius-card] border border-line bg-white p-4 sm:p-6">
           {lesson ? (
             <>

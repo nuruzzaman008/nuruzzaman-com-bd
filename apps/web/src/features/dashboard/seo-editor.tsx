@@ -102,7 +102,7 @@ export function SeoEditor({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_24rem]">
       <form id="seo-editor" onSubmit={save} noValidate className="space-y-5">
         {message ? (
           <Callout tone="danger" role="alert">

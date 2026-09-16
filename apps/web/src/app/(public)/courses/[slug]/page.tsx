@@ -116,7 +116,7 @@ export default async function CoursePage(
           ]}
         />
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="mt-6 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div>
             <header>
               <div className="flex flex-wrap gap-2">

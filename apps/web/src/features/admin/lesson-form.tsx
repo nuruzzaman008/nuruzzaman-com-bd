@@ -281,7 +281,7 @@ export function LessonForm({
         {lesson ? (bn ? 'পাঠ সম্পাদনা' : 'Edit lesson') : bn ? 'নতুন পাঠ যোগ করুন' : 'Add lesson'}
       </h2>
 
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-3 grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <label className={LABEL}>
           {bn ? 'পাঠের নাম' : 'Lesson title'}
           <input

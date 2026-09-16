@@ -114,6 +114,8 @@
     font-size: 1.0625rem;
     line-height: 1.75;
     color: var(--color-ink);
+    /* A pasted URL or a long file name breaks rather than widening the page. */
+    overflow-wrap: break-word;
   }
 
   .prose-nb > * + * {

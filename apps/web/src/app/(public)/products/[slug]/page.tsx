@@ -110,7 +110,7 @@ export default async function ProductPage(
           ]}
         />
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="mt-6 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div>
             <h1
               data-authored="true"
@@ -172,7 +172,7 @@ export default async function ProductPage(
                 </h2>
                 <dl className="mt-4 divide-y divide-line rounded-[--radius-card] border border-line bg-white">
                   {Object.entries(product.specs).map(([key, value]) => (
-                    <div key={key} className="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_1fr]">
+                    <div key={key} className="grid gap-1 px-4 py-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
                       <dt className="font-latin text-sm font-semibold text-navy capitalize">
                         {key.replace(/_/g, ' ')}
                       </dt>

@@ -61,7 +61,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
       <main id="main" className="flex-1">
         <Container className="py-10">
-          <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)]">
+          <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)]">
             {/* Staff are only ever here to verify an address, and the customer
                 navigation would be no use to them. */}
             {isAdministrator(user.roles) ? <div /> : <AccountSidebar user={user} />}

@@ -260,7 +260,7 @@ export default async function HomePage({ locale }: LocalizedPageProps) {
 
       <Section tone="blue">
         <Container>
-          <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+          <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
             <SectionHeading
               eyebrow={t.home.supportEyebrow}
               title={t.home.supportTitle}

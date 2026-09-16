@@ -828,7 +828,7 @@ export function MarkdownTextarea({
 
       {panel === 'help' ? (
         <EditorPanel title={words.shortcuts} closeLabel={words.close} onClose={closePanel}>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-sm">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-sm">
             {(
               [
                 ['Ctrl+B', words.bold],

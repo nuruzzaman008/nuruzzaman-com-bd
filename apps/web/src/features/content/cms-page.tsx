@@ -111,7 +111,7 @@ export async function CmsPage({
         ) : null}
       </div>
 
-      <div className={showToc ? 'mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_16rem]' : 'mt-8'}>
+      <div className={showToc ? 'mt-8 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_16rem]' : 'mt-8'}>
         <Prose html={page.body_html} />
         {showToc ? (
           <aside className="lg:sticky lg:top-24 lg:self-start">

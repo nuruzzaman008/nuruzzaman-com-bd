@@ -131,7 +131,7 @@ function NewRelease({ bn, licences }: { bn: boolean; licences: LicenceOption[] }
       </p>
       <form
         onSubmit={create}
-        className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_auto] sm:items-end"
+        className="mt-4 grid gap-3 grid-cols-[minmax(0,1fr)] sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_auto] sm:items-end"
       >
         <label className="text-sm font-medium text-navy">
           {bn ? 'নাম' : 'Name'}

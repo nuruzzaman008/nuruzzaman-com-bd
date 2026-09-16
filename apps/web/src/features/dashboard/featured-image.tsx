@@ -154,7 +154,7 @@ export function FeaturedImageCard({
       <h2 className="text-lg font-bold text-navy">{t.admin.products.featuredImage}</h2>
       <p className="mt-1 text-sm text-muted">{hint}</p>
 
-      <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] md:items-start">
+      <div className="mt-5 grid gap-6 grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] md:items-start">
         <div>
           {cover?.url ? (
             /* Not next/image: next/image only allows the media host when

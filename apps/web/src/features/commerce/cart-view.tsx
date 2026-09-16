@@ -79,7 +79,7 @@ export function CartView() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="space-y-4">
         {error ? (
           <Callout tone="danger" role="alert">

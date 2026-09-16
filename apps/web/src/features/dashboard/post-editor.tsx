@@ -179,7 +179,7 @@ export function PostEditor({ post }: { post: EditablePost }) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div className="grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_18rem]">
       <form id="post-editor" onSubmit={save} noValidate className="min-w-0 space-y-5">
         <ErrorSummary errors={errors} />
 

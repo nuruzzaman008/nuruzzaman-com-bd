@@ -137,7 +137,7 @@ export async function EngineeringToolsArticle({
 
       <Section tone="white" className="pt-8">
         <Container>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem]">
             <article>
               <Badge tone="warning">NB Engineering Tools v6.0</Badge>
               <h1 className="mt-3 text-[length:var(--step-h1)] leading-tight font-bold text-navy">

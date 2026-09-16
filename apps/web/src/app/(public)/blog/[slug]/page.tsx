@@ -190,7 +190,7 @@ export default async function BlogPostPage(
             />
           )}
 
-          <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <div className="mt-10 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_16rem]">
             <div>
               {post.body_translated ? null : (
                 <Callout tone="info" title={t.cms.untranslatedTitle} role="status">

@@ -108,7 +108,7 @@ export function CheckoutForm() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_22rem]">
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <ErrorSummary errors={errors} />
 

@@ -506,7 +506,7 @@ export function AttachmentDetails({
   );
 
   const body = (
-    <div className="grid min-h-0 flex-1 md:grid-cols-[minmax(0,1fr)_26rem]">
+    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_26rem]">
       <div className="flex min-h-0 items-start justify-center overflow-auto p-4 sm:p-6">
         {preview}
       </div>

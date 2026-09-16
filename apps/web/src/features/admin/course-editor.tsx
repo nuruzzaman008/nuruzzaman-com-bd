@@ -219,7 +219,7 @@ export function CourseEditor({ initial }: { initial?: Curriculum }) {
     {error ? <p role="alert" className="rounded-lg bg-danger/10 p-4 text-danger">{error}</p> : null}
     {message ? <p role="status" className="rounded-lg bg-success/10 p-4 text-success">{message}</p> : null}
     {progress ? <p role="status" className="sticky top-2 z-10 rounded-lg bg-blue-soft p-4 text-navy shadow-sm">{bn ? 'আপলোড হচ্ছে' : 'Uploading'} “{progress.name}” — {Math.round(progress.fraction * 100)}%<span aria-hidden="true" className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white"><span className="block h-full bg-blue" style={{ width: `${Math.round(progress.fraction * 100)}%` }} /></span></p> : null}
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_22rem]">
     <form id="course-details" onSubmit={saveCourse} className="min-w-0 space-y-4">
       <FeaturedImageCard
         image={image}

@@ -154,7 +154,7 @@ export function AffiliateAdminDetail({ affiliate: initial }: { affiliate: AdminA
               : 'Send the money by bKash, Nagad or bank first, then record it here. The site never sends money itself; recording it takes it off the balance and shows it on the affiliate’s page.'}
           </p>
 
-          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-lg bg-surface p-3 text-sm">
+          <dl className="mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 rounded-lg bg-surface p-3 text-sm">
             <dt className="text-muted">{bn ? 'মাধ্যম' : 'Method'}</dt>
             <dd>{payoutMethodLabel(affiliate.payout_method, bn)}</dd>
             <dt className="text-muted">{bn ? 'নম্বর' : 'Number'}</dt>

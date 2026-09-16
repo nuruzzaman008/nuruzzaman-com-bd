@@ -35,7 +35,7 @@ export default async function ContactPage({ locale }: LocalizedPageProps) {
         ]}
       />
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mt-6 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div>
           <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.contact.heading}</h1>
           <p className="mt-3 max-w-2xl text-muted">

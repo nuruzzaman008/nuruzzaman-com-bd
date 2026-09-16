@@ -56,7 +56,7 @@ export default async function ActivationRequestPage(props: {
         <Badge tone={request.status === 'completed' ? 'success' : 'info'}>{statusLabel('activation', request.status, locale)}</Badge>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="mt-6 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-4">
           {request.vendor_response ? (
             <Callout tone="success" title={t.customer.activation.vendorResponse}>
