@@ -381,6 +381,44 @@ describe('MarkdownTextarea panels', () => {
     expect(box.value).toBe('![Triplex walkthrough](https://cdn.test/walkthrough.mp4)\n\n');
   });
 
+  it('shows how much of the video has gone up while it is uploading', async () => {
+    let finish: (parts: unknown) => void = () => undefined;
+
+    uploadInParts.mockImplementation((_file: File, onProgress: (fraction: number) => void) => {
+      onProgress(0.4);
+
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    });
+    request.mockResolvedValue({ data: { id: 10, url: 'https://cdn.test/walkthrough.mp4' } });
+    setup('');
+
+    click('Video');
+    fireEvent.change(screen.getByLabelText('Video description'), {
+      target: { value: 'Triplex walkthrough' },
+    });
+    fireEvent.change(screen.getByLabelText('Video from your computer or Media (MP4, WebM)'), {
+      target: { files: [new File(['x'], 'walkthrough.mp4', { type: 'video/mp4' })] },
+    });
+
+    await act(async () => {
+      click('Insert video');
+    });
+
+    const bar = screen.getByRole('progressbar', { name: 'Video' });
+    expect(bar).toHaveAttribute('aria-valuenow', '40');
+    expect(bar.firstElementChild).toHaveStyle({ width: '40%' });
+    expect(screen.getByRole('button', { name: /Uploading.*40%/ })).toBeDisabled();
+
+    await act(async () => {
+      finish({ upload_id: 'u-1', total: 1, filename: 'walkthrough.mp4' });
+    });
+
+    // Gone again once the file is in, with the button back to its own label.
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
   it('inserts a video by its address only when it is one the site can play', () => {
     const { box } = setup('');
     box.setSelectionRange(0, 0);

@@ -330,6 +330,16 @@
     border: 1px solid var(--color-line);
   }
 
+  /* Only while the lightbox is mounted and listening; see ImageLightbox. */
+  :root[data-nb-zoom='on'] .prose-nb img {
+    cursor: zoom-in;
+  }
+
+  /* A picture that is a link stays a link. */
+  :root[data-nb-zoom='on'] .prose-nb a img {
+    cursor: pointer;
+  }
+
   /* A video inserted from the media library; see App\Support\Markdown::embedVideos. */
   .prose-nb video {
     display: block;

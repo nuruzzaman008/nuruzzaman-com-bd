@@ -1172,6 +1172,7 @@ function VideoPanel({
   const fileId = useId();
   const urlId = useId();
   const busy = progress !== null;
+  const percent = Math.round((progress ?? 0) * 100);
 
   async function insert() {
     const text = description.trim();
@@ -1292,6 +1293,29 @@ function VideoPanel({
             onChange={(event) => setUrl(event.target.value)}
           />
         </div>
+        {busy ? (
+          /* A video is large enough that the wait needs an answer: how much of
+             it has gone up so far. */
+          <div className="sm:col-span-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-navy">
+              <span>{words.uploading}</span>
+              <span aria-live="polite">{percent}%</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label={words.video}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percent}
+              className="mt-1 h-2 overflow-hidden rounded-full bg-surface"
+            >
+              <div
+                className="h-full bg-blue transition-[width] duration-200"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
@@ -1300,7 +1324,7 @@ function VideoPanel({
           className={cn(TOOL_BUTTON, 'bg-blue px-4 font-semibold text-white hover:bg-navy')}
           onClick={() => void insert()}
         >
-          {busy ? `${words.uploading} ${Math.round((progress ?? 0) * 100)}%` : words.insertVideo}
+          {busy ? `${words.uploading} ${percent}%` : words.insertVideo}
         </button>
         <PanelError message={error} />
       </div>

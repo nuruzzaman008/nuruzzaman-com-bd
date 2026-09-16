@@ -1,3 +1,4 @@
+import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { cn } from '@/lib/cn';
 
 /**
@@ -11,13 +12,18 @@ import { cn } from '@/lib/cn';
  * That marks it as text written in one language on purpose: the English-page
  * check reads the attribute and does not report an untranslated article body as
  * an untranslated interface.
+ *
+ * The pictures in it can be clicked to be seen full size; see ImageLightbox.
  */
 export function Prose({ html, className }: { html: string; className?: string }) {
   return (
-    <div
-      data-authored="true"
-      className={cn('prose-nb', className)}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <>
+      <div
+        data-authored="true"
+        className={cn('prose-nb', className)}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+      <ImageLightbox />
+    </>
   );
 }
