@@ -32,7 +32,8 @@ class PostController extends Controller
         ]);
 
         $posts = Post::query()
-            ->with(['author', 'categories'])
+            // cover and seo are what the dashboard list scores each post on.
+            ->with(['author', 'categories', 'cover', 'seo'])
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
             ->latest('id')
@@ -154,7 +155,7 @@ class PostController extends Controller
     private function attributes(PostRequest $request): array
     {
         $data = $request->safe()->except(['category_ids', 'tag_ids', 'seo']);
-        $data['reading_minutes'] = Markdown::readingMinutes($request->validated('body_markdown'));
+        $data['reading_minutes'] = Markdown::readingMinutes($request->validated('body_markdown') ?? '');
 
         return $data;
     }

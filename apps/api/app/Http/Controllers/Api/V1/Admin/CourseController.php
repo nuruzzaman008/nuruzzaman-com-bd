@@ -31,6 +31,8 @@ class CourseController extends Controller
 
         $courses = Course::query()
             ->withCount('lessons')
+            // seo and cover are what the dashboard list scores each course on.
+            ->with(['cover', 'seo'])
             ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
             ->orderBy('title')
             ->paginate(50)

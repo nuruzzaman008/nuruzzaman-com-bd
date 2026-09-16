@@ -1248,6 +1248,31 @@ const bn = {
       review: 'রিভিউ',
       reviewed: 'রিভিউ হয়েছে',
       awaitingReview: 'রিভিউ বাকি',
+      newPost: '+ নতুন আর্টিকেল',
+    },
+
+    /** "নতুন আর্টিকেল" ও "নতুন প্রোডাক্ট" তৈরির ছোট ফর্ম। */
+    newContent: {
+      heading: { post: 'নতুন আর্টিকেল', product: 'নতুন প্রোডাক্ট' },
+      intro: {
+        post: 'শিরোনাম আর ঠিকানা দিন — খসড়া তৈরি হয়ে সম্পাদনার পাতা খুলে যাবে, লেখা সেখানেই।',
+        product: 'নাম, ঠিকানা আর ধরন দিন — বাকি সব (দাম, ছবি, বর্ণনা) পরের পাতায়।',
+      },
+      slugHint: 'ঠিকানায় যা দেখাবে; ইংরেজি ছোট হাতের অক্ষর, সংখ্যা আর হাইফেন।',
+      titleNeeded: 'শিরোনাম দিন।',
+      nameNeeded: 'নাম দিন।',
+      slugNeeded: 'ইংরেজি অক্ষরে একটি ঠিকানা লিখুন (বাংলা শিরোনাম থেকে ঠিকানা তৈরি হয় না)।',
+      create: 'তৈরি করে সম্পাদনায় যান',
+      creating: 'তৈরি হচ্ছে…',
+      failed: 'তৈরি করা যায়নি।',
+    },
+
+    /** শপে যে ধরনের জিনিস বিক্রি হয়। */
+    productTypes: {
+      software_license: 'সফটওয়্যার লাইসেন্স',
+      credit_refill: 'ক্রেডিট রিফিল',
+      bundle: 'বান্ডল',
+      digital_resource: 'ডিজিটাল রিসোর্স',
     },
 
     orders: {
@@ -1375,6 +1400,7 @@ const bn = {
       variants: 'ভ্যারিয়েন্ট',
       noPrice: 'দাম প্রকাশ করা হয়নি',
       analysis: 'বিশ্লেষণ',
+      newProduct: '+ নতুন প্রোডাক্ট',
       editTitle: 'প্রোডাক্ট সম্পাদনা',
       slugHint: 'ছোট হাতের ইংরেজি অক্ষর, সংখ্যা ও হাইফেন। স্লাগ বদলালে আগের লিংকগুলো আর কাজ করবে না।',
       tagline: 'ট্যাগলাইন',
@@ -2956,6 +2982,31 @@ const en: Dictionary = {
       review: 'Review',
       reviewed: 'Reviewed',
       awaitingReview: 'Review outstanding',
+      newPost: '+ New article',
+    },
+
+    /** The short form behind "New article" and "New product". */
+    newContent: {
+      heading: { post: 'New article', product: 'New product' },
+      intro: {
+        post: 'A title and an address. The draft is made and the editor opens, which is where the writing happens.',
+        product: 'A name, an address and a kind. Price, picture and description come next, in the editor.',
+      },
+      slugHint: 'What the address will read; lower-case letters, digits and hyphens.',
+      titleNeeded: 'Give it a title.',
+      nameNeeded: 'Give it a name.',
+      slugNeeded: 'Write an address in Latin letters (a Bengali title cannot make one).',
+      create: 'Create and edit',
+      creating: 'Creating…',
+      failed: 'It could not be created.',
+    },
+
+    /** What the shop sells. */
+    productTypes: {
+      software_license: 'Software licence',
+      credit_refill: 'Credit refill',
+      bundle: 'Bundle',
+      digital_resource: 'Digital resource',
     },
 
     orders: {
@@ -3084,6 +3135,7 @@ const en: Dictionary = {
       variants: 'Variants',
       noPrice: 'No price published',
       analysis: 'Analysis',
+      newProduct: '+ New product',
       editTitle: 'Edit product',
       slugHint:
         'Lower-case letters, digits and hyphens. Changing the slug breaks every link that points at the old one.',

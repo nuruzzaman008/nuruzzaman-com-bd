@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
+import { SeoScore, ViewLink } from '@/features/admin/seo-score';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
@@ -56,6 +57,12 @@ export default async function DashboardPostsPage(props: {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.posts}</h1>
+        <Link
+          href="/dashboard/posts/new"
+          className="inline-flex min-h-11 items-center rounded-lg bg-blue px-5 font-semibold text-white hover:bg-navy"
+        >
+          {t.admin.posts.newPost}
+        </Link>
       </div>
 
       <AdminSearchForm
@@ -125,25 +132,50 @@ export default async function DashboardPostsPage(props: {
               key: 'status',
               header: t.admin.common.status,
               render: (post) => (
-                <Badge tone={TONES[post.status] ?? 'neutral'}>
-                  {statusLabel('content', post.status, locale)}
-                </Badge>
+                <span className="flex flex-col items-start gap-1">
+                  <Badge tone={TONES[post.status] ?? 'neutral'}>
+                    {statusLabel('content', post.status, locale)}
+                  </Badge>
+                  <span className="text-xs text-muted">
+                    {date(post.published_at, locale) ??
+                      (post.reviewed_at ? t.admin.posts.reviewed : t.admin.posts.awaitingReview)}
+                  </span>
+                </span>
               ),
             },
             {
-              key: 'published',
-              header: t.admin.common.published,
-              render: (post) => date(post.published_at, locale) ?? t.admin.posts.unpublished,
+              key: 'seo',
+              header: 'SEO',
+              render: (post) => (
+                <SeoScore
+                  t={t}
+                  locale={locale}
+                  href={`/dashboard/posts/${post.id}`}
+                  input={{
+                    kind: 'post',
+                    title: post.title,
+                    slug: post.slug,
+                    content: post.body_markdown ?? post.body_html,
+                    excerpt: post.excerpt ?? undefined,
+                    metaTitle: post.seo?.meta_title ?? '',
+                    metaDescription: post.seo?.meta_description ?? '',
+                    focusKeyword: post.seo?.focus_keyword ?? '',
+                    featuredImage: post.cover_url ? { alt: post.cover_alt ?? null } : null,
+                  }}
+                />
+              ),
             },
             {
-              key: 'reviewed',
-              header: t.admin.posts.review,
-              render: (post) =>
-                post.reviewed_at ? (
-                  <Badge tone="success">{t.admin.posts.reviewed}</Badge>
-                ) : (
-                  <Badge tone="warning">{t.admin.posts.awaitingReview}</Badge>
-                ),
+              key: 'view',
+              header: t.admin.common.view,
+              align: 'end',
+              render: (post) => (
+                <ViewLink
+                  href={post.status === 'published' ? `/blog/${post.slug}` : null}
+                  label={t.admin.common.view}
+                  draftLabel={t.admin.posts.unpublished}
+                />
+              ),
             },
           ]}
         />

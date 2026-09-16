@@ -31,7 +31,8 @@ class ProductController extends Controller
         ]);
 
         $products = Product::query()
-            ->with(['activeVariants.prices', 'cover'])
+            // seo is what the dashboard list scores each product on.
+            ->with(['activeVariants.prices', 'cover', 'seo'])
             ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'name'))
             ->when($validated['exclude_type'] ?? null, fn ($query, $type) => $query->where('type', '!=', $type))
             ->orderBy('name')

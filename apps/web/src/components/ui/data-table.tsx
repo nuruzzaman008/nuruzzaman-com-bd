@@ -49,7 +49,7 @@ export function DataTable<T>({
                 key={column.key}
                 scope="col"
                 className={cn(
-                  'px-4 py-3 font-semibold text-navy',
+                  'px-3 py-2 font-semibold text-navy',
                   column.align === 'end' ? 'text-end' : 'text-start',
                 )}
               >
@@ -65,7 +65,7 @@ export function DataTable<T>({
                 <td
                   key={column.key}
                   className={cn(
-                    'px-4 py-3 align-middle',
+                    'px-3 py-2 align-middle',
                     column.align === 'end' ? 'text-end' : 'text-start',
                   )}
                 >

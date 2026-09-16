@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
+import { SeoScore, ViewLink } from '@/features/admin/seo-score';
 import { sessionApi } from '@/lib/api/server';
 import { number } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
@@ -31,14 +32,16 @@ export default async function DashboardCoursesPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.courses}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.courses}</h1>
+        <Link
+          href="/dashboard/courses/new"
+          className="inline-flex min-h-11 items-center rounded-lg bg-blue px-5 font-semibold text-white hover:bg-navy"
+        >
+          {bn ? '+ নতুন কোর্স' : '+ New course'}
+        </Link>
+      </div>
       <p className="mt-2 text-muted">{t.admin.courses.publishRule}</p>
-      <Link
-        href="/dashboard/courses/new"
-        className="mt-4 inline-block rounded-lg bg-blue px-5 py-3 font-semibold text-white"
-      >
-        {bn ? '+ নতুন কোর্স' : '+ New course'}
-      </Link>
 
       <AdminSearchForm
         id="course-search"
@@ -94,13 +97,35 @@ export default async function DashboardCoursesPage(props: {
               header: 'SEO',
               render: (course) =>
                 course.id ? (
-                  <Link
-                    href={`/dashboard/courses/${course.id}`}
-                    className="text-blue hover:underline"
-                  >
-                    {t.admin.courses.analysis}
-                  </Link>
+                  <SeoScore
+                    t={t}
+                    locale={locale}
+                    href={`/dashboard/courses/${course.id}/seo`}
+                    input={{
+                      kind: 'course',
+                      title: course.title,
+                      slug: course.slug,
+                      content: course.description_html,
+                      excerpt: course.subtitle ?? undefined,
+                      metaTitle: course.seo?.meta_title ?? '',
+                      metaDescription: course.seo?.meta_description ?? '',
+                      focusKeyword: course.seo?.focus_keyword ?? '',
+                      featuredImage: course.cover_url ? { alt: null } : null,
+                    }}
+                  />
                 ) : null,
+            },
+            {
+              key: 'view',
+              header: t.admin.common.view,
+              align: 'end',
+              render: (course) => (
+                <ViewLink
+                  href={course.published_at ? `/courses/${course.slug}` : null}
+                  label={t.admin.common.view}
+                  draftLabel={t.admin.courses.draft}
+                />
+              ),
             },
             {
               key: 'lessons',

@@ -26,7 +26,9 @@ class PostRequest extends FormRequest
             'excerpt' => ['nullable', 'string', 'max:512'],
             // Markdown source. Raw HTML is stripped at render time rather than
             // stored as trusted markup, so the frontend never sanitises input.
-            'body_markdown' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:200000'],
+            // Present, not required, on create: "New article" makes an empty
+            // draft and the editor is where it is written.
+            'body_markdown' => [$this->isMethod('POST') ? 'present' : 'sometimes', 'string', 'max:200000'],
             'author_id' => ['nullable', 'integer', 'exists:authors,id'],
             'reviewed_by_author_id' => ['nullable', 'integer', 'exists:authors,id'],
             'reviewed_at' => ['nullable', 'date'],

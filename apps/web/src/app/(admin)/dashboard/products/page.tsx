@@ -7,6 +7,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { PriceTag } from '@/components/ui/price';
 import { EmptyState } from '@/components/ui/states';
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
+import { SeoScore, ViewLink } from '@/features/admin/seo-score';
 import { sessionApi } from '@/lib/api/server';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
@@ -31,7 +32,17 @@ export default async function DashboardProductsPage(props: {
 
   return (
     <div>
-      <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.products}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[length:var(--step-h1)] font-bold text-navy">
+          {t.admin.nav.products}
+        </h1>
+        <Link
+          href="/dashboard/products/new"
+          className="inline-flex min-h-11 items-center rounded-lg bg-blue px-5 font-semibold text-white hover:bg-navy"
+        >
+          {t.admin.products.newProduct}
+        </Link>
+      </div>
       <p className="mt-2 text-muted">{t.admin.products.priceRule}</p>
       <p className="mt-1 text-sm text-muted">
         {bn
@@ -94,13 +105,35 @@ export default async function DashboardProductsPage(props: {
               header: 'SEO',
               render: (product) =>
                 product.id ? (
-                  <Link
-                    href={`/dashboard/products/${product.id}`}
-                    className="text-blue hover:underline"
-                  >
-                    {t.admin.products.analysis}
-                  </Link>
+                  <SeoScore
+                    t={t}
+                    locale={locale}
+                    href={`/dashboard/products/${product.id}/seo`}
+                    input={{
+                      kind: 'product',
+                      title: product.name,
+                      slug: product.slug,
+                      content: product.description_html,
+                      excerpt: product.tagline ?? undefined,
+                      metaTitle: product.seo?.meta_title ?? '',
+                      metaDescription: product.seo?.meta_description ?? '',
+                      focusKeyword: product.seo?.focus_keyword ?? '',
+                      featuredImage: product.cover_url ? { alt: product.cover_alt ?? null } : null,
+                    }}
+                  />
                 ) : null,
+            },
+            {
+              key: 'view',
+              header: t.admin.common.view,
+              align: 'end',
+              render: (product) => (
+                <ViewLink
+                  href={product.published_at ? `/products/${product.slug}` : null}
+                  label={t.admin.common.view}
+                  draftLabel={t.admin.courses.draft}
+                />
+              ),
             },
             {
               key: 'type',
