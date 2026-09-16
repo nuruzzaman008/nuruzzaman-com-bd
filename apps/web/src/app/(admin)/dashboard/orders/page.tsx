@@ -2,11 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Order } from '@nuruzzaman/contracts';
 
-import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/ui/data-table';
-import { EmptyState } from '@/components/ui/states';
+import { OrderList, type OrderRow } from '@/features/dashboard/order-list';
 import { sessionApi } from '@/lib/api/server';
-import { date, price } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 import { statusLabel } from '@/lib/status';
@@ -36,6 +33,16 @@ export default async function DashboardOrdersPage(props: {
     query: { status: searchParams.status, q: searchParams.q },
   });
 
+  const rows: OrderRow[] = orders.data.map((order) => ({
+    number: order.number,
+    status: order.status,
+    billingName: order.billing_name,
+    billingEmail: order.billing_email,
+    placedAt: order.placed_at,
+    totalMinor: order.total_minor,
+    currency: order.currency,
+  }));
+
   return (
     <div>
       <h1 className="text-[length:var(--step-h1)] font-bold text-navy">{t.admin.nav.orders}</h1>
@@ -58,58 +65,7 @@ export default async function DashboardOrdersPage(props: {
         ))}
       </nav>
 
-      <div className="mt-6">
-        <DataTable
-          caption={t.admin.orders.caption}
-          rows={orders.data}
-          getRowKey={(order) => order.number}
-          empty={<EmptyState title={t.admin.orders.empty} />}
-          columns={[
-            {
-              key: 'number',
-              header: t.admin.orders.order,
-              render: (order) => (
-                <Link
-                  href={`/dashboard/orders/${order.number}`}
-                  className="font-latin font-semibold text-blue hover:underline"
-                >
-                  {order.number}
-                </Link>
-              ),
-            },
-            {
-              key: 'customer',
-              header: t.admin.orders.customer,
-              render: (order) => (
-                <span>
-                  <span className="block">{order.billing_name}</span>
-                  <span className="font-latin block text-xs text-muted">{order.billing_email}</span>
-                </span>
-              ),
-            },
-            {
-              key: 'status',
-              header: t.admin.common.status,
-              render: (order) => (
-                <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>
-                  {statusLabel('order', order.status, locale)}
-                </Badge>
-              ),
-            },
-            {
-              key: 'placed',
-              header: t.admin.common.date,
-              render: (order) => date(order.placed_at, locale) ?? '—',
-            },
-            {
-              key: 'total',
-              header: t.admin.orders.total,
-              align: 'end',
-              render: (order) => price(order.total_minor, order.currency, locale),
-            },
-          ]}
-        />
-      </div>
+      <OrderList rows={rows} />
     </div>
   );
 }

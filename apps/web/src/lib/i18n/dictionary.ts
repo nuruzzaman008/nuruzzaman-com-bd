@@ -1288,6 +1288,7 @@ const bn = {
         post: { one: 'আর্টিকেল', many: 'আর্টিকেল' },
         product: { one: 'প্রোডাক্ট', many: 'প্রোডাক্ট' },
         course: { one: 'কোর্স', many: 'কোর্স' },
+        order: { one: 'অর্ডার', many: 'অর্ডার' },
       },
     },
 
@@ -3083,6 +3084,7 @@ const en: Dictionary = {
         post: { one: 'article', many: 'articles' },
         product: { one: 'product', many: 'products' },
         course: { one: 'course', many: 'courses' },
+        order: { one: 'order', many: 'orders' },
       },
     },
 

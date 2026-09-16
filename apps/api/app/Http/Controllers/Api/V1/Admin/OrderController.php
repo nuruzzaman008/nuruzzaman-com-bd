@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Enums\OrderStatus;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Jobs\FulfillOrder;
 use App\Models\Order;
 use App\Services\Commerce\OrderStateMachine;
+use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -55,6 +57,51 @@ class OrderController extends Controller
      * Manual status changes still go through the state machine, so an admin
      * cannot put an order into a state the domain does not allow.
      */
+    /**
+     * Deletes an order that never took money: an abandoned checkout, a failed
+     * or cancelled attempt, a test that stopped at the payment page.
+     *
+     * An order that did take money is a financial record. Deleting it would take
+     * its payment, its invoice and its refunds with it - the database cascades
+     * them - and leave the accounts unable to say where the money came from, so
+     * it is refused here with the reason. A payment someone submitted by hand
+     * and is waiting to be checked counts as money too.
+     */
+    public function destroy(string $number): JsonResponse
+    {
+        $this->authorize('manage', Order::class);
+
+        $order = Order::query()->where('number', $number)->firstOrFail();
+
+        $unpaid = [OrderStatus::Draft, OrderStatus::PendingPayment, OrderStatus::Failed, OrderStatus::Cancelled];
+
+        $reason = match (true) {
+            ! in_array($order->status, $unpaid, true) => "is {$order->status->value}",
+            $order->payments()->exists() => 'has a payment recorded against it',
+            DB::table('manual_payment_submissions')->where('order_id', $order->id)->exists() => 'has a payment submitted for checking',
+            DB::table('affiliate_commissions')->where('order_id', $order->id)->exists() => 'has earned an affiliate commission',
+            default => null,
+        };
+
+        if ($reason !== null) {
+            throw DomainException::conflict(
+                "Order {$order->number} {$reason}, so it is kept as a financial record. Only an order that never took money can be deleted."
+            );
+        }
+
+        Audit::record('order.deleted', $order, [
+            'number' => $order->number,
+            'status' => $order->status->value,
+            'total_minor' => (int) $order->total_minor,
+            'billing_email' => $order->billing_email,
+        ]);
+
+        // Its lines and status history go with it; nothing else points at an unpaid order.
+        $order->delete();
+
+        return response()->json(['message' => 'Order deleted.']);
+    }
+
     public function transition(Request $request, string $number): OrderResource
     {
         $this->authorize('manage', Order::class);

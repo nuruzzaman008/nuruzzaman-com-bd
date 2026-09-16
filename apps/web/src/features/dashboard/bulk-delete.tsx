@@ -25,7 +25,7 @@ import { statusLabel } from '@/lib/status';
   page cannot slip sideways into review, a schedule needs its date first, and a
   product that has sold or a course with a learner in it cannot be deleted.
 */
-export type Deletable = { id: number; title: string; live: boolean };
+export type Deletable = { id: number | string; title: string; live: boolean };
 
 /** What the dropdown offers: a status to move to, or deleting. */
 export type BulkAction = 'delete' | (typeof STATUSES)[number] | '';
@@ -38,10 +38,10 @@ export type BulkDelete<T extends Deletable> = {
   note: string | null;
   action: BulkAction;
   setAction: (action: BulkAction) => void;
-  selected: Set<number>;
+  selected: Set<number | string>;
   start: () => void;
   cancel: () => void;
-  toggle: (id: number) => void;
+  toggle: (id: number | string) => void;
   run: () => Promise<void>;
   /** The checkbox column, or nothing while the list is not in selecting mode. */
   column: () => Column<T>[];
@@ -55,19 +55,19 @@ export function useBulkDelete<T extends Deletable>({
   rows: T[];
   /** Where one row is deleted, e.g. `/admin/posts/12`. */
   path: (row: T) => string;
-  noun: 'post' | 'product' | 'course';
+  noun: 'post' | 'product' | 'course' | 'order';
 }): BulkDelete<T> {
   const { locale, t } = useLocale();
   const words = t.admin.bulk;
   const router = useRouter();
   const [active, setActive] = useState(false);
-  const [selected, setSelected] = useState<Set<number>>(() => new Set());
+  const [selected, setSelected] = useState<Set<number | string>>(() => new Set());
   const [action, setAction] = useState<BulkAction>('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  function toggle(id: number) {
+  function toggle(id: number | string) {
     setSelected((current) => {
       const next = new Set(current);
 
@@ -183,7 +183,14 @@ export function useBulkDelete<T extends Deletable>({
 }
 
 /** The Bulk select row above a list: what to do, to how many, and what happened. */
-export function BulkToolbar<T extends Deletable>({ bulk }: { bulk: BulkDelete<T> }) {
+export function BulkToolbar<T extends Deletable>({
+  bulk,
+  statusActions = true,
+}: {
+  bulk: BulkDelete<T>;
+  /** Off for a list whose rows have no editorial status, such as orders. */
+  statusActions?: boolean;
+}) {
   const { locale, t } = useLocale();
   const words = t.admin.bulk;
 
@@ -202,13 +209,15 @@ export function BulkToolbar<T extends Deletable>({ bulk }: { bulk: BulkDelete<T>
                 onChange={(event) => bulk.setAction(event.target.value as BulkAction)}
               >
                 <option value="">{words.actions}</option>
-                <optgroup label={words.statusGroup}>
-                  {STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {statusLabel('content', status, locale)}
-                    </option>
-                  ))}
-                </optgroup>
+                {statusActions ? (
+                  <optgroup label={words.statusGroup}>
+                    {STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {statusLabel('content', status, locale)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
                 <option value="delete">{words.delete}</option>
               </select>
             </label>

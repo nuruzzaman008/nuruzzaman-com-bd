@@ -3751,6 +3751,29 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Order' }
         '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteOrder
+      summary: Admin delete an order that never took money
+      security: [{ sessionCookie: [] }]
+      description: |
+        Only a draft, pending, failed or cancelled order with no payment, no
+        payment submitted for checking and no affiliate commission. Anything
+        else is a financial record and is refused with 409.
+      parameters:
+        - { name: number, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /admin/orders/{number}/transition:
     post:

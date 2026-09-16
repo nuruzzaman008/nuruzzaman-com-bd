@@ -97,6 +97,7 @@ Route::middleware([
     Route::post('manual-payments/{id}/review', [PaymentSelectionController::class, 'review']);
     Route::match(['get', 'put'], 'payment-methods', [PaymentSelectionController::class, 'settings']);
     Route::get('orders/{number}', [Admin\OrderController::class, 'show']);
+    Route::delete('orders/{number}', [Admin\OrderController::class, 'destroy']);
     Route::post('orders/{number}/transition', [Admin\OrderController::class, 'transition']);
     Route::post('orders/{number}/refulfill', [Admin\OrderController::class, 'refulfill']);
     Route::post('orders/{number}/refunds', [Admin\RefundController::class, 'store']);
