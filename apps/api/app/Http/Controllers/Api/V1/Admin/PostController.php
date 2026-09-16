@@ -10,6 +10,7 @@ use App\Jobs\RevalidateFrontend;
 use App\Models\Post;
 use App\Models\PostRevision;
 use App\Services\Content\PublishingService;
+use App\Support\Audit;
 use App\Support\Markdown;
 use App\Support\SearchTerm;
 use Illuminate\Http\JsonResponse;
@@ -147,7 +148,17 @@ class PostController extends Controller
     {
         $this->authorize('delete', $post);
 
+        $slug = $post->slug;
+        $wasPublished = $post->status === ContentStatus::Published;
+
         $post->delete();
+
+        Audit::record('post.deleted', $post, ['slug' => $slug, 'was_published' => $wasPublished]);
+
+        // A deleted article has to leave the site now, not when the pages
+        // happen to be built again: its own page, the lists it was in, and
+        // the sitemap that still names it.
+        RevalidateFrontend::dispatch([...$this->publishing->tagsFor($post), 'post:'.$slug]);
 
         return response()->json(['message' => 'Post moved to trash.']);
     }

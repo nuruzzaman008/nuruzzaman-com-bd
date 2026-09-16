@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Post } from '@nuruzzaman/contracts';
 
-import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/ui/data-table';
-import { EmptyState } from '@/components/ui/states';
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
-import { SeoScore, ViewLink } from '@/features/admin/seo-score';
+import { seoScoreOf } from '@/features/admin/seo-score';
+import { PostList, type PostRow } from '@/features/dashboard/post-list';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
@@ -53,6 +51,33 @@ export default async function DashboardPostsPage(props: {
     query: { status: searchParams.status, q },
   });
 
+  const rows: PostRow[] = posts.data.map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    status: post.status,
+    statusLabel: statusLabel('content', post.status, locale),
+    statusTone: TONES[post.status] ?? 'neutral',
+    note:
+      date(post.published_at, locale) ??
+      (post.reviewed_at ? t.admin.posts.reviewed : t.admin.posts.awaitingReview),
+    seoScore: seoScoreOf(
+      {
+        kind: 'post',
+        title: post.title,
+        slug: post.slug,
+        content: post.body_markdown ?? post.body_html,
+        excerpt: post.excerpt ?? undefined,
+        metaTitle: post.seo?.meta_title ?? '',
+        metaDescription: post.seo?.meta_description ?? '',
+        focusKeyword: post.seo?.focus_keyword ?? '',
+        featuredImage: post.cover_url ? { alt: post.cover_alt ?? null } : null,
+      },
+      t,
+    ),
+    live: post.status === 'published',
+  }));
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -95,91 +120,16 @@ export default async function DashboardPostsPage(props: {
         ))}
       </nav>
 
-      <div className="mt-6">
-        <DataTable
-          caption={t.admin.posts.caption}
-          rows={posts.data}
-          getRowKey={(post) => post.slug}
-          empty={
-            <EmptyState
-              title={
-                q
-                  ? bn
-                    ? `“${q}” শিরোনামে বা slug-এ কোনো পোস্ট পাওয়া যায়নি`
-                    : `No post matches “${q}”`
-                  : t.admin.posts.empty
-              }
-            />
-          }
-          columns={[
-            {
-              key: 'title',
-              header: t.admin.common.title,
-              render: (post) => (
-                <Link
-                  href={`/dashboard/posts/${post.id}`}
-                  data-authored="true"
-                  className="font-semibold text-blue hover:underline"
-                >
-                  {post.title}
-                  <span className="font-latin block text-xs font-normal text-muted">
-                    /{post.slug}
-                  </span>
-                </Link>
-              ),
-            },
-            {
-              key: 'status',
-              header: t.admin.common.status,
-              render: (post) => (
-                <span className="flex flex-col items-start gap-1">
-                  <Badge tone={TONES[post.status] ?? 'neutral'}>
-                    {statusLabel('content', post.status, locale)}
-                  </Badge>
-                  <span className="text-xs text-muted">
-                    {date(post.published_at, locale) ??
-                      (post.reviewed_at ? t.admin.posts.reviewed : t.admin.posts.awaitingReview)}
-                  </span>
-                </span>
-              ),
-            },
-            {
-              key: 'seo',
-              header: 'SEO',
-              render: (post) => (
-                <SeoScore
-                  t={t}
-                  locale={locale}
-                  href={`/dashboard/posts/${post.id}`}
-                  input={{
-                    kind: 'post',
-                    title: post.title,
-                    slug: post.slug,
-                    content: post.body_markdown ?? post.body_html,
-                    excerpt: post.excerpt ?? undefined,
-                    metaTitle: post.seo?.meta_title ?? '',
-                    metaDescription: post.seo?.meta_description ?? '',
-                    focusKeyword: post.seo?.focus_keyword ?? '',
-                    featuredImage: post.cover_url ? { alt: post.cover_alt ?? null } : null,
-                  }}
-                />
-              ),
-            },
-            {
-              key: 'view',
-              header: t.admin.common.view,
-              align: 'end',
-              render: (post) => (
-                <ViewLink
-                  href={post.status === 'published' ? `/blog/${post.slug}` : null}
-                  label={t.admin.common.view}
-                  draftLabel={t.admin.posts.unpublished}
-                />
-              ),
-            },
-          ]}
-        />
-      </div>
+      <PostList
+        rows={rows}
+        emptyTitle={
+          q
+            ? bn
+              ? `“${q}” শিরোনামে বা slug-এ কোনো পোস্ট পাওয়া যায়নি`
+              : `No post matches “${q}”`
+            : t.admin.posts.empty
+        }
+      />
     </div>
   );
 }
