@@ -60,6 +60,28 @@ describe('the status links', () => {
   });
 });
 
+describe('the status links for orders', () => {
+  it('uses the order statuses and their own labels', () => {
+    render(
+      <StatusLinks
+        basePath="/dashboard/orders"
+        current={{ month: '2026-09' }}
+        counts={{ all: 1, pending_payment: 1, paid: 0, fulfilled: 0 }}
+        statuses={['pending_payment', 'paid', 'fulfilled']}
+        group="order"
+      />,
+    );
+
+    const waiting = screen.getByRole('link', { name: /Awaiting payment/ });
+    expect(waiting).toHaveTextContent('(1)');
+    // The month travels with the status.
+    expect(waiting).toHaveAttribute('href', '/dashboard/orders?month=2026-09&status=pending_payment');
+    expect(screen.getByRole('link', { name: /Fulfilled/ })).toHaveTextContent('(0)');
+    // No content statuses on an orders list.
+    expect(screen.queryByRole('link', { name: /In review/ })).not.toBeInTheDocument();
+  });
+});
+
 describe('the filter dropdowns', () => {
   const categories = [
     { value: 'rcc-design-detailing', label: 'RCC design' },

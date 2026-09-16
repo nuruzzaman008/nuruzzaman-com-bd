@@ -10,6 +10,7 @@ use App\Jobs\FulfillOrder;
 use App\Models\Order;
 use App\Services\Commerce\OrderStateMachine;
 use App\Support\Audit;
+use App\Support\ListFilters;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -24,21 +25,36 @@ class OrderController extends Controller
         $this->authorize('viewAny', Order::class);
 
         $validated = $request->validate([
-            'status' => ['sometimes', 'string', 'in:'.implode(',', OrderStatus::values())],
-            'q' => ['sometimes', 'string', 'max:120'],
+            'status' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', OrderStatus::values())],
+            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'month' => ['sometimes', 'nullable', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $orders = Order::query()
-            ->with(['items', 'user:id,name,email'])
-            ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+        // An order is filed under the month it was placed.
+        $filed = 'COALESCE(placed_at, created_at)';
+        $month = $validated['month'] ?? null;
+
+        // Without the status or the month: those two are what the filters count.
+        $base = Order::query()
             ->when($validated['q'] ?? null, fn ($query, $term) => $query->where(fn ($inner) => $inner
                 ->where('number', 'like', '%'.$term.'%')
-                ->orWhere('billing_email', 'like', '%'.$term.'%')))
-            ->latest('id')
-            ->paginate($validated['per_page'] ?? 25);
+                ->orWhere('billing_email', 'like', '%'.$term.'%')
+                ->orWhere('billing_name', 'like', '%'.$term.'%')));
 
-        return OrderResource::collection($orders);
+        $orders = ListFilters::month($base->clone(), $month, $filed)
+            ->with(['items', 'user:id,name,email'])
+            ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->latest('id')
+            ->paginate($validated['per_page'] ?? 25)
+            ->withQueryString();
+
+        return OrderResource::collection($orders)->additional([
+            'filters' => [
+                'counts' => ListFilters::statusCounts(ListFilters::month($base->clone(), $month, $filed), OrderStatus::values()),
+                'months' => ListFilters::months($base->clone(), $filed),
+            ],
+        ]);
     }
 
     public function show(string $number): OrderResource

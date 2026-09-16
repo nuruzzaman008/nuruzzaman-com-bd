@@ -9,21 +9,26 @@ use Illuminate\Database\Eloquent\Builder;
  * The filters above an admin list: how many rows are in each status, which
  * months have anything in them, and the month filter itself.
  *
- * A row is filed under the month it went live, or the month it was made when it
- * never has - so a draft written in September is found under September rather
- * than nowhere at all.
+ * Content is filed under the month it went live, or the month it was made when
+ * it never has - so a draft written in September is found under September
+ * rather than nowhere at all. An order is filed under the month it was placed;
+ * callers with another date say which with `$filed`.
  */
 final class ListFilters
 {
+    /**
+     * The date a row is filed under. Written into SQL as it stands, so a caller
+     * passes a column expression of its own, never anything from a request.
+     */
     private const FILED = "COALESCE(published_at, created_at)";
 
-    public static function month(Builder $query, ?string $month): Builder
+    public static function month(Builder $query, ?string $month, string $filed = self::FILED): Builder
     {
         if (! $month) {
             return $query;
         }
 
-        return $query->whereRaw('DATE_FORMAT('.self::FILED.", '%Y-%m') = ?", [$month]);
+        return $query->whereRaw('DATE_FORMAT('.$filed.", '%Y-%m') = ?", [$month]);
     }
 
     /**
@@ -31,12 +36,12 @@ final class ListFilters
      *
      * @return list<string>
      */
-    public static function months(Builder $query): array
+    public static function months(Builder $query, string $filed = self::FILED): array
     {
         return $query->clone()
             ->toBase()
             ->reorder()
-            ->selectRaw('DATE_FORMAT('.self::FILED.", '%Y-%m') as ym")
+            ->selectRaw('DATE_FORMAT('.$filed.", '%Y-%m') as ym")
             ->distinct()
             ->pluck('ym')
             ->filter()
@@ -54,7 +59,7 @@ final class ListFilters
      *
      * @return array<string, int>
      */
-    public static function statusCounts(Builder $query): array
+    public static function statusCounts(Builder $query, ?array $statuses = null): array
     {
         $rows = $query->clone()
             ->toBase()
@@ -66,7 +71,7 @@ final class ListFilters
 
         $counts = ['all' => (int) $rows->sum()];
 
-        foreach (ContentStatus::values() as $status) {
+        foreach ($statuses ?? ContentStatus::values() as $status) {
             $counts[$status] = (int) ($rows[$status] ?? 0);
         }
 

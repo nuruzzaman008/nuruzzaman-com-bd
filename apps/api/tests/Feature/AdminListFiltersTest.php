@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
+use App\Enums\OrderStatus;
 use App\Enums\ProductType;
 use App\Enums\Role;
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\Order;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\Tag;
@@ -127,6 +129,35 @@ class AdminListFiltersTest extends TestCase
             ['beginner-course'],
             $this->getJson('/api/v1/admin/courses?status=published')->assertOk()->json('data.*.slug'),
         );
+    }
+
+    public function test_orders_are_counted_by_status_and_filtered_by_the_month_they_were_placed(): void
+    {
+        $september = Order::factory()->create(['status' => OrderStatus::PendingPayment, 'placed_at' => '2026-09-14 10:00:00']);
+        Order::factory()->paid()->create(['placed_at' => '2026-08-02 10:00:00']);
+        Order::factory()->create(['status' => OrderStatus::Failed, 'placed_at' => '2026-08-20 10:00:00']);
+
+        $this->actingAs($this->userWithRole(Role::SuperAdmin));
+
+        $all = $this->getJson('/api/v1/admin/orders')->assertOk();
+        $this->assertSame(3, $all->json('filters.counts.all'));
+        $this->assertSame(1, $all->json('filters.counts.pending_payment'));
+        $this->assertSame(1, $all->json('filters.counts.paid'));
+        $this->assertSame(0, $all->json('filters.counts.refunded'));
+        $this->assertSame(['2026-09', '2026-08'], $all->json('filters.months'));
+
+        $this->assertSame(
+            [$september->number],
+            $this->getJson('/api/v1/admin/orders?month=2026-09')->assertOk()->json('data.*.number'),
+        );
+
+        // The month narrows the counts, and the status narrows the rows.
+        $august = $this->getJson('/api/v1/admin/orders?month=2026-08&status=failed')->assertOk();
+        $this->assertSame(2, $august->json('filters.counts.all'));
+        $this->assertCount(1, $august->json('data'));
+
+        // An empty filter from the form is no filter at all.
+        $this->getJson('/api/v1/admin/orders?status=&month=&q=')->assertOk();
     }
 
     public function test_a_month_that_is_not_a_month_is_refused(): void

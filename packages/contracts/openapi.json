@@ -5915,8 +5915,18 @@
           {
             "name": "q",
             "in": "query",
+            "description": "Part of the order number or the customer's email or name.",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Orders placed in this month, as YYYY-MM.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
             }
           },
           {
@@ -5942,6 +5952,9 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Pagination"
+                    },
+                    "filters": {
+                      "$ref": "#/components/schemas/ListFilters"
                     }
                   }
                 }

@@ -55,10 +55,16 @@ export function StatusLinks({
   basePath,
   current,
   counts,
+  statuses = STATUSES,
+  group = 'content',
 }: {
   basePath: string;
   current: Record<string, string | undefined>;
   counts: Record<string, number> | undefined;
+  /** Which statuses to offer, in order. Content by default. */
+  statuses?: readonly string[];
+  /** Where their labels come from. */
+  group?: 'content' | 'order';
 }) {
   const { locale, t } = useLocale();
   const active = current.status;
@@ -94,7 +100,7 @@ export function StatusLinks({
     <nav aria-label={t.admin.filterByStatus}>
       <ul className="mt-4 flex flex-wrap gap-2">
         {item(undefined, t.admin.common.all)}
-        {STATUSES.map((status) => item(status, statusLabel('content', status, locale)))}
+        {statuses.map((status) => item(status, statusLabel(group, status, locale)))}
       </ul>
     </nav>
   );
