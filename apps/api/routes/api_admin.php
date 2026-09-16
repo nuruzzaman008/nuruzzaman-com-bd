@@ -19,6 +19,9 @@ Route::middleware([
     'role:super_admin,admin,editor,instructor,support',
 ])->prefix('admin')->group(function () {
     Route::get('dashboard', Admin\DashboardController::class);
+    Route::get('wallets', [Admin\WalletController::class, 'index'])->middleware('permission:wallets.view');
+    Route::get('wallets/{license}', [Admin\WalletController::class, 'show'])->whereNumber('license')->middleware('permission:wallets.view');
+    Route::post('wallets/{license}/actions', [Admin\WalletController::class, 'action'])->whereNumber('license')->middleware(['permission:wallets.manage', 'throttle:30,1']);
     Route::get('audit-logs', Admin\AuditLogController::class);
 
     Route::get('settings', [Admin\SettingController::class, 'index']);
@@ -78,6 +81,7 @@ Route::middleware([
     Route::post('products', [Admin\ProductController::class, 'store']);
     Route::get('products/{product:id}', [Admin\ProductController::class, 'show']);
     Route::patch('products/{product:id}', [Admin\ProductController::class, 'update']);
+    Route::delete('products/{product:id}', [Admin\ProductController::class, 'destroy']);
     Route::post('products/{product:id}/transition', [Admin\ProductController::class, 'transition']);
     Route::post('products/{product:id}/variants', [Admin\ProductVariantController::class, 'store']);
     Route::patch('products/{product:id}/variants/{variant:id}', [Admin\ProductVariantController::class, 'update']);
@@ -129,6 +133,7 @@ Route::middleware([
     Route::post('courses', [Admin\CourseController::class, 'store']);
     Route::get('courses/{course:id}', [Admin\CourseController::class, 'show']);
     Route::patch('courses/{course:id}', [Admin\CourseController::class, 'update']);
+    Route::delete('courses/{course:id}', [Admin\CourseController::class, 'destroy']);
     Route::post('courses/{course:id}/transition', [Admin\CourseController::class, 'transition']);
     Route::put('courses/{course:id}/instructors', [Admin\CourseController::class, 'syncInstructors']);
 

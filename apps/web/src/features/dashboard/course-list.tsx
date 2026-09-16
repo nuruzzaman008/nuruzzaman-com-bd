@@ -7,33 +7,26 @@ import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { SeoScoreBadge, ViewLink } from '@/features/admin/seo-score-badge';
 import { BulkToolbar, useBulkDelete } from '@/features/dashboard/bulk-delete';
+import { number } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
 
-/**
- * The articles list, with selecting and deleting.
- *
- * The rows arrive ready to render: the SEO score is the editor's own analysis,
- * run on the server where the article's text already is, so none of it has to
- * be sent to the browser to show one number.
- */
-export type PostRow = {
+/** The courses list, with selecting and deleting. Scores are computed on the server. */
+export type CourseRow = {
   id: number;
   slug: string;
   title: string;
-  statusLabel: string;
-  statusTone: 'neutral' | 'info' | 'success' | 'warning';
-  /** Publication date, or the review state when it is not published. */
-  note: string;
+  level: string;
+  lessons: number;
   seoScore: number | null;
   live: boolean;
 };
 
-export function PostList({ rows, emptyTitle }: { rows: PostRow[]; emptyTitle: string }) {
+export function CourseList({ rows, emptyTitle }: { rows: CourseRow[]; emptyTitle: string }) {
   const { locale, t } = useLocale();
   const bulk = useBulkDelete({
     rows,
-    noun: 'post',
-    path: (row) => `/admin/posts/${row.id}`,
+    noun: 'course',
+    path: (row) => `/admin/courses/${row.id}`,
   });
 
   return (
@@ -41,7 +34,7 @@ export function PostList({ rows, emptyTitle }: { rows: PostRow[]; emptyTitle: st
       <BulkToolbar bulk={bulk} />
 
       <DataTable
-        caption={t.admin.posts.caption}
+        caption={t.admin.courses.caption}
         rows={rows}
         getRowKey={(row) => row.slug}
         empty={<EmptyState title={emptyTitle} />}
@@ -49,12 +42,12 @@ export function PostList({ rows, emptyTitle }: { rows: PostRow[]; emptyTitle: st
           ...bulk.column(),
           {
             key: 'title',
-            header: t.admin.common.title,
+            header: t.admin.nav.courses,
             render: (row) => (
               <Link
-                href={`/dashboard/posts/${row.id}`}
+                href={`/dashboard/courses/${row.id}`}
                 data-authored="true"
-                className="font-semibold text-blue hover:underline"
+                className="block font-medium text-blue hover:underline"
               >
                 {row.title}
                 <span className="font-latin block text-xs font-normal text-muted">/{row.slug}</span>
@@ -62,14 +55,9 @@ export function PostList({ rows, emptyTitle }: { rows: PostRow[]; emptyTitle: st
             ),
           },
           {
-            key: 'status',
-            header: t.admin.common.status,
-            render: (row) => (
-              <span className="flex flex-col items-start gap-1">
-                <Badge tone={row.statusTone}>{row.statusLabel}</Badge>
-                <span className="text-xs text-muted">{row.note}</span>
-              </span>
-            ),
+            key: 'level',
+            header: t.admin.courses.level,
+            render: (row) => row.level,
           },
           {
             key: 'seo',
@@ -77,7 +65,7 @@ export function PostList({ rows, emptyTitle }: { rows: PostRow[]; emptyTitle: st
             render: (row) => (
               <SeoScoreBadge
                 score={row.seoScore}
-                href={`/dashboard/posts/${row.id}`}
+                href={`/dashboard/courses/${row.id}/seo`}
                 t={t}
                 locale={locale}
               />
@@ -86,14 +74,29 @@ export function PostList({ rows, emptyTitle }: { rows: PostRow[]; emptyTitle: st
           {
             key: 'view',
             header: t.admin.common.view,
-            align: 'end',
             render: (row) => (
               <ViewLink
-                href={row.live ? `/blog/${row.slug}` : null}
+                href={row.live ? `/courses/${row.slug}` : null}
                 label={t.admin.common.view}
-                draftLabel={t.admin.posts.unpublished}
+                draftLabel={t.admin.courses.draft}
               />
             ),
+          },
+          {
+            key: 'lessons',
+            header: t.admin.courses.lessons,
+            align: 'end',
+            render: (row) => number(row.lessons, locale),
+          },
+          {
+            key: 'published',
+            header: t.admin.common.published,
+            render: (row) =>
+              row.live ? (
+                <Badge tone="success">{t.admin.common.published}</Badge>
+              ) : (
+                <Badge tone="neutral">{t.admin.courses.draft}</Badge>
+              ),
           },
         ]}
       />

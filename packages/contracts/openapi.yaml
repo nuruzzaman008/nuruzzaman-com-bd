@@ -5215,6 +5215,28 @@ paths:
                   data: { $ref: '#/components/schemas/Product' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteProduct
+      summary: Admin delete product
+      security: [{ sessionCookie: [] }]
+      description: |
+        Refused with 409 when the product has been ordered: an order must keep
+        pointing at something. Unpublish it instead.
+      parameters:
+        - { name: product, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Moved to trash
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /admin/products/{product}/transition:
     post:
@@ -5991,6 +6013,28 @@ paths:
                   data: { $ref: '#/components/schemas/Course' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [Admin]
+      operationId: adminDeleteCourse
+      summary: Admin delete course
+      security: [{ sessionCookie: [] }]
+      description: |
+        Refused with 409 when learners are enrolled or the course has been
+        bought: their access and progress hang off it. Unpublish it instead.
+      parameters:
+        - { name: course, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Moved to trash
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   /admin/courses/{course}/transition:
     post:

@@ -9601,6 +9601,55 @@
             "$ref": "#/components/responses/ValidationFailed"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminDeleteProduct",
+        "summary": "Admin delete product",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Refused with 409 when the product has been ordered: an order must keep\npointing at something. Unpublish it instead.\n",
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Moved to trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
       }
     },
     "/admin/products/{product}/transition": {
@@ -11498,6 +11547,55 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminDeleteCourse",
+        "summary": "Admin delete course",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Refused with 409 when learners are enrolled or the course has been\nbought: their access and progress hang off it. Unpublish it instead.\n",
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Moved to trash",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "message"
+                  ],
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Enums\ContentStatus;
 use App\Enums\ProductType;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
+use App\Jobs\RevalidateFrontend;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\Content\PublishingService;
@@ -96,6 +99,38 @@ class ProductController extends Controller
         $this->publishing->transition($product, ContentStatus::from($validated['status']), $request->user());
 
         return new ProductResource($product->fresh()->load('activeVariants.prices'));
+    }
+
+    /**
+     * Moves a product to the trash, unless it has been bought.
+     *
+     * An order line keeps the name, the SKU and the price it was sold at, so a
+     * deleted product does not erase anyone's receipt - but a shop that quietly
+     * loses the thing an order points at is a shop nobody can answer questions
+     * about. One that has sold is refused here and unpublished instead, which
+     * takes it out of the shop and leaves the history whole.
+     */
+    public function destroy(Product $product): JsonResponse
+    {
+        $this->authorize('delete', $product);
+
+        $sold = OrderItem::query()
+            ->whereIn('product_variant_id', $product->variants()->select('id'))
+            ->count();
+
+        if ($sold > 0) {
+            throw DomainException::conflict(
+                "This product has been ordered {$sold} time(s), so it cannot be deleted. Unpublish it instead and it leaves the shop."
+            );
+        }
+
+        $slug = $product->slug;
+        $product->delete();
+
+        Audit::record('product.deleted', $product, ['slug' => $slug]);
+        RevalidateFrontend::dispatch($this->publishing->tagsFor($product));
+
+        return response()->json(['message' => 'Product moved to trash.']);
     }
 
     private function rules(?int $productId): array

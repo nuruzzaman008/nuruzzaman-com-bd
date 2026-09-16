@@ -2,12 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Product } from '@nuruzzaman/contracts';
 
-import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/ui/data-table';
-import { PriceTag } from '@/components/ui/price';
-import { EmptyState } from '@/components/ui/states';
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
-import { SeoScore, ViewLink } from '@/features/admin/seo-score';
+import { seoScoreOf } from '@/features/admin/seo-score';
+import { ProductList, type ProductRow } from '@/features/dashboard/product-list';
 import { sessionApi } from '@/lib/api/server';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
@@ -29,6 +26,33 @@ export default async function DashboardProductsPage(props: {
     // Course listings exist only so a course can be bought; they are managed under Courses.
     { query: { q, exclude_type: 'course' } },
   );
+
+  const rows: ProductRow[] = products.data.map((product) => ({
+    id: product.id ?? null,
+    slug: product.slug,
+    title: product.name,
+    type: product.type,
+    live: Boolean(product.published_at),
+    variants: (product.variants ?? []).map((variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      price: variant.price ?? null,
+    })),
+    seoScore: seoScoreOf(
+      {
+        kind: 'product',
+        title: product.name,
+        slug: product.slug,
+        content: product.description_html,
+        excerpt: product.tagline ?? undefined,
+        metaTitle: product.seo?.meta_title ?? '',
+        metaDescription: product.seo?.meta_description ?? '',
+        focusKeyword: product.seo?.focus_keyword ?? '',
+        featuredImage: product.cover_url ? { alt: product.cover_alt ?? null } : null,
+      },
+      t,
+    ),
+  }));
 
   return (
     <div>
@@ -65,102 +89,16 @@ export default async function DashboardProductsPage(props: {
         locale={locale}
       />
 
-      <div className="mt-6">
-        <DataTable
-          caption={t.admin.products.caption}
-          rows={products.data}
-          getRowKey={(product) => product.slug}
-          empty={
-            <EmptyState
-              title={
-                q
-                  ? bn
-                    ? `“${q}” নামে বা slug-এ কোনো প্রোডাক্ট পাওয়া যায়নি`
-                    : `No product matches “${q}”`
-                  : t.admin.products.empty
-              }
-            />
-          }
-          columns={[
-            {
-              key: 'name',
-              header: t.admin.products.product,
-              render: (product) => (
-                <span>
-                  <Link
-                    href={
-                      product.id ? `/dashboard/products/${product.id}` : `/products/${product.slug}`
-                    }
-                    data-authored="true"
-                    className="block font-medium text-blue hover:underline"
-                  >
-                    {product.name}
-                  </Link>
-                  <span className="font-latin block text-xs text-muted">/{product.slug}</span>
-                </span>
-              ),
-            },
-            {
-              key: 'seo',
-              header: 'SEO',
-              render: (product) =>
-                product.id ? (
-                  <SeoScore
-                    t={t}
-                    locale={locale}
-                    href={`/dashboard/products/${product.id}/seo`}
-                    input={{
-                      kind: 'product',
-                      title: product.name,
-                      slug: product.slug,
-                      content: product.description_html,
-                      excerpt: product.tagline ?? undefined,
-                      metaTitle: product.seo?.meta_title ?? '',
-                      metaDescription: product.seo?.meta_description ?? '',
-                      focusKeyword: product.seo?.focus_keyword ?? '',
-                      featuredImage: product.cover_url ? { alt: product.cover_alt ?? null } : null,
-                    }}
-                  />
-                ) : null,
-            },
-            {
-              key: 'view',
-              header: t.admin.common.view,
-              align: 'end',
-              render: (product) => (
-                <ViewLink
-                  href={product.published_at ? `/products/${product.slug}` : null}
-                  label={t.admin.common.view}
-                  draftLabel={t.admin.courses.draft}
-                />
-              ),
-            },
-            {
-              key: 'type',
-              header: t.admin.common.type,
-              render: (product) => <Badge tone="info">{product.type}</Badge>,
-            },
-            {
-              key: 'variants',
-              header: t.admin.products.variants,
-              render: (product) => (
-                <ul className="space-y-1">
-                  {(product.variants ?? []).map((variant) => (
-                    <li key={variant.id} className="text-xs">
-                      <span className="font-latin text-navy">{variant.sku}</span>{' '}
-                      <PriceTag
-                        value={variant.price ?? null}
-                        size="sm"
-                        unavailableLabel={t.admin.products.noPrice}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ),
-            },
-          ]}
-        />
-      </div>
+      <ProductList
+        rows={rows}
+        emptyTitle={
+          q
+            ? bn
+              ? `“${q}” নামে বা slug-এ কোনো প্রোডাক্ট পাওয়া যায়নি`
+              : `No product matches “${q}”`
+            : t.admin.products.empty
+        }
+      />
     </div>
   );
 }

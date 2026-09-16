@@ -55,7 +55,6 @@ export default async function DashboardPostsPage(props: {
     id: post.id,
     slug: post.slug,
     title: post.title,
-    status: post.status,
     statusLabel: statusLabel('content', post.status, locale),
     statusTone: TONES[post.status] ?? 'neutral',
     note:

@@ -2,13 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Course } from '@nuruzzaman/contracts';
 
-import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/ui/data-table';
-import { EmptyState } from '@/components/ui/states';
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
-import { SeoScore, ViewLink } from '@/features/admin/seo-score';
+import { seoScoreOf } from '@/features/admin/seo-score';
+import { CourseList, type CourseRow } from '@/features/dashboard/course-list';
 import { sessionApi } from '@/lib/api/server';
-import { number } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { levelLabel } from '@/lib/i18n/labels';
 import { privateMetadata } from '@/lib/seo';
@@ -29,6 +26,32 @@ export default async function DashboardCoursesPage(props: {
     '/admin/courses',
     { query: { q } },
   );
+
+  const rows: CourseRow[] = courses.data
+    // A course with no id is one this user may not open, so it is not listed.
+    .filter((course) => typeof course.id === 'number')
+    .map((course) => ({
+      id: course.id as number,
+      slug: course.slug,
+      title: course.title,
+      level: levelLabel(t, course.level),
+      lessons: course.lesson_count ?? 0,
+      live: Boolean(course.published_at),
+      seoScore: seoScoreOf(
+        {
+          kind: 'course',
+          title: course.title,
+          slug: course.slug,
+          content: course.description_html,
+          excerpt: course.subtitle ?? undefined,
+          metaTitle: course.seo?.meta_title ?? '',
+          metaDescription: course.seo?.meta_description ?? '',
+          focusKeyword: course.seo?.focus_keyword ?? '',
+          featuredImage: course.cover_url ? { alt: null } : null,
+        },
+        t,
+      ),
+    }));
 
   return (
     <div>
@@ -54,98 +77,16 @@ export default async function DashboardCoursesPage(props: {
         locale={locale}
       />
 
-      <div className="mt-6">
-        <DataTable
-          caption={t.admin.courses.caption}
-          rows={courses.data}
-          getRowKey={(course) => course.slug}
-          empty={
-            <EmptyState
-              title={
-                q
-                  ? bn
-                    ? `“${q}” নামে বা slug-এ কোনো কোর্স পাওয়া যায়নি`
-                    : `No course matches “${q}”`
-                  : t.admin.courses.empty
-              }
-            />
-          }
-          columns={[
-            {
-              key: 'title',
-              header: t.admin.nav.courses,
-              render: (course) => (
-                <span>
-                  <Link
-                    href={course.id ? `/dashboard/courses/${course.id}` : `/courses/${course.slug}`}
-                    data-authored="true"
-                    className="block font-medium text-blue hover:underline"
-                  >
-                    {course.title}
-                  </Link>
-                  <span className="font-latin block text-xs text-muted">/{course.slug}</span>
-                </span>
-              ),
-            },
-            {
-              key: 'level',
-              header: t.admin.courses.level,
-              render: (course) => levelLabel(t, course.level),
-            },
-            {
-              key: 'seo',
-              header: 'SEO',
-              render: (course) =>
-                course.id ? (
-                  <SeoScore
-                    t={t}
-                    locale={locale}
-                    href={`/dashboard/courses/${course.id}/seo`}
-                    input={{
-                      kind: 'course',
-                      title: course.title,
-                      slug: course.slug,
-                      content: course.description_html,
-                      excerpt: course.subtitle ?? undefined,
-                      metaTitle: course.seo?.meta_title ?? '',
-                      metaDescription: course.seo?.meta_description ?? '',
-                      focusKeyword: course.seo?.focus_keyword ?? '',
-                      featuredImage: course.cover_url ? { alt: null } : null,
-                    }}
-                  />
-                ) : null,
-            },
-            {
-              key: 'view',
-              header: t.admin.common.view,
-              align: 'end',
-              render: (course) => (
-                <ViewLink
-                  href={course.published_at ? `/courses/${course.slug}` : null}
-                  label={t.admin.common.view}
-                  draftLabel={t.admin.courses.draft}
-                />
-              ),
-            },
-            {
-              key: 'lessons',
-              header: t.admin.courses.lessons,
-              align: 'end',
-              render: (course) => number(course.lesson_count ?? 0, locale),
-            },
-            {
-              key: 'published',
-              header: t.admin.common.published,
-              render: (course) =>
-                course.published_at ? (
-                  <Badge tone="success">{t.admin.common.published}</Badge>
-                ) : (
-                  <Badge tone="neutral">{t.admin.courses.draft}</Badge>
-                ),
-            },
-          ]}
-        />
-      </div>
+      <CourseList
+        rows={rows}
+        emptyTitle={
+          q
+            ? bn
+              ? `“${q}” নামে বা slug-এ কোনো কোর্স পাওয়া যায়নি`
+              : `No course matches “${q}”`
+            : t.admin.courses.empty
+        }
+      />
     </div>
   );
 }

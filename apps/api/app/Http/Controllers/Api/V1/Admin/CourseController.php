@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Enums\ContentStatus;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CourseResource;
+use App\Jobs\RevalidateFrontend;
 use App\Models\Course;
+use App\Models\OrderItem;
 use App\Services\Content\PublishingService;
 use App\Services\Content\RevalidationService;
 use App\Services\Lms\CoursePricingService;
+use App\Support\Audit;
 use App\Support\CourseTracks;
 use App\Support\SearchTerm;
 use Carbon\CarbonImmutable;
@@ -66,6 +70,46 @@ class CourseController extends Controller
         });
 
         return new CourseResource($course->load('seo')->loadCount('lessons'));
+    }
+
+    /**
+     * Moves a course to the trash, unless someone is learning from it.
+     *
+     * An enrolment is a promise: the learner paid for or was granted access,
+     * their progress and any certificate hang off this course. Deleting it
+     * would take all of that away without telling them, so a course with
+     * enrolments - or one that has been bought - is refused and unpublished
+     * instead, which takes it off the site and leaves the learners alone.
+     */
+    public function destroy(Course $course): JsonResponse
+    {
+        $this->authorize('delete', $course);
+
+        $learners = $course->enrollments()->count();
+
+        if ($learners > 0) {
+            throw DomainException::conflict(
+                "{$learners} learner(s) are enrolled in this course, so it cannot be deleted. Unpublish it instead and it leaves the site."
+            );
+        }
+
+        $sold = OrderItem::query()
+            ->whereIn('product_variant_id', $course->purchasableVariants()->select('id'))
+            ->count();
+
+        if ($sold > 0) {
+            throw DomainException::conflict(
+                "This course has been bought {$sold} time(s), so it cannot be deleted. Unpublish it instead and it leaves the site."
+            );
+        }
+
+        $slug = $course->slug;
+        $course->delete();
+
+        Audit::record('course.deleted', $course, ['slug' => $slug]);
+        RevalidateFrontend::dispatch($this->publishing->tagsFor($course));
+
+        return response()->json(['message' => 'Course moved to trash.']);
     }
 
     public function update(Request $request, Course $course): CourseResource

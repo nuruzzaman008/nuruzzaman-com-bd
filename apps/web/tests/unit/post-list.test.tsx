@@ -19,7 +19,6 @@ const row = (id: number, overrides: Partial<PostRow> = {}): PostRow => ({
   id,
   slug: `article-${id}`,
   title: `Article ${id}`,
-  status: 'published',
   statusLabel: 'Published',
   statusTone: 'success',
   note: '11 September 2026',
@@ -30,7 +29,7 @@ const row = (id: number, overrides: Partial<PostRow> = {}): PostRow => ({
 
 const rows = [
   row(1),
-  row(2, { status: 'draft', statusLabel: 'Draft', statusTone: 'neutral', live: false, seoScore: null }),
+  row(2, { statusLabel: 'Draft', statusTone: 'neutral', live: false, seoScore: null }),
   row(3, { seoScore: 41 }),
 ];
 

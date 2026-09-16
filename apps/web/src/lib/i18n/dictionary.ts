@@ -1251,6 +1251,23 @@ const bn = {
       newPost: '+ নতুন আর্টিকেল',
     },
 
+    /** তালিকা থেকে একসাথে বাছাই করে মুছে ফেলা। */
+    bulk: {
+      select: 'একসাথে বাছাই',
+      selectRow: 'বাছাই',
+      delete: 'মুছে ফেলুন',
+      selected: '{count}টি বাছাই করা হয়েছে',
+      confirm: '{count}টি {noun} মুছবেন?',
+      live: 'এর মধ্যে {count}টি এখন সাইটে প্রকাশিত — মুছলে ওই ঠিকানাগুলো আর কাজ করবে না।',
+      noUndo: 'মুছে ফেলা জিনিস ড্যাশবোর্ড থেকে আর ফেরানো যায় না।',
+      failed: 'এগুলো মুছতে পারা যায়নি:',
+      nouns: {
+        post: { one: 'আর্টিকেল', many: 'আর্টিকেল' },
+        product: { one: 'প্রোডাক্ট', many: 'প্রোডাক্ট' },
+        course: { one: 'কোর্স', many: 'কোর্স' },
+      },
+    },
+
     /** Settings → সাইটের কোড: Google, বিজ্ঞাপন ও অন্যান্য স্ক্রিপ্টের ঘর। */
     siteCode: {
       title: 'সাইটের কোড (Header ও Footer)',
@@ -3004,6 +3021,23 @@ const en: Dictionary = {
       reviewed: 'Reviewed',
       awaitingReview: 'Review outstanding',
       newPost: '+ New article',
+    },
+
+    /** Choosing rows in a list and deleting them together. */
+    bulk: {
+      select: 'Bulk select',
+      selectRow: 'Select',
+      delete: 'Delete',
+      selected: '{count} selected',
+      confirm: 'Delete {count} {noun}?',
+      live: '{count} of them are live on the site; those addresses will stop working.',
+      noUndo: 'Deleted items cannot be brought back from the dashboard.',
+      failed: 'These could not be deleted:',
+      nouns: {
+        post: { one: 'article', many: 'articles' },
+        product: { one: 'product', many: 'products' },
+        course: { one: 'course', many: 'courses' },
+      },
     },
 
     /** Settings → Site code: where Google, ads and other scripts go. */
