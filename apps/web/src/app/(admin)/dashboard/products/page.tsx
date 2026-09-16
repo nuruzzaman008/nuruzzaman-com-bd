@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Product } from '@nuruzzaman/contracts';
 
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
+import { ListFilters, StatusLinks } from '@/features/admin/list-filters';
 import { seoScoreOf } from '@/features/admin/seo-score';
 import { ProductList, type ProductRow } from '@/features/dashboard/product-list';
 import { sessionApi } from '@/lib/api/server';
@@ -16,15 +17,26 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function DashboardProductsPage(props: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; type?: string; month?: string }>;
 }) {
   const { locale, t } = await adminDictionary();
   const bn = locale === 'bn';
-  const q = (await props.searchParams).q?.trim() || undefined;
-  const products = await sessionApi<{ data: Product[]; meta?: { total?: number } }>(
+  const searchParams = await props.searchParams;
+  const q = searchParams.q?.trim() || undefined;
+  const current = {
+    q,
+    status: searchParams.status,
+    type: searchParams.type,
+    month: searchParams.month,
+  };
+  const products = await sessionApi<{
+    data: Product[];
+    meta?: { total?: number };
+    filters?: { counts?: Record<string, number>; months?: string[]; types?: string[] };
+  }>(
     '/admin/products',
     // Course listings exist only so a course can be bought; they are managed under Courses.
-    { query: { q, exclude_type: 'course' } },
+    { query: { ...current, exclude_type: 'course' } },
   );
 
   const rows: ProductRow[] = products.data.map((product) => ({
@@ -78,10 +90,38 @@ export default async function DashboardProductsPage(props: {
         {bn ? ' থেকে চালান।' : '.'}
       </p>
 
+      <StatusLinks
+        basePath="/dashboard/products"
+        current={current}
+        counts={products.filters?.counts}
+      />
+
+      <ListFilters
+        basePath="/dashboard/products"
+        current={current}
+        months={products.filters?.months ?? []}
+        selects={[
+          {
+            name: 'type',
+            label: t.admin.filters.type,
+            anyLabel: t.admin.filters.allTypes,
+            options: (products.filters?.types ?? [])
+              // A course listing is managed under Courses, so it is not offered here.
+              .filter((type) => type !== 'course')
+              .map((type) => ({
+                value: type,
+                label:
+                  (t.admin.productTypes as Record<string, string | undefined>)[type] ?? type,
+              })),
+          },
+        ]}
+      />
+
       <AdminSearchForm
         id="product-search"
         basePath="/dashboard/products"
         value={q}
+        keep={{ ...current, q: undefined }}
         total={products.meta?.total ?? products.data.length}
         label={bn ? 'প্রোডাক্ট খুঁজুন' : 'Search products'}
         placeholder={bn ? 'প্রোডাক্টের নাম বা URL slug…' : 'Product name or URL slug…'}

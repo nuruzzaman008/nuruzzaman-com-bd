@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Post } from '@nuruzzaman/contracts';
 
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
+import { ListFilters, StatusLinks } from '@/features/admin/list-filters';
 import { seoScoreOf } from '@/features/admin/seo-score';
 import { PostList, type PostRow } from '@/features/dashboard/post-list';
 import { sessionApi } from '@/lib/api/server';
@@ -17,8 +18,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return privateMetadata(t.admin.nav.posts);
 }
 
-const STATUSES = ['draft', 'in_review', 'scheduled', 'published', 'archived'] as const;
-
 const TONES: Record<string, 'neutral' | 'info' | 'success' | 'warning'> = {
   draft: 'neutral',
   in_review: 'warning',
@@ -27,29 +26,39 @@ const TONES: Record<string, 'neutral' | 'info' | 'success' | 'warning'> = {
   archived: 'neutral',
 };
 
-/** A status filter link that keeps the search, and a search that keeps the status. */
-function postsHref(status?: string, q?: string): string {
-  const query = new URLSearchParams();
-
-  if (status) query.set('status', status);
-  if (q) query.set('q', q);
-
-  const search = query.toString();
-
-  return search ? `/dashboard/posts?${search}` : '/dashboard/posts';
-}
+type Taxonomy = { slug: string; name: string };
 
 export default async function DashboardPostsPage(props: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    q?: string;
+    category?: string;
+    tag?: string;
+    month?: string;
+  }>;
 }) {
   const { locale, t } = await adminDictionary();
   const bn = locale === 'bn';
   const searchParams = await props.searchParams;
   const q = searchParams.q?.trim() || undefined;
+  const current = {
+    status: searchParams.status,
+    q,
+    category: searchParams.category,
+    tag: searchParams.tag,
+    month: searchParams.month,
+  };
 
-  const posts = await sessionApi<{ data: Post[]; meta?: { total?: number } }>('/admin/posts', {
-    query: { status: searchParams.status, q },
-  });
+  // The three go together on this page, so they are asked for together.
+  const [posts, categories, tags] = await Promise.all([
+    sessionApi<{
+      data: Post[];
+      meta?: { total?: number };
+      filters?: { counts?: Record<string, number>; months?: string[] };
+    }>('/admin/posts', { query: current }),
+    sessionApi<{ data: Taxonomy[] }>('/admin/categories'),
+    sessionApi<{ data: Taxonomy[] }>('/admin/tags'),
+  ]);
 
   const rows: PostRow[] = posts.data.map((post) => ({
     id: post.id,
@@ -94,30 +103,34 @@ export default async function DashboardPostsPage(props: {
         basePath="/dashboard/posts"
         value={q}
         total={posts.meta?.total ?? posts.data.length}
-        keep={{ status: searchParams.status }}
+        keep={{ ...current, q: undefined }}
         label={bn ? 'ব্লগ পোস্ট খুঁজুন' : 'Search blog posts'}
         placeholder={bn ? 'পোস্টের শিরোনাম বা URL slug…' : 'Post title or URL slug…'}
         searchLabel={t.admin.common.search}
         locale={locale}
       />
 
-      <nav aria-label={t.admin.filterByStatus} className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href={postsHref(undefined, q)}
-          className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
-        >
-          {t.admin.common.all}
-        </Link>
-        {STATUSES.map((status) => (
-          <Link
-            key={status}
-            href={postsHref(status, q)}
-            className="inline-flex min-h-9 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-navy hover:border-blue"
-          >
-            {statusLabel('content', status, locale)}
-          </Link>
-        ))}
-      </nav>
+      <StatusLinks basePath="/dashboard/posts" current={current} counts={posts.filters?.counts} />
+
+      <ListFilters
+        basePath="/dashboard/posts"
+        current={current}
+        months={posts.filters?.months ?? []}
+        selects={[
+          {
+            name: 'category',
+            label: t.admin.filters.category,
+            anyLabel: t.admin.filters.allCategories,
+            options: categories.data.map((row) => ({ value: row.slug, label: row.name })),
+          },
+          {
+            name: 'tag',
+            label: t.admin.filters.tag,
+            anyLabel: t.admin.filters.allTags,
+            options: tags.data.map((row) => ({ value: row.slug, label: row.name })),
+          },
+        ]}
+      />
 
       <PostList
         rows={rows}

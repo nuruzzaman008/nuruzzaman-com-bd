@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Course } from '@nuruzzaman/contracts';
 
 import { AdminSearchForm } from '@/features/admin/admin-search-form';
+import { ListFilters, StatusLinks } from '@/features/admin/list-filters';
 import { seoScoreOf } from '@/features/admin/seo-score';
 import { CourseList, type CourseRow } from '@/features/dashboard/course-list';
 import { sessionApi } from '@/lib/api/server';
@@ -17,15 +18,29 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function DashboardCoursesPage(props: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; level?: string; track?: string; month?: string }>;
 }) {
   const { locale, t } = await adminDictionary();
   const bn = locale === 'bn';
-  const q = (await props.searchParams).q?.trim() || undefined;
-  const courses = await sessionApi<{ data: Course[]; meta?: { total?: number } }>(
-    '/admin/courses',
-    { query: { q } },
-  );
+  const searchParams = await props.searchParams;
+  const q = searchParams.q?.trim() || undefined;
+  const current = {
+    q,
+    status: searchParams.status,
+    level: searchParams.level,
+    track: searchParams.track,
+    month: searchParams.month,
+  };
+  const courses = await sessionApi<{
+    data: Course[];
+    meta?: { total?: number };
+    filters?: {
+      counts?: Record<string, number>;
+      months?: string[];
+      levels?: string[];
+      tracks?: { value: string; label: string }[];
+    };
+  }>('/admin/courses', { query: current });
 
   const rows: CourseRow[] = courses.data
     // A course with no id is one this user may not open, so it is not listed.
@@ -66,10 +81,36 @@ export default async function DashboardCoursesPage(props: {
       </div>
       <p className="mt-2 text-muted">{t.admin.courses.publishRule}</p>
 
+      <StatusLinks basePath="/dashboard/courses" current={current} counts={courses.filters?.counts} />
+
+      <ListFilters
+        basePath="/dashboard/courses"
+        current={current}
+        months={courses.filters?.months ?? []}
+        selects={[
+          {
+            name: 'level',
+            label: t.admin.filters.level,
+            anyLabel: t.admin.filters.allLevels,
+            options: (courses.filters?.levels ?? []).map((level) => ({
+              value: level,
+              label: levelLabel(t, level),
+            })),
+          },
+          {
+            name: 'track',
+            label: t.admin.filters.track,
+            anyLabel: t.admin.filters.allTracks,
+            options: courses.filters?.tracks ?? [],
+          },
+        ]}
+      />
+
       <AdminSearchForm
         id="course-search"
         basePath="/dashboard/courses"
         value={q}
+        keep={{ ...current, q: undefined }}
         total={courses.meta?.total ?? courses.data.length}
         label={bn ? 'কোর্স খুঁজুন' : 'Search courses'}
         placeholder={bn ? 'কোর্সের নাম বা URL slug…' : 'Course title or URL slug…'}

@@ -14,6 +14,7 @@ use App\Services\Content\RevalidationService;
 use App\Services\Lms\CoursePricingService;
 use App\Support\Audit;
 use App\Support\CourseTracks;
+use App\Support\ListFilters;
 use App\Support\SearchTerm;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
@@ -31,18 +32,42 @@ class CourseController extends Controller
     {
         $this->authorize('viewAny', Course::class);
 
-        $validated = $request->validate(['q' => ['sometimes', 'nullable', 'string', 'max:120']]);
+        $validated = $request->validate([
+            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'status' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', ContentStatus::values())],
+            'level' => ['sometimes', 'nullable', 'string', 'max:40'],
+            'track' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'month' => ['sometimes', 'nullable', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        ]);
 
-        $courses = Course::query()
+        // Without the status or the month: those two are what the filters count.
+        $base = Course::query()
+            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
+            ->when($validated['level'] ?? null, fn ($query, $level) => $query->where('level', $level))
+            ->when($validated['track'] ?? null, fn ($query, $track) => $query->where('track', $track));
+
+        $month = $validated['month'] ?? null;
+
+        $courses = ListFilters::month($base->clone(), $month)
             ->withCount('lessons')
             // seo and cover are what the dashboard list scores each course on.
             ->with(['cover', 'seo'])
-            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
+            ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->orderBy('title')
             ->paginate(50)
             ->withQueryString();
 
-        return CourseResource::collection($courses);
+        return CourseResource::collection($courses)->additional([
+            'filters' => [
+                'counts' => ListFilters::statusCounts(ListFilters::month($base->clone(), $month)),
+                'months' => ListFilters::months($base->clone()),
+                'levels' => $base->clone()->toBase()->reorder()->distinct()->pluck('level')->filter()->sort()->values()->all(),
+                // Labelled here: the slug alone is no use in a dropdown.
+                'tracks' => $base->clone()->toBase()->reorder()->distinct()->pluck('track')->filter()->sort()
+                    ->map(fn (string $track) => ['value' => $track, 'label' => CourseTracks::name($track) ?? $track])
+                    ->values()->all(),
+            ],
+        ]);
     }
 
     public function show(Course $course): CourseResource

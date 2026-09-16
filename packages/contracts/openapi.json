@@ -5025,6 +5025,31 @@
             }
           },
           {
+            "name": "category",
+            "in": "query",
+            "description": "Category slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Tag slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Rows filed under this month, as YYYY-MM. A row is filed under the month it went live, or the month it was made when it never did.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
             "$ref": "#/components/parameters/Page"
           }
         ],
@@ -5047,6 +5072,9 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Pagination"
+                    },
+                    "filters": {
+                      "$ref": "#/components/schemas/ListFilters"
                     }
                   }
                 }
@@ -9373,6 +9401,44 @@
             }
           },
           {
+            "name": "type",
+            "in": "query",
+            "description": "Only this kind of product.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "software_license",
+                "credit_refill",
+                "course",
+                "bundle",
+                "digital_resource"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "in_review",
+                "scheduled",
+                "published",
+                "archived"
+              ]
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Rows filed under this month, as YYYY-MM.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
             "$ref": "#/components/parameters/Page"
           }
         ],
@@ -9395,6 +9461,9 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Pagination"
+                    },
+                    "filters": {
+                      "$ref": "#/components/schemas/ListFilters"
                     }
                   }
                 }
@@ -11277,6 +11346,45 @@
             }
           },
           {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "in_review",
+                "scheduled",
+                "published",
+                "archived"
+              ]
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "description": "Only this level.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "description": "Only this track.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "description": "Rows filed under this month, as YYYY-MM.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          {
             "$ref": "#/components/parameters/Page"
           }
         ],
@@ -11299,6 +11407,9 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/Pagination"
+                    },
+                    "filters": {
+                      "$ref": "#/components/schemas/ListFilters"
                     }
                   }
                 }
@@ -17577,6 +17688,59 @@
           },
           "is_available": {
             "type": "boolean"
+          }
+        }
+      },
+      "ListFilters": {
+        "type": "object",
+        "description": "What the filter bar above an admin list needs: how many rows each\nstatus holds under the current search, and which months have rows.\nCounted without the status filter itself, so the number beside\n\"Draft\" says how many drafts this search would show.\n",
+        "required": [
+          "counts",
+          "months"
+        ],
+        "properties": {
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            }
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "value",
+                "label"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       },

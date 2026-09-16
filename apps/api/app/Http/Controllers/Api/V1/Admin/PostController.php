@@ -11,6 +11,7 @@ use App\Models\Post;
 use App\Models\PostRevision;
 use App\Services\Content\PublishingService;
 use App\Support\Audit;
+use App\Support\ListFilters;
 use App\Support\Markdown;
 use App\Support\SearchTerm;
 use Illuminate\Http\JsonResponse;
@@ -27,20 +28,46 @@ class PostController extends Controller
         $this->authorize('viewAny', Post::class);
 
         $validated = $request->validate([
-            'status' => ['sometimes', 'string', 'in:'.implode(',', ContentStatus::values())],
+            'status' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', ContentStatus::values())],
             'q' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'category' => ['sometimes', 'nullable', 'string', 'max:180'],
+            'tag' => ['sometimes', 'nullable', 'string', 'max:180'],
+            'month' => ['sometimes', 'nullable', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $posts = Post::query()
+        /*
+         * Everything except the status and the month, so the counts beside each
+         * status and the months in the date filter describe the list the way it
+         * is being searched rather than the whole archive.
+         */
+        $base = Post::query()
+            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
+            ->when($validated['category'] ?? null, fn ($query, $slug) => $query->whereHas(
+                'categories',
+                fn ($categories) => $categories->where('slug', $slug),
+            ))
+            ->when($validated['tag'] ?? null, fn ($query, $slug) => $query->whereHas(
+                'tags',
+                fn ($tags) => $tags->where('slug', $slug),
+            ));
+
+        $month = $validated['month'] ?? null;
+
+        $posts = ListFilters::month($base->clone(), $month)
             // cover and seo are what the dashboard list scores each post on.
             ->with(['author', 'categories', 'cover', 'seo'])
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'title'))
             ->latest('id')
-            ->paginate($validated['per_page'] ?? 20);
+            ->paginate($validated['per_page'] ?? 20)
+            ->withQueryString();
 
-        return PostResource::collection($posts);
+        return PostResource::collection($posts)->additional([
+            'filters' => [
+                'counts' => ListFilters::statusCounts(ListFilters::month($base->clone(), $month)),
+                'months' => ListFilters::months($base->clone()),
+            ],
+        ]);
     }
 
     public function show(Post $post): PostResource

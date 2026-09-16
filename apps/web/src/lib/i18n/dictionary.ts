@@ -1241,6 +1241,24 @@ const bn = {
 
     filterByStatus: 'অবস্থা অনুযায়ী ছাঁকুন',
 
+    /** তালিকার উপরের ফিল্টার বার। */
+    filters: {
+      date: 'তারিখ',
+      allDates: 'সব তারিখ',
+      allCategories: 'সব ক্যাটাগরি',
+      allTags: 'সব ট্যাগ',
+      allTypes: 'সব ধরন',
+      allLevels: 'সব লেভেল',
+      allTracks: 'সব ট্র্যাক',
+      category: 'ক্যাটাগরি',
+      tag: 'ট্যাগ',
+      type: 'ধরন',
+      level: 'লেভেল',
+      track: 'ট্র্যাক',
+      apply: 'ছাঁকুন',
+      clear: 'ফিল্টার মুছুন',
+    },
+
     posts: {
       caption: 'আর্টিকেলের তালিকা',
       empty: 'কোনো আর্টিকেল নেই',
@@ -3012,6 +3030,24 @@ const en: Dictionary = {
     },
 
     filterByStatus: 'Filter by status',
+
+    /** The filter bar above a list. */
+    filters: {
+      date: 'Date',
+      allDates: 'All dates',
+      allCategories: 'All categories',
+      allTags: 'All tags',
+      allTypes: 'All kinds',
+      allLevels: 'All levels',
+      allTracks: 'All tracks',
+      category: 'Category',
+      tag: 'Tag',
+      type: 'Kind',
+      level: 'Level',
+      track: 'Track',
+      apply: 'Filter',
+      clear: 'Clear filters',
+    },
 
     posts: {
       caption: 'List of articles',

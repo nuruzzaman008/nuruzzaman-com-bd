@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\Content\PublishingService;
 use App\Support\Audit;
+use App\Support\ListFilters;
 use App\Support\SearchTerm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,20 +30,36 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'q' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'status' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', ContentStatus::values())],
+            'type' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', ProductType::values())],
+            'month' => ['sometimes', 'nullable', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
             // The dashboard leaves course listings out: they are managed under Courses.
-            'exclude_type' => ['sometimes', 'nullable', 'string', 'in:software_license,credit_refill,course,bundle,digital_resource'],
+            'exclude_type' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', ProductType::values())],
         ]);
 
-        $products = Product::query()
+        // Without the status or the month: those two are what the filters count.
+        $base = Product::query()
+            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'name'))
+            ->when($validated['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->when($validated['exclude_type'] ?? null, fn ($query, $type) => $query->where('type', '!=', $type));
+
+        $month = $validated['month'] ?? null;
+
+        $products = ListFilters::month($base->clone(), $month)
             // seo is what the dashboard list scores each product on.
             ->with(['activeVariants.prices', 'cover', 'seo'])
-            ->when($validated['q'] ?? null, fn ($query, $term) => SearchTerm::titleOrSlug($query, $term, 'name'))
-            ->when($validated['exclude_type'] ?? null, fn ($query, $type) => $query->where('type', '!=', $type))
+            ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->orderBy('name')
             ->paginate(50)
             ->withQueryString();
 
-        return ProductResource::collection($products);
+        return ProductResource::collection($products)->additional([
+            'filters' => [
+                'counts' => ListFilters::statusCounts(ListFilters::month($base->clone(), $month)),
+                'months' => ListFilters::months($base->clone()),
+                'types' => $base->clone()->toBase()->reorder()->distinct()->pluck('type')->sort()->values()->all(),
+            ],
+        ]);
     }
 
     public function show(Product $product): ProductResource
