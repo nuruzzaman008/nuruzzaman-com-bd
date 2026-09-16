@@ -26,7 +26,12 @@ class PublishingService
         $from = $content->status;
 
         if (! $from->allows($to)) {
-            throw DomainException::conflict("Cannot move content from {$from->value} to {$to->value}.");
+            $allowed = implode(', ', array_map(fn (ContentStatus $status) => $status->value, $from->allowedNext()));
+
+            // Saying only "no" leaves the editor guessing; this says where it can go.
+            throw DomainException::conflict(
+                "This is {$from->value}, so it cannot become {$to->value}. From {$from->value} it can go to: {$allowed}."
+            );
         }
 
         if ($to === ContentStatus::Scheduled && blank($content->scheduled_for ?? null)) {

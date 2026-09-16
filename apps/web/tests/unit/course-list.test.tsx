@@ -55,7 +55,8 @@ describe('the courses list', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select: RCC footing design' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select: Draft course' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.change(screen.getByLabelText('Bulk actions'), { target: { value: 'delete' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Delete 2 courses?'));
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining('1 of them are live'));
@@ -74,7 +75,8 @@ describe('the courses list', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Bulk select' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select: RCC footing design' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.change(screen.getByLabelText('Bulk actions'), { target: { value: 'delete' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     const problem = await screen.findByRole('alert');
     expect(problem).toHaveTextContent('RCC footing design');
@@ -93,7 +95,8 @@ describe('the products list', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Bulk select' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select: NB Engineering Tools' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.change(screen.getByLabelText('Bulk actions'), { target: { value: 'delete' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Delete 1 product?'));
     await waitFor(() => expect(request).toHaveBeenCalledWith('/admin/products/7', { method: 'DELETE' }));
