@@ -1251,6 +1251,27 @@ const bn = {
       newPost: '+ নতুন আর্টিকেল',
     },
 
+    /** Settings → সাইটের কোড: Google, বিজ্ঞাপন ও অন্যান্য স্ক্রিপ্টের ঘর। */
+    siteCode: {
+      title: 'সাইটের কোড (Header ও Footer)',
+      intro:
+        'Google Search Console যাচাই, AdSense, Analytics, Tag Manager বা চ্যাট উইজেট — যে কোড ওরা দেয়, সেটি এখানে বসান। সাইটের সব পাবলিক পেজে চলবে।',
+      warning:
+        'এখানকার কোড প্রতিটি পাবলিক পেজে চলে, তাই ভুল কোড পুরো পেজ নষ্ট করতে পারে। কেবল বিশ্বস্ত উৎস থেকে হুবহু কপি করে বসান, আর সেভ করার পর সাইটটি একবার দেখে নিন।',
+      head: '<head>-এ কোড',
+      headHint:
+        'যেগুলো <head>-এ বসাতে বলা হয়: verification meta, AdSense বা Analytics-এর script, ফন্ট বা CSS-এর link।',
+      bodyStart: '<body> শুরুতে কোড',
+      bodyStartHint: 'Google Tag Manager-এর <noscript> অংশটি এখানে যায়।',
+      bodyEnd: '<body> শেষে কোড',
+      bodyEndHint: 'চ্যাট উইজেট বা যেসব স্ক্রিপ্ট পেজ দেখানোর পরে চললেই চলে।',
+      adsTxt: 'ads.txt',
+      adsTxtHint:
+        'AdSense যে লাইনটি দিতে বলে (google.com, pub-…, DIRECT, …) সেটি এখানে দিন — সাইটে /ads.txt ঠিকানায় দেখাবে। খালি রাখলে ফাইলটি থাকবে না।',
+      saved: 'কোড সংরক্ষিত হয়েছে। সাইট সঙ্গে সঙ্গে হালনাগাদ হয়ে যাবে।',
+      failed: 'কোড সংরক্ষণ করা যায়নি।',
+    },
+
     /** "নতুন আর্টিকেল" ও "নতুন প্রোডাক্ট" তৈরির ছোট ফর্ম। */
     newContent: {
       heading: { post: 'নতুন আর্টিকেল', product: 'নতুন প্রোডাক্ট' },
@@ -2983,6 +3004,27 @@ const en: Dictionary = {
       reviewed: 'Reviewed',
       awaitingReview: 'Review outstanding',
       newPost: '+ New article',
+    },
+
+    /** Settings → Site code: where Google, ads and other scripts go. */
+    siteCode: {
+      title: 'Site code (header and footer)',
+      intro:
+        'Search Console verification, AdSense, Analytics, a tag manager, a chat widget: paste what they give you here and it runs on every public page.',
+      warning:
+        'This code runs on every public page, so a broken snippet can break the page. Paste only what a source you trust gave you, and open the site once after saving.',
+      head: 'Code in <head>',
+      headHint:
+        'Whatever is meant for the head: a verification meta tag, the AdSense or Analytics script, a font or stylesheet link.',
+      bodyStart: 'Code at the start of <body>',
+      bodyStartHint: 'Google Tag Manager’s <noscript> half belongs here.',
+      bodyEnd: 'Code at the end of <body>',
+      bodyEndHint: 'A chat widget, or anything that can wait until the page is shown.',
+      adsTxt: 'ads.txt',
+      adsTxtHint:
+        'The line AdSense asks you to publish (google.com, pub-…, DIRECT, …). It is served at /ads.txt; leave it empty and there is no file.',
+      saved: 'Saved. The site picks it up at once.',
+      failed: 'The code could not be saved.',
     },
 
     /** The short form behind "New article" and "New product". */

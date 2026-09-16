@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RevalidateFrontend;
 use App\Models\Setting;
 use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +44,11 @@ class SettingController extends Controller
         Audit::record('settings.updated', null, [
             'keys' => array_column($validated['settings'], 'key'),
         ]);
+
+        // The public shell reads these with the rest of the site settings, and
+        // the header and footer code the owner just saved has to show now, not
+        // when the pages happen to be built again.
+        RevalidateFrontend::dispatch(['settings']);
 
         return response()->json(['data' => Setting::query()->orderBy('group')->orderBy('key')->get()]);
     }

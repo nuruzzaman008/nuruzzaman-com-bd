@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { Setting } from '@nuruzzaman/contracts';
 
 import { SettingsForm } from '@/features/dashboard/settings-form';
+import { SiteCodeForm } from '@/features/dashboard/site-code-form';
 import { Callout } from '@/components/ui/callout';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
@@ -28,6 +29,10 @@ export default async function DashboardSettingsPage() {
         {t.admin.settings.envNote}{' '}
         <span className="font-latin">docs/CONFIGURATION_CHECKLIST_BN.md</span>
       </Callout>
+
+      <div className="mt-6 max-w-3xl">
+        <SiteCodeForm settings={settings.data} />
+      </div>
 
       <div className="mt-6 max-w-3xl">
         {settings.data.length === 0 ? (
