@@ -30,7 +30,7 @@ class AdminContentCreationTest extends TestCase
             'body_markdown' => '',
         ]);
 
-        $response->assertCreated();
+        $this->assertSame(201, $response->status(), (string) json_encode($response->json()));
         $this->assertSame('draft', $response->json('data.status'));
 
         $post = Post::query()->where('slug', 'bolt-connection-checks')->firstOrFail();
@@ -41,9 +41,11 @@ class AdminContentCreationTest extends TestCase
     {
         $this->actingAs($this->userWithRole(Role::Editor));
 
-        $this->postJson('/api/v1/admin/posts', ['body_markdown' => ''])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['title', 'slug']);
+        // The API reports validation under error.fields, not Laravel's own shape.
+        $response = $this->postJson('/api/v1/admin/posts', ['body_markdown' => ''])->assertStatus(422);
+
+        $this->assertArrayHasKey('title', $response->json('error.fields'));
+        $this->assertArrayHasKey('slug', $response->json('error.fields'));
     }
 
     public function test_a_new_product_starts_as_a_draft_of_the_kind_chosen(): void

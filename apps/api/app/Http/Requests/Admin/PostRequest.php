@@ -27,8 +27,9 @@ class PostRequest extends FormRequest
             // Markdown source. Raw HTML is stripped at render time rather than
             // stored as trusted markup, so the frontend never sanitises input.
             // Present, not required, on create: "New article" makes an empty
-            // draft and the editor is where it is written.
-            'body_markdown' => [$this->isMethod('POST') ? 'present' : 'sometimes', 'string', 'max:200000'],
+            // draft and the editor is where it is written. Nullable with it,
+            // because Laravel turns an empty field into null on the way in.
+            'body_markdown' => [$this->isMethod('POST') ? 'present' : 'sometimes', 'nullable', 'string', 'max:200000'],
             'author_id' => ['nullable', 'integer', 'exists:authors,id'],
             'reviewed_by_author_id' => ['nullable', 'integer', 'exists:authors,id'],
             'reviewed_at' => ['nullable', 'date'],

@@ -155,7 +155,17 @@ class PostController extends Controller
     private function attributes(PostRequest $request): array
     {
         $data = $request->safe()->except(['category_ids', 'tag_ids', 'seo']);
-        $data['reading_minutes'] = Markdown::readingMinutes($request->validated('body_markdown') ?? '');
+
+        /*
+         * An empty body reaches here as null - Laravel converts empty fields -
+         * and a new article starts empty on purpose, while the column is not
+         * nullable. Only touched when the caller actually sent a body: a save
+         * that leaves it out must keep the article that is already written.
+         */
+        if (array_key_exists('body_markdown', $data)) {
+            $data['body_markdown'] ??= '';
+            $data['reading_minutes'] = Markdown::readingMinutes($data['body_markdown']);
+        }
 
         return $data;
     }
