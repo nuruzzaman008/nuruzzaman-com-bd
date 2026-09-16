@@ -11,8 +11,6 @@ export default defineConfig({
       '@nuruzzaman/contracts': fileURLToPath(
         new URL('../../packages/contracts/src/index.ts', import.meta.url),
       ),
-      // Next.js resolves this itself at build time; it is not an installed package.
-      'server-only': fileURLToPath(new URL('./tests/stubs/server-only.ts', import.meta.url)),
     },
   },
   test: {

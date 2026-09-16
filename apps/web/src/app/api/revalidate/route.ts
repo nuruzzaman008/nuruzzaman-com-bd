@@ -1,7 +1,6 @@
 import { revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 
-import { bumpVersions } from '@/lib/cache-versions';
 import { serverEnv } from '@/lib/env.server';
 
 /**
@@ -84,19 +83,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       // show on the first visit after it.
       revalidateTag(tag, { expire: 0 });
       accepted.push(tag);
-    }
-  }
-
-  // revalidateTag only reaches the process this request landed in; the
-  // versions file reaches every process. See lib/cache-versions.ts.
-  if (accepted.length > 0) {
-    try {
-      bumpVersions(accepted);
-    } catch (error) {
-      console.error(
-        'Could not record content versions; other processes refresh on their own schedule.',
-        error,
-      );
     }
   }
 

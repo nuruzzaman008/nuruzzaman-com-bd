@@ -15,6 +15,12 @@ const eslintConfig = defineConfig([
     files: ['src/lib/api/browser.ts', 'src/features/account/download-button.tsx'],
     rules: { 'no-restricted-globals': 'off' },
   },
+  {
+    // Next.js loads the cache handler itself, outside the bundle, so it has to
+    // be CommonJS - it cannot import anything.
+    files: ['cache-handler.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   globalIgnores([
     '.next/**',
     'out/**',

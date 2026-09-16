@@ -12,6 +12,9 @@ import path from 'node:path';
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
+  // Passenger runs several Node processes, and a revalidated tag has to reach
+  // all of them, not only the one the webhook landed in. See cache-handler.js.
+  cacheHandler: path.join(__dirname, 'cache-handler.js'),
   reactStrictMode: true,
   poweredByHeader: false,
   experimental: {
