@@ -37,7 +37,8 @@ class AdminListFiltersTest extends TestCase
             'slug' => 'august-post',
             'published_at' => '2026-08-10 10:00:00',
         ]);
-        Post::factory()->create(['slug' => 'a-draft', 'status' => ContentStatus::Draft]);
+        Post::factory()->create(['slug' => 'a-draft', 'status' => ContentStatus::Draft])
+            ->forceFill(['created_at' => '2026-05-02 09:00:00'])->saveQuietly();
 
         $this->actingAs($this->userWithRole(Role::SuperAdmin));
 
@@ -88,7 +89,8 @@ class AdminListFiltersTest extends TestCase
     public function test_products_are_filtered_by_kind_and_status(): void
     {
         Product::factory()->create(['slug' => 'tools', 'status' => ContentStatus::Published]);
-        Product::factory()->ofType(ProductType::CreditRefill)->create(['slug' => 'refill']);
+        Product::factory()->ofType(ProductType::CreditRefill)
+            ->create(['slug' => 'refill', 'status' => ContentStatus::Draft]);
 
         $this->actingAs($this->userWithRole(Role::SuperAdmin));
 
