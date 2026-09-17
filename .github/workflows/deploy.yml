@@ -79,7 +79,7 @@ jobs:
           DB_DATABASE: nuruzzaman_test
           DB_USERNAME: root
           DB_PASSWORD: devroot
-        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest|EngineeringToolsPriceTest|CreditPricingTest|RetirePostTest|AdminProductPricesTest|ReleaseDownloadsTest|AffiliateProgramTest|AdminMediaLibraryTest|MediaAttachmentTest|MarkdownVideoEmbedTest|PostUpdateRevalidationTest|AdminContentCreationTest|SiteCodeSettingsTest|PostDeletionTest|ContentDeletionGuardsTest|AdminListFiltersTest|BulkStatusChangeTest|OrderDeletionTest|SecurityHardeningTest|ApiContractTest'
+        run: php vendor/bin/phpunit --filter='UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest|EngineeringToolsPriceTest|CreditPricingTest|RetirePostTest|AdminProductPricesTest|ReleaseDownloadsTest|AffiliateProgramTest|AdminMediaLibraryTest|MediaAttachmentTest|MarkdownVideoEmbedTest|PostUpdateRevalidationTest|AdminContentCreationTest|SiteCodeSettingsTest|PostDeletionTest|ContentDeletionGuardsTest|AdminListFiltersTest|BulkStatusChangeTest|OrderDeletionTest|SecurityHardeningTest|PaymentIntegrityTest|PaymentValidationTest|RefundTest|CheckoutTest|CartPricingTest|ManualPaymentTest|FulfillmentTest|ApiContractTest'
 
   deploy:
     needs: upload-api-tests

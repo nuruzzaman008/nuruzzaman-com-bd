@@ -99,11 +99,26 @@ class FakeGateway implements PaymentGateway
             cardType: $callback['card_type'] ?? 'SANDBOX',
             error: $errors ? implode(' ', $errors) : null,
             raw: $callback,
+            // Stands in for the gateway's validation API, which answers about the
+            // transaction it was asked about.
+            authoritative: ($callback['tran_id'] ?? null) === $payment->reference,
         );
+    }
+
+    /** The sandbox signs nothing; a callback it did not validate is never believed. */
+    public function verifiesCallbackSignature(array $callback): bool
+    {
+        return false;
     }
 
     public function refund(Payment $payment, int $amountMinor, string $reason): GatewayRefund
     {
+        // A sandbox refund in production would record money as returned that no
+        // gateway ever sent back.
+        if (app()->isProduction()) {
+            return new GatewayRefund(false, error: 'The sandbox gateway refunds nothing in production.');
+        }
+
         return new GatewayRefund(true, 'SANDBOX-REFUND-'.Str::random(10), raw: ['driver' => 'fake']);
     }
 

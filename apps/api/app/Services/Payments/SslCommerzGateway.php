@@ -138,7 +138,57 @@ class SslCommerzGateway implements PaymentGateway
             cardType: $body['card_type'] ?? null,
             error: $errors ? implode(' ', $errors) : null,
             raw: $body,
+            // The gateway spoke about this transaction only if its answer names
+            // it. Someone else's val_id tells us nothing about this payment.
+            authoritative: ($body['tran_id'] ?? null) === $payment->reference,
         );
+    }
+
+    /**
+     * SSLCOMMERZ signs every IPN: verify_sign is the MD5 of the fields named in
+     * verify_key plus the MD5 of the store password, sorted by name and joined
+     * as key=value&... The reference and the status must be among the signed
+     * fields, or a genuine signature could be carried over to another order.
+     */
+    public function verifiesCallbackSignature(array $callback): bool
+    {
+        $signature = $callback['verify_sign'] ?? null;
+        $signedKeys = $callback['verify_key'] ?? null;
+
+        if (! is_string($signature) || ! is_string($signedKeys) || $signature === '' || $signedKeys === '') {
+            return false;
+        }
+
+        $keys = explode(',', $signedKeys);
+
+        if (! in_array('tran_id', $keys, true) || ! in_array('status', $keys, true)) {
+            return false;
+        }
+
+        try {
+            $password = (string) $this->config()['store_password'];
+        } catch (DomainException) {
+            return false;
+        }
+
+        $fields = [];
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $callback) && ! is_array($callback[$key])) {
+                $fields[$key] = (string) $callback[$key];
+            }
+        }
+
+        $fields['store_passwd'] = md5($password);
+        ksort($fields);
+
+        $pairs = [];
+
+        foreach ($fields as $key => $value) {
+            $pairs[] = $key.'='.$value;
+        }
+
+        return hash_equals(md5(implode('&', $pairs)), strtolower($signature));
     }
 
     public function refund(Payment $payment, int $amountMinor, string $reason): GatewayRefund

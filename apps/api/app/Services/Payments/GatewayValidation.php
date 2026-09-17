@@ -20,6 +20,13 @@ final class GatewayValidation
         public readonly ?string $cardType = null,
         public readonly ?string $error = null,
         public readonly array $raw = [],
+        /**
+         * True when the gateway itself answered about this transaction, so a
+         * result that is not valid really is the gateway's verdict. False when
+         * nothing could be asked: no val_id, the API unreachable, or a val_id
+         * that belongs to a different transaction.
+         */
+        public readonly bool $authoritative = false,
     ) {}
 
     public function isRisky(): bool

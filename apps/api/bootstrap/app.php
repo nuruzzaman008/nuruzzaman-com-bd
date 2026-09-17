@@ -51,6 +51,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/payments/*/ipn',
         ]);
 
+        // The gateway's signature covers the fields exactly as it sent them.
+        // Trimming a value or turning an empty one into null would break a
+        // genuine signature, so the IPN is read untouched.
+        $isPaymentCallback = fn (Request $request) => $request->is('api/v1/payments/*/ipn');
+        $middleware->trimStrings(except: [$isPaymentCallback]);
+        $middleware->convertEmptyStringsToNull(except: [$isPaymentCallback]);
+
         // Trusted proxies come from config/trustedproxy.php, never '*': trusting
         // every address let any visitor choose the IP the rate limits count.
 

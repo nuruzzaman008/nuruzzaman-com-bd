@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
+use App\Services\Commerce\PricingService;
 use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,13 @@ class CouponController extends Controller
         $this->guard($request);
 
         return response()->json([
-            'data' => Coupon::query()->withCount('redemptions')->latest('id')->paginate(50),
+            // Uses are orders placed with the coupon that are pending or paid,
+            // the same count checkout enforces the limits with.
+            'data' => Coupon::query()
+                ->withCount(['orders as redemptions_count' => fn ($query) => $query
+                    ->whereNotIn('status', PricingService::ORDERS_NOT_USING_A_COUPON)])
+                ->latest('id')
+                ->paginate(50),
         ]);
     }
 

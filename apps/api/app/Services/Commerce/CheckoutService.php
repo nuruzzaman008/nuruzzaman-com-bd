@@ -5,6 +5,7 @@ namespace App\Services\Commerce;
 use App\Enums\OrderStatus;
 use App\Exceptions\DomainException;
 use App\Models\Cart;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Affiliates\AffiliateProgram;
@@ -50,6 +51,21 @@ class CheckoutService
         $affiliate = $referralCode ? $this->affiliates->attributable($referralCode, $user) : null;
 
         return DB::transaction(function () use ($cart, $user, $billing, $acceptedTerms, $ip, $totals, $affiliate) {
+            // First in the transaction, so the counts below read what other
+            // checkouts committed while this one waited for the lock. Two
+            // customers placing orders at the same moment could otherwise both
+            // take the last use of a coupon.
+            if ($cart->coupon_id) {
+                $coupon = Coupon::query()->lockForUpdate()->find($cart->coupon_id);
+                $couponError = $coupon
+                    ? $this->pricing->couponLimitError($coupon, $user, locking: true)
+                    : 'This coupon code is not valid.';
+
+                if ($couponError) {
+                    throw new DomainException($couponError);
+                }
+            }
+
             $order = Order::create([
                 'number' => Reference::order(),
                 'user_id' => $user->getKey(),

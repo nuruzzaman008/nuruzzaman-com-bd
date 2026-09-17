@@ -2,8 +2,10 @@
 
 namespace App\Services\Commerce;
 
+use App\Enums\OrderStatus;
 use App\Models\Cart;
 use App\Models\Coupon;
+use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Support\Money;
@@ -14,6 +16,13 @@ use App\Support\Money;
  */
 class PricingService
 {
+    /** Orders that hold no use of their coupon: never placed, or never paid. */
+    public const ORDERS_NOT_USING_A_COUPON = [
+        OrderStatus::Draft->value,
+        OrderStatus::Failed->value,
+        OrderStatus::Cancelled->value,
+    ];
+
     public function totalsFor(Cart $cart, ?User $user = null): CartTotals
     {
         $cart->loadMissing(['items.variant.product', 'items.variant.prices', 'coupon']);
@@ -94,16 +103,8 @@ class PricingService
             return [Money::zero($subtotal->currency), null];
         }
 
-        if (! $coupon->isWithinWindow()) {
-            return [Money::zero($subtotal->currency), 'This coupon is not currently valid.'];
-        }
-
-        if ($coupon->max_redemptions !== null && $coupon->redemption_count >= $coupon->max_redemptions) {
-            return [Money::zero($subtotal->currency), 'This coupon has reached its redemption limit.'];
-        }
-
-        if ($user && $this->userRedemptions($coupon, $user) >= $coupon->max_redemptions_per_user) {
-            return [Money::zero($subtotal->currency), 'You have already used this coupon.'];
+        if ($limitError = $this->couponLimitError($coupon, $user)) {
+            return [Money::zero($subtotal->currency), $limitError];
         }
 
         $eligible = $this->eligibleSubtotal($coupon, $lines, $subtotal);
@@ -132,9 +133,47 @@ class PricingService
         return $taxable->percentage((int) $percent);
     }
 
-    private function userRedemptions(Coupon $coupon, User $user): int
+    /**
+     * Why this coupon cannot be used right now, or null when it can.
+     *
+     * With $locking, the counts are locking reads: checkout calls it inside its
+     * transaction after locking the coupon row, so a use committed a moment ago
+     * by another checkout is always seen.
+     */
+    public function couponLimitError(Coupon $coupon, ?User $user, bool $locking = false): ?string
     {
-        return $coupon->redemptions()->where('user_id', $user->getKey())->count();
+        if (! $coupon->isWithinWindow()) {
+            return 'This coupon is not currently valid.';
+        }
+
+        if ($coupon->max_redemptions !== null && $this->couponUses($coupon, null, $locking) >= $coupon->max_redemptions) {
+            return 'This coupon has reached its redemption limit.';
+        }
+
+        if ($user && $coupon->max_redemptions_per_user !== null
+            && $this->couponUses($coupon, $user, $locking) >= $coupon->max_redemptions_per_user) {
+            return 'You have already used this coupon.';
+        }
+
+        return null;
+    }
+
+    /**
+     * A coupon is used by every order placed with it that is waiting for
+     * payment or has been paid. A failed or cancelled order gives the use back.
+     *
+     * Counted from the orders themselves: nothing ever wrote a redemption row or
+     * the redemption_count column, so "one per customer" and "first 50 uses"
+     * were never enforced.
+     */
+    public function couponUses(Coupon $coupon, ?User $user = null, bool $locking = false): int
+    {
+        return Order::query()
+            ->where('coupon_id', $coupon->getKey())
+            ->whereNotIn('status', self::ORDERS_NOT_USING_A_COUPON)
+            ->when($user, fn ($query) => $query->where('user_id', $user->getKey()))
+            ->when($locking, fn ($query) => $query->sharedLock())
+            ->count();
     }
 
     /** @param array<int, CartLine> $lines */

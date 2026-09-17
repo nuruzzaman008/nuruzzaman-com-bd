@@ -28,6 +28,12 @@ class Coupon extends Model
         return $this->hasMany(CouponRedemption::class);
     }
 
+    /** Orders placed with this coupon; see PricingService::couponUses for which count as a use. */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function isWithinWindow(?\DateTimeInterface $at = null): bool
     {
         $at ??= now();

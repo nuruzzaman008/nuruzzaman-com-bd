@@ -13,6 +13,7 @@ use App\Services\Commerce\OrderStateMachine;
 use App\Support\Audit;
 use App\Support\Reference;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Owns the payment lifecycle.
@@ -24,6 +25,9 @@ use Illuminate\Support\Facades\DB;
  */
 class PaymentProcessor
 {
+    /** Statuses a signed callback may use to report that no money was taken. */
+    private const FAILURE_STATUSES = ['FAILED', 'CANCELLED', 'CANCEL', 'UNATTEMPTED', 'EXPIRED'];
+
     public function __construct(
         private readonly PaymentGateway $gateway,
         private readonly OrderStateMachine $states,
@@ -80,7 +84,9 @@ class PaymentProcessor
         $event = PaymentEvent::create([
             'payment_id' => $payment?->getKey(),
             'source' => $source,
-            'event_type' => strtolower((string) ($payload['status'] ?? 'unknown')),
+            // The column holds 48 characters; a longer status from a forged
+            // callback must not turn the whole callback into a server error.
+            'event_type' => mb_substr(strtolower((string) ($payload['status'] ?? 'unknown')), 0, 48),
             'fingerprint' => $fingerprint,
             'payload' => Audit::redact($payload),
             'remote_ip' => $remoteIp,
@@ -96,47 +102,85 @@ class PaymentProcessor
 
         $validation = $this->gateway->validateTransaction($payment, $payload);
 
-        if (! $validation->isValid) {
-            $this->recordFailure($payment, $event, $validation);
+        if ($validation->isValid) {
+            $this->recordSuccess($payment, $event, $validation);
 
             return $event->refresh();
         }
 
-        $this->recordSuccess($payment, $event, $validation);
+        /*
+          Failing a payment fails its order for good, so only the gateway may say
+          so: either its validation API answered about this very transaction, or
+          the callback carries the gateway's signature over its own reference and
+          a failure status. Anyone who learns a reference can post a callback; a
+          made-up val_id, none at all, or someone else's val_id used to fail an
+          order while its customer was still paying. Such a callback is kept for
+          the record and changes nothing.
+        */
+        $signedFailure = in_array(strtoupper((string) ($payload['status'] ?? '')), self::FAILURE_STATUSES, true)
+            && $this->gateway->verifiesCallbackSignature($payload);
+
+        if ($validation->authoritative || $signedFailure) {
+            $this->recordFailure(
+                $payment,
+                $event,
+                $validation,
+                $validation->authoritative ? $validation->status : strtoupper((string) $payload['status']),
+            );
+        } else {
+            $this->recordUnverified($payment, $event, $validation);
+        }
 
         return $event->refresh();
     }
 
-    private function recordFailure(Payment $payment, PaymentEvent $event, GatewayValidation $validation): void
+    private function recordFailure(Payment $payment, PaymentEvent $event, GatewayValidation $validation, string $gatewayStatus): void
     {
-        DB::transaction(function () use ($payment, $event, $validation) {
+        DB::transaction(function () use ($payment, $event, $validation, $gatewayStatus) {
             $event->update([
                 'is_valid' => false,
-                'validation_error' => $validation->error,
+                'validation_error' => Str::limit((string) $validation->error, 250),
                 'processed_at' => now(),
             ]);
 
-            // An already-settled payment is never downgraded by a later failure
-            // callback; out-of-order delivery must not undo a good settlement.
-            if ($payment->status->isSettled()) {
+            /** @var Payment $locked */
+            $locked = Payment::query()->lockForUpdate()->findOrFail($payment->getKey());
+
+            // A settled payment is never downgraded by a later failure callback;
+            // out-of-order delivery must not undo a good settlement. A payment on
+            // risk hold took money too and waits for a person, and a refunded one
+            // is finished.
+            if ($locked->status->isSettled() || in_array($locked->status, [PaymentStatus::RiskHold, PaymentStatus::Refunded], true)) {
                 return;
             }
 
-            $payment->update([
-                'status' => in_array(strtoupper($validation->status), ['CANCELLED', 'CANCEL'], true)
+            $locked->update([
+                'status' => in_array($gatewayStatus, ['CANCELLED', 'CANCEL'], true)
                     ? PaymentStatus::Cancelled
                     : PaymentStatus::Failed,
                 'failed_at' => now(),
             ]);
 
-            $order = $payment->order;
+            $order = $locked->order;
 
             if ($order && $order->status === OrderStatus::PendingPayment) {
-                $this->states->transition($order, OrderStatus::Failed, $validation->error ?? 'Payment failed');
+                $this->states->transition($order, OrderStatus::Failed, Str::limit($validation->error ?? 'Payment failed', 250));
             }
         });
 
         Audit::record('payment.validation_failed', $payment, ['error' => $validation->error]);
+    }
+
+    /** Stored for the record; the payment and the order are left exactly as they were. */
+    private function recordUnverified(Payment $payment, PaymentEvent $event, GatewayValidation $validation): void
+    {
+        $event->update([
+            'is_valid' => false,
+            'validation_error' => Str::limit('Not confirmed by the gateway, so nothing was changed. '.$validation->error, 250),
+            'processed_at' => now(),
+        ]);
+
+        Audit::record('payment.callback_unverified', $payment, ['error' => $validation->error]);
     }
 
     private function recordSuccess(Payment $payment, PaymentEvent $event, GatewayValidation $validation): void
@@ -144,8 +188,21 @@ class PaymentProcessor
         $holdForReview = $validation->isRisky()
             && config('nb.commerce.risk_order_policy') !== 'auto_release';
 
-        $order = DB::transaction(function () use ($payment, $event, $validation, $holdForReview) {
+        $outcome = DB::transaction(function () use ($payment, $event, $validation, $holdForReview) {
             $event->update(['is_valid' => true, 'processed_at' => now()]);
+
+            /** @var Payment $locked */
+            $locked = Payment::query()->lockForUpdate()->findOrFail($payment->getKey());
+
+            // Settled once is settled. The same transaction reported again - an
+            // IPN retry that reads VALIDATED instead of VALID, or reconciliation
+            // replaying it - has a new fingerprint, and used to overwrite the
+            // settled record, refunded or not.
+            if (in_array($locked->status, [PaymentStatus::Validated, PaymentStatus::Refunded], true)) {
+                return ['recorded' => false, 'order' => null];
+            }
+
+            $payment = $locked;
 
             $payment->update([
                 'status' => $holdForReview ? PaymentStatus::RiskHold : PaymentStatus::Validated,
@@ -161,11 +218,15 @@ class PaymentProcessor
             $order = $payment->order()->firstOrFail();
 
             if ($holdForReview || ! $order->status->allows(OrderStatus::Paid)) {
-                return null;
+                return ['recorded' => true, 'order' => null];
             }
 
-            return $this->states->transition($order, OrderStatus::Paid, 'Payment validated by gateway');
+            return ['recorded' => true, 'order' => $this->states->transition($order, OrderStatus::Paid, 'Payment validated by gateway')];
         });
+
+        if (! $outcome['recorded']) {
+            return;
+        }
 
         Audit::record($holdForReview ? 'payment.risk_hold' : 'payment.validated', $payment, [
             'risk_level' => $validation->riskLevel,
@@ -173,8 +234,8 @@ class PaymentProcessor
         ]);
 
         // Dispatched only after the transaction above has committed.
-        if ($order) {
-            FulfillOrder::dispatch($order->getKey());
+        if ($outcome['order']) {
+            FulfillOrder::dispatch($outcome['order']->getKey());
         }
     }
 

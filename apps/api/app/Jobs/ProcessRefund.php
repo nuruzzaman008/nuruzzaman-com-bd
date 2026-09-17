@@ -34,7 +34,11 @@ class ProcessRefund implements ShouldQueue
             return;
         }
 
-        $result = $refund->payment
+        // A bKash, Nagad, Rocket or bank payment never passed through the card
+        // gateway, so the gateway cannot return it: the owner sends that money
+        // back by hand and this records it. Asking the card gateway sent it a
+        // bKash transaction id - accepted by the sandbox, refused by the real one.
+        $result = $refund->payment && $refund->payment->gateway !== 'manual'
             ? $gateway->refund($refund->payment, $refund->amount_minor, $refund->reason ?? 'Customer refund')
             : null;
 

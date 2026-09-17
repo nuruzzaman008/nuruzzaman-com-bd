@@ -22,5 +22,11 @@ interface PaymentGateway
      */
     public function validateTransaction(Payment $payment, array $callback): GatewayValidation;
 
+    /**
+     * True only when the callback carries the gateway's own signature over its
+     * transaction reference and status, so it can be believed without asking.
+     */
+    public function verifiesCallbackSignature(array $callback): bool;
+
     public function refund(Payment $payment, int $amountMinor, string $reason): GatewayRefund;
 }

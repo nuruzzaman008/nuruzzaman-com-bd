@@ -28,6 +28,10 @@ class ReconcilePayments implements ShouldQueue
     public function handle(PaymentProcessor $processor): void
     {
         $pending = Payment::query()
+            // A bKash, Nagad, Rocket or bank payment has no gateway to ask. It
+            // waits for a person to check the transfer, however long that takes,
+            // and expiring it here showed money that had arrived as failed.
+            ->where('gateway', '!=', 'manual')
             ->whereIn('status', [PaymentStatus::Initiated->value, PaymentStatus::Pending->value])
             ->where('created_at', '<=', now()->subMinutes($this->minutesOld))
             ->where('created_at', '>=', now()->subDays(7))
