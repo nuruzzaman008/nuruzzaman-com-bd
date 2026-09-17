@@ -28,7 +28,9 @@ use Illuminate\Validation\Rule;
 class MediaController extends Controller
 {
     private const ALLOWED = [
-        'image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/svg+xml', 'application/pdf',
+        // No SVG: an SVG can carry a script, and one opened from this host would run
+        // with the API's cookies. Raster images cover every use the site has.
+        'image/jpeg', 'image/png', 'image/webp', 'image/avif', 'application/pdf',
     ];
 
     /** Played in the browser as they are, so only formats every browser plays. */

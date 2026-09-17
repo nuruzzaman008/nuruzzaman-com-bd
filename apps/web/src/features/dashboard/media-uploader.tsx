@@ -9,13 +9,12 @@ import { useLocale } from '@/lib/i18n/locale-provider';
 import { readVideoDuration } from '@/lib/media/video-duration';
 import { uploadInParts } from '@/lib/uploads/chunked-upload';
 
-/** The same list the API accepts; see Admin\MediaController. */
+/** The same list the API accepts; see Admin\MediaController. No SVG: it can carry script. */
 export const MEDIA_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/avif',
-  'image/svg+xml',
   'application/pdf',
   'video/mp4',
   'video/webm',
@@ -52,8 +51,8 @@ export function MediaUploader({ onUploaded }: { onUploaded: () => void }) {
   function problemWith(file: File): string | null {
     if (!MEDIA_TYPES.includes(file.type)) {
       return bn
-        ? 'এই ধরনের ফাইল নেওয়া হয় না। ছবি (JPG, PNG, WebP, AVIF, SVG), PDF বা ভিডিও (MP4, WebM) দিন।'
-        : 'This kind of file is not accepted. Use an image (JPG, PNG, WebP, AVIF, SVG), a PDF or a video (MP4, WebM).';
+        ? 'এই ধরনের ফাইল নেওয়া হয় না। ছবি (JPG, PNG, WebP, AVIF), PDF বা ভিডিও (MP4, WebM) দিন।'
+        : 'This kind of file is not accepted. Use an image (JPG, PNG, WebP, AVIF), a PDF or a video (MP4, WebM).';
     }
 
     const limit = file.type.startsWith('video/') ? MAX_VIDEO_BYTES : MAX_FILE_BYTES;

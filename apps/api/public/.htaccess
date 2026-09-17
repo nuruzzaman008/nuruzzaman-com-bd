@@ -1,3 +1,19 @@
+# Security headers for everything served from this host, including uploaded
+# files, which LiteSpeed serves directly without passing through Laravel.
+#
+# The deployment never overwrites this file on the server (it can hold host
+# settings), so a change here has to be copied there by hand as well.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
+
+    # A document type that can carry script is never allowed to run one here.
+    <FilesMatch "\.(svg|svgz|html?|xhtml|xml)$">
+        Header always set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
