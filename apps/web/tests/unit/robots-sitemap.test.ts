@@ -8,7 +8,11 @@ vi.mock('@/lib/api/server', () => ({
   tryPublicApi: async () => ({
     data: {
       posts: [{ slug: 'published-article', updated_at: '2026-08-01T00:00:00Z' }],
-      pages: [{ slug: 'about', updated_at: '2026-08-01T00:00:00Z' }],
+      pages: [
+        { slug: 'about', updated_at: '2026-08-01T00:00:00Z' },
+        { slug: 'support-installation', updated_at: '2026-08-02T00:00:00Z' },
+        { slug: 'draft-landing-page-with-no-route', updated_at: '2026-08-01T00:00:00Z' },
+      ],
       products: [
         { slug: 'nb-engineering-tools', updated_at: '2026-08-01T00:00:00Z' },
         { slug: 'nb-credit-refill', updated_at: '2026-08-01T00:00:00Z' },
@@ -46,6 +50,21 @@ describe('robots.txt', () => {
 });
 
 describe('sitemap.xml', () => {
+  it('lists a CMS page only at the route that shows it', async () => {
+    const { default: sitemap } = await import('@/app/sitemap');
+    const entries = await sitemap();
+    const urls = entries.map((entry) => entry.url);
+
+    expect(urls.some((url) => url.endsWith('/support-installation'))).toBe(false);
+    expect(urls.some((url) => url.includes('draft-landing-page-with-no-route'))).toBe(false);
+
+    const installation = urls.filter((url) => new URL(url).pathname === '/support/installation');
+    expect(installation).toHaveLength(1);
+    expect(entries.find((entry) => entry.url === installation[0])?.lastModified).toEqual(
+      new Date('2026-08-02T00:00:00Z'),
+    );
+  });
+
   it('lists published content and never a private route', async () => {
     const { default: sitemap } = await import('@/app/sitemap');
     const entries = await sitemap();

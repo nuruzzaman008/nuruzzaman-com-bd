@@ -5,6 +5,15 @@ import type { SitemapFeed } from '@nuruzzaman/contracts';
 import { tryPublicApi } from '@/lib/api/server';
 import { absoluteUrl } from '@/lib/env';
 import { localizePath } from '@/lib/i18n/locale';
+import { pageSlugForPath } from '@/lib/site';
+
+/**
+ * Where a CMS page is actually served. A page has no URL of its own: it is the
+ * content of a fixed route, and a nested route has a flat slug
+ * (/support/installation reads 'support-installation'). Listing the slug as
+ * /support-installation advertised a URL that answers "not found".
+ */
+const pathForPageSlug = new Map(Object.entries(pageSlugForPath).map(([path, slug]) => [slug, path]));
 
 /**
  * Only genuinely indexable URLs are listed. The API decides what is publishable
@@ -93,7 +102,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     MetadataRoute.Sitemap[number]['changeFrequency'],
   ][] = [
     ['posts', '/blog', 0.8, 'monthly'],
-    ['pages', '', 0.5, 'monthly'],
     ['products', '/products', 0.8, 'weekly'],
     ['courses', '/courses', 0.8, 'weekly'],
     // Attachment pages the owner has not left out; the slug is the file id.
@@ -103,6 +111,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // A CMS page whose slug is already a static route above would otherwise be
   // listed twice with two different lastModified values.
   const listed = new Set(entries.map((entry) => entry.url));
+
+  // A CMS page only moves the date of the route that shows it. One without a
+  // route is not reachable, so it is not listed.
+  for (const page of feed.data.pages ?? []) {
+    const path = pathForPageSlug.get(page.slug);
+
+    if (!path || !page.updated_at) {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (entry.url === absoluteUrl(path) || entry.url === absoluteUrl(localizePath(path, 'en'))) {
+        entry.lastModified = new Date(page.updated_at);
+      }
+    }
+  }
 
   for (const [key, prefix, priority, changeFrequency] of dynamic) {
     for (const item of feed.data[key] ?? []) {
