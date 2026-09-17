@@ -154,6 +154,36 @@ const nextConfig: NextConfig = {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload',
           },
+          // A response is what its Content-Type says, never what a browser guesses.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // No other site may frame these pages (login, checkout, the dashboard),
+          // which is what clickjacking needs. frame-ancestors below says the same
+          // to browsers that read CSP; this header covers the ones that do not.
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), usb=(), payment=()',
+          },
+          /*
+            A deliberately partial policy. It sets no script, style, image or
+            frame source, so Analytics, AdSense, video embeds and the owner's own
+            header code keep loading exactly as before. What it does block:
+            framing by other sites, a <base> tag redirecting relative URLs,
+            plugins, and forms posting anywhere but here, Google sign-in and the
+            payment gateway. Restricting scripts needs nonces and is its own
+            change.
+          */
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "object-src 'none'",
+              "form-action 'self' https://accounts.google.com https://*.sslcommerz.com",
+              'upgrade-insecure-requests',
+            ].join('; '),
+          },
         ],
       },
     ];
