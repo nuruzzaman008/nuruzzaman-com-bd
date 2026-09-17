@@ -70,11 +70,16 @@ class PaymentCallbackController extends Controller
     }
 
     /**
-     * Sandbox stand-in for the hosted payment page. Only reachable while the
-     * fake gateway driver is bound, so it cannot exist in production.
+     * Sandbox stand-in for the hosted payment page, which settles a payment as
+     * paid on request.
+     *
+     * Never in production, whatever the driver says. The driver defaults to
+     * "fake", so forgetting one variable on the day card payments go live would
+     * otherwise have left this route marking any order paid for free.
      */
     public function sandbox(Request $request, string $reference): RedirectResponse|JsonResponse
     {
+        abort_if(app()->isProduction(), 404);
         abort_unless(config('sslcommerz.driver') !== 'sslcommerz', 404);
 
         $payment = Payment::query()->where('reference', $reference)->firstOrFail();

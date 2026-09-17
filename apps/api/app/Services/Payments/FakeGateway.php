@@ -2,6 +2,7 @@
 
 namespace App\Services\Payments;
 
+use App\Exceptions\DomainException;
 use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Cache;
@@ -24,6 +25,11 @@ class FakeGateway implements PaymentGateway
 
     public function createSession(Order $order, Payment $payment): GatewaySession
     {
+        // A sandbox in production is a checkout that never takes money.
+        if (app()->isProduction()) {
+            throw DomainException::unavailable('Online payment is not configured.');
+        }
+
         $sessionKey = 'fake_'.Str::random(24);
 
         // Remember what a valid settlement should look like so validateTransaction
@@ -42,6 +48,11 @@ class FakeGateway implements PaymentGateway
 
     public function validateTransaction(Payment $payment, array $callback): GatewayValidation
     {
+        // Nothing the sandbox says settles money in production.
+        if (app()->isProduction()) {
+            return GatewayValidation::failed('The sandbox gateway settles nothing in production.', $callback);
+        }
+
         $expected = Cache::get($this->cacheKey($payment->reference));
 
         if (! $expected) {
