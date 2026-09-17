@@ -1,0 +1,86 @@
+# The whole API and web test suites, run on demand and every week.
+#
+# The deploy workflow runs a selected set of API tests so a push goes live in
+# minutes. This runs all of them - registration, sign-in, password reset,
+# checkout, fulfilment, licensing, the LMS and every admin screen - so a
+# regression anywhere is found without waiting for someone to trip over it.
+# It reports; it does not block a deploy.
+name: Full test suite
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 2 * * 3' # Wednesdays, 02:41 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: devroot
+          MYSQL_DATABASE: nuruzzaman_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pdevroot"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, dom, fileinfo, gd, redis
+          coverage: none
+          tools: composer:v2
+      - name: Install
+        working-directory: apps/api
+        run: |
+          composer install --no-interaction --prefer-dist --no-scripts
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      - name: Every API test
+        working-directory: apps/api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: nuruzzaman_test
+          DB_USERNAME: root
+          DB_PASSWORD: devroot
+        run: php vendor/bin/phpunit --log-junit phpunit-report.xml
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-report
+          path: apps/api/phpunit-report.xml
+          if-no-files-found: ignore
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --include=dev --no-audit --no-fund
+      - name: Lint and unit tests
+        run: |
+          npm run lint
+          npm test
+      - name: Type check
+        working-directory: apps/web
+        run: npx tsc --noEmit
+      - name: Production build
+        run: npm run build
