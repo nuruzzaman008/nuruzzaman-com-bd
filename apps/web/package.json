@@ -15,9 +15,9 @@
     "preview": "node tools/preview.mjs"
   },
   "dependencies": {
-    "next": "16.3.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "@nuruzzaman/contracts": "*"
   },
   "devDependencies": {
@@ -26,12 +26,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "@nuruzzaman/eslint-config": "*",
-    "@playwright/test": "^1.50.1",
-    "@testing-library/dom": "^10.4.0",
+    "@playwright/test": "^1.63.0",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.6.1",
