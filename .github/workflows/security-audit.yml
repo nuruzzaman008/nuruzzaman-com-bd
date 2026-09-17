@@ -1,0 +1,48 @@
+# Known vulnerabilities in what the site actually runs, checked every week and
+# on demand. It fails - and GitHub emails the repository owner - when a
+# production dependency has a high or critical advisory, so a new CVE is found
+# the week it is published rather than at the next audit.
+#
+# Development tooling is reported but does not fail the run: it is never
+# shipped to the server.
+name: Security audit
+
+on:
+  schedule:
+    - cron: '17 3 * * 1' # Mondays, 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Production dependencies (fails on high or critical)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: All dependencies, including development tooling (report only)
+        run: npm audit || true
+
+  composer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+
+      - name: Laravel and PHP packages (fails on any advisory)
+        run: composer audit --locked --no-interaction
