@@ -49,13 +49,13 @@ let memo = null;
 /** Parsed again only when the file changed, because this runs on every cache read. */
 function readStamps(file, fresh = false) {
   try {
-    const { mtimeMs } = statSync(file);
+    const { mtimeMs } = statSync(/* turbopackIgnore: true */ file);
 
     if (!fresh && memo && memo.file === file && memo.mtime === mtimeMs) {
       return memo.stamps;
     }
 
-    const parsed = JSON.parse(readFileSync(file, 'utf8'));
+    const parsed = JSON.parse(readFileSync(/* turbopackIgnore: true */ file, 'utf8'));
     const stamps = {};
 
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {

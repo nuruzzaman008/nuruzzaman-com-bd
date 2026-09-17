@@ -37,7 +37,10 @@ export function buildMetadata(input: MetadataInput): Metadata {
   const image = input.seo?.og_image_url || input.image || absoluteUrl('/opengraph-image');
 
   return {
-    title,
+    // The layout's template appends the brand. A title that already names it
+    // (the home page, About, or an editor's own meta title) is kept as written,
+    // so search results do not show "Engr. Md. Nuruzzaman, RSE" twice.
+    title: title.includes(brand.owner) ? { absolute: title } : title,
     description,
     alternates: {
       canonical,

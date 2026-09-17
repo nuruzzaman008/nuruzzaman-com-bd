@@ -83,11 +83,16 @@ const nextConfig: NextConfig = {
     const target =
       configured ?? (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8001' : undefined);
 
+    // Browsers and crawlers ask for /favicon.ico whatever the page declares;
+    // it answered 404 while the real icon is generated at /icon.
+    const favicon = { source: '/favicon.ico', destination: '/icon' };
+
     if (!target) {
-      return [];
+      return [favicon];
     }
 
     return [
+      favicon,
       { source: '/api/:path*', destination: `${target}/api/:path*` },
       { source: '/sanctum/:path*', destination: `${target}/sanctum/:path*` },
     ];

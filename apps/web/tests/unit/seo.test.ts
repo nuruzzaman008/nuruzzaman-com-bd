@@ -10,6 +10,7 @@ import {
   productSchema,
   websiteSchema,
 } from '@/lib/seo';
+import { brand } from '@/lib/site';
 
 describe('buildMetadata', () => {
   it('uses the CMS SEO override when one is set', () => {
@@ -30,6 +31,13 @@ describe('buildMetadata', () => {
     expect(metadata.title).toBe('Plain');
     expect(metadata.robots).toEqual({ index: true, follow: true });
     expect(metadata.alternates?.canonical).toContain('/about');
+  });
+
+  it('does not repeat the brand when the title already names it', () => {
+    const metadata = buildMetadata({ title: `${brand.owner} — About`, path: '/about' });
+
+    expect(metadata.title).toEqual({ absolute: `${brand.owner} — About` });
+    expect(metadata.openGraph?.title).toBe(`${brand.owner} — About`);
   });
 
   it('honours a noindex flag from the CMS', () => {
