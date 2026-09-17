@@ -15,7 +15,7 @@
     "bundle": "redocly bundle openapi.yaml --config redocly.yaml -o openapi.json"
   },
   "devDependencies": {
-    "@redocly/cli": "^1.34.1",
+    "@redocly/cli": "^2.52.1",
     "openapi-typescript": "^7.9.1",
     "yaml": "^2.7.0"
   }
