@@ -51,7 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/payments/*/ipn',
         ]);
 
-        $middleware->trustProxies(at: '*');
+        // Trusted proxies come from config/trustedproxy.php, never '*': trusting
+        // every address let any visitor choose the IP the rate limits count.
 
         /*
          * There is no Laravel login page: the sign-in form is in the Next.js
