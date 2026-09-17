@@ -17,9 +17,16 @@
 | send, which switched off every per-address rate limit - login, contact form,
 | search, referrals - and let the audit log record a forged address.
 |
-| Production sets TRUSTED_PROXIES in .env. The default trusts only loopback.
-| Rollback, should a real client ever arrive looking like the proxy: set
-| TRUSTED_PROXIES=* and run php artisan config:cache.
+| Production sets TRUSTED_PROXIES in .env to loopback plus the one address
+| Next.js calls from (115.187.18.50). List exact addresses, not the host's
+| subnet: a /28 also trusted neighbours that are not this server. LiteSpeed in
+| front of the API already swaps in the first X-Forwarded-For entry for
+| requests from this server, which is why Next.js sends exactly one entry;
+| this list is the second line, for when that server setting changes.
+|
+| The default trusts only loopback. Rollback, should real visitors ever all
+| show up as one address: widen TRUSTED_PROXIES and run
+| php artisan config:cache.
 |
 */
 

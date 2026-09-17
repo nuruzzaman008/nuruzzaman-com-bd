@@ -39,6 +39,24 @@ class SecurityHardeningTest extends TestCase
             ->assertJsonPath('ip', '203.0.113.7');
     }
 
+    /** H1 follow-up: exact proxy addresses, and a forged first entry never wins. */
+    public function test_only_the_listed_proxy_address_is_believed(): void
+    {
+        Route::get('/_security/ip', fn (Request $request) => response()->json(['ip' => $request->ip()]));
+        config(['trustedproxy.proxies' => '127.0.0.1,::1,115.187.18.50']);
+
+        // A neighbour in the same subnet is not this server's proxy.
+        $this->withServerVariables(['REMOTE_ADDR' => '115.187.18.59'])
+            ->getJson('/_security/ip', ['X-Forwarded-For' => '203.0.113.7'])
+            ->assertJsonPath('ip', '115.187.18.59');
+
+        // Through the real proxy, a visitor who adds their own entry in front
+        // still gets the address the proxy appended.
+        $this->withServerVariables(['REMOTE_ADDR' => '115.187.18.50'])
+            ->getJson('/_security/ip', ['X-Forwarded-For' => '203.0.113.7, 198.51.100.9'])
+            ->assertJsonPath('ip', '198.51.100.9');
+    }
+
     public function test_the_default_trusts_only_loopback(): void
     {
         // TRUSTED_PROXIES is not set under test, so this is the shipped default.
