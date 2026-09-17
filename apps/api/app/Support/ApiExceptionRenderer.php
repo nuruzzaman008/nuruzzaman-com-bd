@@ -54,6 +54,9 @@ final class ApiExceptionRenderer
             $e instanceof AuthenticationException => [401, 'unauthenticated', 'Authentication is required.', []],
             $e instanceof AuthorizationException => [403, 'forbidden', $e->getMessage() ?: 'This action is not allowed.', []],
             $e instanceof ModelNotFoundException => [404, 'not_found', 'The requested resource was not found.', []],
+            // Route model binding arrives wrapped in a 404 whose message names the
+            // model class ("No query results for model [App\Models\Post]").
+            $e instanceof HttpExceptionInterface && $e->getPrevious() instanceof ModelNotFoundException => [404, 'not_found', 'The requested resource was not found.', []],
             $e instanceof HttpExceptionInterface => [
                 $e->getStatusCode(),
                 self::codeForStatus($e->getStatusCode()),

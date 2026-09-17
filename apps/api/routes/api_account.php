@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\Route;
 | inside the /api/v1 prefix.
 */
 
+/*
+| Who is signed in, for the site header and footer: 200 with the user or with
+| null, where /me answers a signed-out visitor 401. Public, and rate limited
+| like the rest of the public API.
+*/
+Route::get('session', Auth\SessionController::class)->middleware('throttle:api');
+
 Route::middleware(['auth:sanctum', 'active', EnsureCustomerAccount::class])->group(function () {
     Route::get('me', [Account\ProfileController::class, 'show']);
     Route::get('me/avatar', [Account\AvatarController::class, 'own']);

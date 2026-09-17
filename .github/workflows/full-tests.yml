@@ -9,6 +9,10 @@ name: Full test suite
 
 on:
   workflow_dispatch:
+  # Dependabot's pull requests, and anyone else's, are tested before a merge
+  # to main deploys them.
+  pull_request:
+    branches: [main]
   schedule:
     - cron: '41 2 * * 3' # Wednesdays, 02:41 UTC
 

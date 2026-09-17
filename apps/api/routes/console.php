@@ -1,6 +1,8 @@
 <?php
 
 use App\Jobs\ReconcilePayments;
+use App\Jobs\RecordQueueHeartbeat;
+use App\Support\OperationalHealth;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -34,3 +36,11 @@ Schedule::job(new ReconcilePayments)->everyFifteenMinutes()->withoutOverlapping(
 Schedule::call(fn () => Artisan::call('platform:housekeeping'))
     ->name('platform:housekeeping')
     ->dailyAt('02:15');
+
+// Heartbeats read by /up (App\Support\OperationalHealth): the scheduler notes
+// that it ran, and queues a job whose running proves a worker is taking jobs.
+Schedule::call(fn () => OperationalHealth::beat(OperationalHealth::SCHEDULER_KEY))
+    ->name('health:scheduler-heartbeat')
+    ->everyFiveMinutes();
+
+Schedule::job(new RecordQueueHeartbeat)->everyFiveMinutes();

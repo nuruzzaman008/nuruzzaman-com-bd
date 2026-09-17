@@ -1,9 +1,11 @@
 import 'server-only';
 
 import { cookies, headers } from 'next/headers';
-import { createClient, type RequestOptions } from '@nuruzzaman/contracts';
+import { redirect } from 'next/navigation';
+import { ApiError, createClient, type RequestOptions } from '@nuruzzaman/contracts';
 
 import { clientAddress } from '@/lib/client-address';
+import { loginRedirect, REQUEST_PATH_HEADER } from '@/lib/request-path';
 import { serverEnv } from '@/lib/env.server';
 
 /**
@@ -68,11 +70,26 @@ export async function sessionApi<T>(path: string, options: RequestOptions = {}):
     forwarded['X-Request-Id'] = requestId;
   }
 
-  return client.request<T>(path, {
-    ...options,
-    headers: { ...forwarded, ...options.headers },
-    cache: 'no-store',
-  });
+  try {
+    return await client.request<T>(path, {
+      ...options,
+      headers: { ...forwarded, ...options.headers },
+      cache: 'no-store',
+    });
+  } catch (error) {
+    /*
+      Signed out: to the sign-in page and back to this URL, which is what every
+      layout already did. A page renders alongside its layout, though, so while
+      the layout redirected, the page's own request failed too and was logged
+      as an unhandled server error on every signed-out visit to /account or
+      /dashboard.
+    */
+    if (error instanceof ApiError && error.isUnauthenticated) {
+      redirect(loginRedirect(headerStore.get(REQUEST_PATH_HEADER), '/account'));
+    }
+
+    throw error;
+  }
 }
 
 /** Returns null on 404/403 instead of throwing, for optional page sections. */

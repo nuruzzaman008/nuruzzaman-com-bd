@@ -21,6 +21,13 @@ vi.mock('@/lib/api/server', () => ({
   sessionApi: async () => ({ data: null }),
 }));
 
+// The sitemap waits for a real request so it is never frozen at build time;
+// outside Next there is no request to wait for.
+vi.mock('next/server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/server')>()),
+  connection: async () => undefined,
+}));
+
 const PRIVATE_PATHS = ['/cart', '/checkout', '/account', '/dashboard', '/learn', '/search'];
 
 describe('robots.txt', () => {

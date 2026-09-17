@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { connection } from 'next/server';
 import type { SitemapFeed } from '@nuruzzaman/contracts';
 
 import { tryPublicApi } from '@/lib/api/server';
@@ -43,6 +44,16 @@ const STATIC_ROUTES: {
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  /*
+    Built when a crawler asks, never during `next build`. The build calls the
+    API from GitHub's servers, which the API's per-address limit refuses after
+    120 requests a minute; the refused sitemap call was frozen into the deploy
+    with only the static routes below, and it was never rebuilt on the server.
+    The API response itself is still cached for 15 minutes, and a publish
+    refreshes it through the 'sitemap' tag.
+  */
+  await connection();
+
   const feed = await tryPublicApi<{ data: SitemapFeed }>('/site/sitemap', {
     tags: ['sitemap'],
     revalidate: 900,

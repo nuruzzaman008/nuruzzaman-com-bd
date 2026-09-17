@@ -21,6 +21,11 @@ class RegisterController extends Controller
 
     public function __invoke(RegisterRequest $request): JsonResponse
     {
+        // A website action. Without the session Sanctum starts for the site the
+        // account used to be created - or the password accepted - and only then
+        // did the request fail, on the missing session, with a server error.
+        abort_unless($request->hasSession(), 400, 'Sign in and register on the website.');
+
         $user = DB::transaction(function () use ($request) {
             $user = User::create($request->safe()->only(['name', 'email', 'password', 'phone', 'account_mode']));
             $user->refresh();

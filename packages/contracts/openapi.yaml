@@ -2111,6 +2111,35 @@ paths:
                   message: { type: string }
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
+  /session:
+    get:
+      tags: [Auth]
+      operationId: getSession
+      summary: Who is signed in, if anyone
+      description: |
+        Always 200. `data` is the signed-in user, or null for a visitor who is
+        not signed in or whose account is inactive. The site header uses this,
+        so a signed-out visitor's page view logs no failed request; `/me` keeps
+        answering 401.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/User'
+                      - type: 'null'
+        '429':
+          description: Too many requests from this address
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /me:
     get:
       tags: [Account]

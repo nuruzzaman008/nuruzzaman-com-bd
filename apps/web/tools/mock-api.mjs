@@ -201,6 +201,8 @@ const ROUTES = new Map([
   ['/api/v1/courses', { data: [], meta: { current_page: 1, last_page: 1, per_page: 12, total: 0 } }],
   ['/api/v1/releases', { data: [release] }],
   ['/api/v1/cart', { data: emptyCart }],
+  // Signed out, as the real API answers a visitor with no session.
+  ['/api/v1/session', { data: null }],
 ]);
 
 /** Pattern fixtures, tried in order. */

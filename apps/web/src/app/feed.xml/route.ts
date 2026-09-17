@@ -1,3 +1,4 @@
+import { connection } from 'next/server';
 import type { PostSummary } from '@nuruzzaman/contracts';
 
 import { tryPublicApi } from '@/lib/api/server';
@@ -11,8 +12,6 @@ import { brand } from '@/lib/site';
  * assumptions and limitations that sit around them on the page, and an excerpt
  * in a reader cannot be mistaken for a complete method.
  */
-export const revalidate = 900;
-
 /** Escapes the five XML entities. Feed text comes from the CMS, not from users. */
 function escapeXml(value: string): string {
   return value
@@ -24,6 +23,11 @@ function escapeXml(value: string): string {
 }
 
 export async function GET(): Promise<Response> {
+  // Built per request from the cached posts, not during `next build`: a build
+  // refused by the API's rate limit froze an empty feed into the deploy. The
+  // Cache-Control header below still lets readers and CDNs cache it.
+  await connection();
+
   const feed = await tryPublicApi<{ data: PostSummary[] }>('/posts?per_page=30', {
     tags: ['posts'],
     revalidate: 900,

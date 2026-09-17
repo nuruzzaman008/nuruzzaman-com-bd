@@ -46,7 +46,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const load = useCallback(async (isCancelled: () => boolean = () => false) => {
     try {
-      const me = await api<{ data: User }>('/me');
+      // /session, not /me: /me answers a signed-out visitor 401, which the
+      // browser printed as a red console error on every page view.
+      const me = await api<{ data: User | null }>('/session');
 
       if (!isCancelled()) {
         setUser(me.data);

@@ -1,0 +1,53 @@
+# Is the live site up and working? Checked every 15 minutes.
+#
+# A failed run is the alert: GitHub emails the account that owns this schedule
+# when a scheduled workflow fails. Scheduled runs can start a few minutes late
+# when GitHub is busy, so this is a safety net, not a pager.
+#
+# /up answers 500 not only when PHP is down but when the database or cache is
+# unreachable, or when the scheduler or the queue worker has not run for 15
+# minutes (App\Support\OperationalHealth).
+name: Uptime
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: API health (database, cache, scheduler, queue)
+        run: |
+          body=$(curl -fsS --retry 2 --retry-delay 10 --max-time 20 -H 'Accept: application/json' https://api.nuruzzaman.com.bd/up)
+          echo "$body"
+          echo "$body" | grep -q '"status":"up"'
+
+      - name: Home page
+        run: curl -fsS --retry 2 --retry-delay 10 --max-time 30 -o /dev/null https://nuruzzaman.com.bd/
+
+      - name: Sitemap lists published articles
+        # The sitemap was once frozen with only the fixed pages after a build
+        # was rate limited. A blog URL in it means the API data reached it.
+        run: |
+          curl -fsS --retry 2 --retry-delay 10 --max-time 30 https://nuruzzaman.com.bd/sitemap.xml > sitemap.xml
+          grep -c '<loc>' sitemap.xml
+          grep -q 'https://nuruzzaman.com.bd/blog/' sitemap.xml
+
+      - name: Certificates valid for at least 14 more days
+        run: |
+          for host in nuruzzaman.com.bd api.nuruzzaman.com.bd; do
+            end=$(echo | openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+            days=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+            echo "$host: $days days left"
+            test "$days" -ge 14
+          done
