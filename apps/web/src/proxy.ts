@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import { clientAddress } from '@/lib/client-address';
 import { PATHNAME_HEADER, REQUEST_PATH_HEADER } from '@/lib/request-path';
 
 /**
@@ -28,6 +29,20 @@ export function proxy(request: NextRequest) {
   // signed-out visitor to the exact URL they asked for - a verification link
   // is nothing but its query string.
   headers.set(REQUEST_PATH_HEADER, `${request.nextUrl.pathname}${request.nextUrl.search}`);
+
+  /*
+    Only the address our own web server recorded goes on to the API, whether
+    through the /api rewrite or a server component. Anything a visitor wrote
+    in this header themselves is dropped here, before it can be mistaken for
+    their address further in.
+  */
+  const visitor = clientAddress(request.headers.get('x-forwarded-for'));
+
+  if (visitor) {
+    headers.set('x-forwarded-for', visitor);
+  } else {
+    headers.delete('x-forwarded-for');
+  }
 
   return NextResponse.next({ request: { headers } });
 }

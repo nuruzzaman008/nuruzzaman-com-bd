@@ -3,6 +3,7 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { createClient, type RequestOptions } from '@nuruzzaman/contracts';
 
+import { clientAddress } from '@/lib/client-address';
 import { serverEnv } from '@/lib/env.server';
 
 /**
@@ -58,7 +59,8 @@ export async function sessionApi<T>(path: string, options: RequestOptions = {}):
   // Sanctum decides a request is first-party from its Origin, and Laravel needs
   // the real client address for rate limiting and audit rows.
   forwarded.Origin = headerStore.get('origin') ?? headerStore.get('host') ?? '';
-  forwarded['X-Forwarded-For'] = headerStore.get('x-forwarded-for') ?? '';
+  // The last address only: see lib/client-address.ts.
+  forwarded['X-Forwarded-For'] = clientAddress(headerStore.get('x-forwarded-for'));
 
   const requestId = headerStore.get('x-request-id');
 
