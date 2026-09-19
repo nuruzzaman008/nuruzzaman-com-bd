@@ -26,6 +26,15 @@ class VideoPlaybackService
         if ($lesson->video_provider === 'uploaded' && filled($lesson->video_asset_id)) {
             return ['provider' => 'uploaded', 'kind' => 'video', 'url' => URL::temporarySignedRoute('lesson.video.stream', now()->addHours(2), ['lesson' => $lesson->id, 'viewer' => $lesson->is_free_preview ? 0 : (auth()->id() ?? 0)], absolute: false), 'token' => null, 'expires_in' => 7200, 'available' => true, 'message' => null];
         }
+        // Resource uploads are also playable, including files attached before
+        // this fallback existed. Explicitly configured videos take precedence.
+        if (blank($lesson->video_asset_id)) {
+            $lesson->loadMissing('assets');
+            $attachment = $lesson->assets->first(fn ($asset) => $asset->playableVideoMime() !== null);
+            if ($attachment) {
+                return ['provider' => 'uploaded', 'kind' => 'video', 'url' => URL::temporarySignedRoute('lesson.video.stream', now()->addHours(2), ['lesson' => $lesson->id, 'asset' => $attachment->id, 'viewer' => $lesson->is_free_preview ? 0 : (auth()->id() ?? 0)], absolute: false), 'token' => null, 'expires_in' => 7200, 'available' => true, 'message' => null];
+            }
+        }
         $ttl = (int) config('video.playback_ttl_seconds');
         $driver = $lesson->video_provider ?: config('video.driver');
 

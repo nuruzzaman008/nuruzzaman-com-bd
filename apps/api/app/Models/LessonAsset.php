@@ -33,6 +33,19 @@ class LessonAsset extends Model
         return $this->disk === self::LINK_DISK;
     }
 
+    public function playableVideoMime(): ?string
+    {
+        if ($this->isLink()) {
+            return null;
+        }
+
+        return match (strtolower(pathinfo($this->storage_path, PATHINFO_EXTENSION))) {
+            'mp4' => 'video/mp4',
+            'webm' => 'video/webm',
+            default => null,
+        };
+    }
+
     public function getKindAttribute(): string
     {
         return $this->isLink() ? 'link' : 'file';
