@@ -54,6 +54,8 @@ describe('LessonPlayer documents', () => {
     expect(open).toHaveAttribute('href', '/api/v1/learn/plumbing/lessons/documents/assets/3');
     expect(open).toHaveAttribute('target', '_blank');
     expect(open.getAttribute('rel')).toContain('noopener');
+    expect(open.getAttribute('rel')?.split(/\s+/)).not.toContain('noreferrer');
+    expect(open).toHaveAttribute('referrerpolicy', 'same-origin');
     expect(screen.getByText('Google Drive')).toBeInTheDocument();
   });
 

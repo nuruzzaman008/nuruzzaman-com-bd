@@ -248,12 +248,13 @@ export function LessonPlayer({
                 </span>
                 {asset.download_url ? (
                   asset.kind === 'link' ? (
-                    // Opens on Google Drive or Dropbox, in a tab of its own, so
-                    // the lesson stays where it was.
+                    // Sanctum needs the same-origin Referer on the protected API
+                    // hop. Do not send the lesson URL to the external provider.
                     <a
                       href={asset.download_url}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
+                      referrerPolicy="same-origin"
                       aria-label={`${words.openLink}: ${asset.title}`}
                       className="shrink-0 rounded-full bg-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-navy"
                     >
