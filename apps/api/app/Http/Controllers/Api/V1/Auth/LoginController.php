@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\Commerce\CartService;
 use App\Support\Audit;
+use App\Support\MfaSession;
 use App\Support\Totp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ class LoginController extends Controller
     private const LOCK_MINUTES = 15;
 
     /** Where the half-finished sign-in waits for its code. */
-    private const PENDING_KEY = 'auth.mfa_pending';
+    private const PENDING_KEY = MfaSession::PENDING;
 
     /** How long that wait may last. */
     private const PENDING_SECONDS = 300;
@@ -178,6 +179,11 @@ class LoginController extends Controller
     {
         Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
+
+        // This session typed the code, so it may open the dashboard.
+        if ($viaMfa) {
+            MfaSession::markVerified($request, $user);
+        }
 
         $user->forceFill([
             'last_login_at' => now(),

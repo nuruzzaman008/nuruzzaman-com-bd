@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\MfaSession;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,8 +25,22 @@ class RequireStaffMfa
     {
         $user = $request->user('sanctum');
 
-        if ($user && $request->is('api/v1/admin/*') && $user->isStaff() && ! $user->hasTwoFactor()) {
+        if (! $user || ! $request->is('api/v1/admin/*') || ! $user->isStaff()) {
+            return $next($request);
+        }
+
+        if (! $user->hasTwoFactor()) {
             abort(403, 'Two-step verification is required for staff. Set it up in Dashboard → Security.');
+        }
+
+        /*
+          Having the app set up is not enough: this session must have seen a
+          code. Otherwise a staff account opened through Google, or through a
+          remember-me cookie, would walk past the second step entirely. There is
+          no session-less way into the admin API, so no session means no entry.
+        */
+        if (! MfaSession::isVerified($request, $user)) {
+            abort(403, 'Enter the code from your authenticator app to continue.');
         }
 
         return $next($request);

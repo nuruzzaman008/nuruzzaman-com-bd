@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\Commerce\CartService;
 use App\Support\Audit;
+use App\Support\MfaSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -129,7 +130,30 @@ class GoogleAuthController extends Controller
             $user->forceFill(['google_id' => $googleId])->save();
         }
 
-        Auth::login($user, remember: true);
+        $staff = $user->roles()->whereIn('name', self::STAFF_ROLES)->exists();
+
+        /*
+          Google proves who holds the Google account, not who holds this one's
+          authenticator app. An account with two-step verification is handed to
+          the same code step a password sign-in gets, and nothing is signed in
+          until the code is right.
+        */
+        if ($user->hasTwoFactor()) {
+            $request->session()->regenerate();
+            $request->session()->put(MfaSession::PENDING, [
+                'id' => $user->getKey(),
+                'remember' => ! $staff,
+                'at' => now()->getTimestamp(),
+            ]);
+
+            Audit::record('auth.mfa_challenged', $user, ['via' => 'google'], $user->getKey());
+
+            return redirect()->away($this->frontend().'/login?mfa=1');
+        }
+
+        // A staff session is not kept alive by a long-lived cookie: a stolen
+        // remember-me cookie would otherwise outlast any password change.
+        Auth::login($user, remember: ! $staff);
         $request->session()->regenerate();
 
         $user->forceFill([
@@ -140,8 +164,6 @@ class GoogleAuthController extends Controller
         if ($cart = $request->cookie('cart_token')) {
             $this->carts->merge($this->carts->forToken($cart), $user);
         }
-
-        $staff = $user->roles()->whereIn('name', self::STAFF_ROLES)->exists();
 
         // Recorded distinctly: a staff sign-in that skipped the password is
         // worth being able to find in the audit log later.

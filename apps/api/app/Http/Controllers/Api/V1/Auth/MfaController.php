@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Support\Audit;
+use App\Support\MfaSession;
 use App\Support\Totp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -64,9 +66,56 @@ class MfaController extends Controller
 
         $user->forceFill(['mfa_confirmed_at' => now()])->save();
 
+        // The code was just typed into this session.
+        MfaSession::markVerified($request, $user);
+
         Audit::record('auth.mfa_enabled', $user, [], $user->getKey());
 
         return response()->json(['data' => ['mfa_enabled' => true]]);
+    }
+
+    /**
+     * Asks a signed-in session for the code when it got in without one: through
+     * Google, through a remember-me cookie, or from before two-step
+     * verification existed. Three wrong codes lock it for fifteen minutes, as
+     * at sign-in.
+     */
+    public function verify(Request $request): JsonResponse
+    {
+        $input = $request->validate(['code' => ['required', 'string', 'max:10']]);
+        $user = $request->user();
+
+        if (! $user->hasTwoFactor()) {
+            throw ValidationException::withMessages([
+                'code' => 'Set up two-step verification first.',
+            ]);
+        }
+
+        $throttleKey = 'mfa:'.$user->getKey();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            Audit::record('auth.mfa_locked', $user, [], $user->getKey());
+
+            throw ValidationException::withMessages([
+                'code' => 'Too many wrong codes. Try again in '
+                    .max(1, (int) ceil(RateLimiter::availableIn($throttleKey) / 60)).' minute(s).',
+            ]);
+        }
+
+        if (! Totp::verify((string) $user->mfa_secret, $input['code'])) {
+            RateLimiter::hit($throttleKey, 15 * 60);
+            Audit::record('auth.mfa_failed', $user, ['step_up' => true], $user->getKey());
+
+            throw ValidationException::withMessages(['code' => 'That code is not right.']);
+        }
+
+        RateLimiter::clear($throttleKey);
+        $request->session()->regenerate();
+        MfaSession::markVerified($request, $user);
+
+        Audit::record('auth.mfa_verified', $user, ['step_up' => true], $user->getKey());
+
+        return response()->json(['data' => ['mfa_session_verified' => true]]);
     }
 
     /** Turning it off needs the password, so a borrowed session cannot. */

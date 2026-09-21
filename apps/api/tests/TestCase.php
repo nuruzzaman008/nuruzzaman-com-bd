@@ -5,8 +5,10 @@ namespace Tests;
 use App\Enums\Role as RoleEnum;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\MfaSession;
 use App\Support\Totp;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -52,6 +54,21 @@ abstract class TestCase extends BaseTestCase
         $user->roles()->attach(Role::query()->where('name', $role->value)->firstOrFail());
 
         return $user->fresh();
+    }
+
+    /**
+     * Acting as someone with two-step verification on also means acting in a
+     * session that has typed the code, because the dashboard refuses a staff
+     * session that has not (RequireStaffMfa). Use be() for a session that has
+     * not.
+     */
+    public function actingAs(Authenticatable $user, $guard = null)
+    {
+        if ($user instanceof User && $user->hasTwoFactor()) {
+            $this->withSession([MfaSession::VERIFIED => $user->getKey()]);
+        }
+
+        return parent::actingAs($user, $guard);
     }
 
     protected function customer(array $attributes = []): User

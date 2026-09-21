@@ -8,7 +8,6 @@ use App\Models\DownloadEntitlement;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -34,9 +33,23 @@ class DownloadService
             throw DomainException::unavailable('This file is not available on the server yet.');
         }
 
-        DB::transaction(function () use ($entitlement) {
-            $entitlement->increment('download_count');
-        });
+        /*
+          Counted and checked in one statement. Reading the count, then adding
+          one, let several downloads started at the same moment all see the last
+          one free and all go through.
+        */
+        $counted = DownloadEntitlement::query()
+            ->whereKey($entitlement->getKey())
+            ->where(fn ($query) => $query
+                ->whereNull('max_downloads')
+                ->orWhereColumn('download_count', '<', 'max_downloads'))
+            ->increment('download_count');
+
+        if ($counted === 0) {
+            $this->log($entitlement, 'limit_reached', $request);
+
+            throw DomainException::forbidden('You have reached the download limit for this file.');
+        }
 
         $this->log($entitlement, 'granted', $request);
 

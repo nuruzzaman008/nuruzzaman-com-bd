@@ -2063,6 +2063,74 @@
         }
       }
     },
+    "/me/mfa/verify": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "verifyTwoFactorSession",
+        "summary": "Enter a code for a session that signed in without one",
+        "description": "Staff signed in through Google or a remember-me cookie are asked for a code before the dashboard opens. Three wrong codes lock it for fifteen minutes.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "This session has now typed a code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "mfa_session_verified"
+                      ],
+                      "properties": {
+                        "mfa_session_verified": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/auth/logout": {
       "post": {
         "tags": [
@@ -17410,6 +17478,10 @@
           },
           "mfa_enabled": {
             "type": "boolean"
+          },
+          "mfa_session_verified": {
+            "type": "boolean",
+            "description": "Whether this session has typed a code. Staff are asked for one before the dashboard opens when it has not."
           },
           "roles": {
             "type": "array",

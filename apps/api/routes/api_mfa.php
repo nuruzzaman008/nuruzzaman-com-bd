@@ -20,5 +20,6 @@ Route::post('auth/mfa', [LoginController::class, 'challenge'])->middleware('thro
 Route::middleware(['auth:sanctum', 'active', 'throttle:verify-email'])->group(function () {
     Route::post('me/mfa', [MfaController::class, 'start']);
     Route::post('me/mfa/confirm', [MfaController::class, 'confirm']);
+    Route::post('me/mfa/verify', [MfaController::class, 'verify']);
     Route::delete('me/mfa', [MfaController::class, 'destroy']);
 });

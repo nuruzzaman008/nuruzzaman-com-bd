@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Support\MfaSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,9 @@ class UserResource extends JsonResource
             'status' => $this->status,
             'email_verified' => $this->email_verified_at !== null,
             'mfa_enabled' => $this->mfa_confirmed_at !== null,
+            // Whether this session has typed a code. The dashboard asks for one
+            // when it has not, rather than letting every admin page fail.
+            'mfa_session_verified' => $this->mfa_confirmed_at !== null && MfaSession::isVerified($request, $this->resource),
             'roles' => $this->roleNames()->values(),
             'permissions' => $this->when(
                 $this->isStaff(),
