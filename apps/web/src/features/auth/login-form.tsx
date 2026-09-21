@@ -30,6 +30,8 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
   // the API answers "code needed", and this form asks for it. Google sign-in
   // lands here with ?mfa=1 for the same reason.
   const [codeNeeded, setCodeNeeded] = useState(searchParams.get('mfa') === '1');
+  // The phone is not to hand: one of the recovery codes instead.
+  const [useRecovery, setUseRecovery] = useState(false);
 
   // The staff entrance has a destination of its own, so arriving there
   // without one still means the dashboard rather than the customer account.
@@ -47,7 +49,9 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
       const signedIn = codeNeeded
         ? await api<{ data: User }>('/auth/mfa', {
             method: 'POST',
-            body: { code: form.get('code') },
+            body: useRecovery
+              ? { recovery_code: form.get('recovery_code') }
+              : { code: form.get('code') },
           })
         : await api<{ data: User | { mfa_required: true } }>('/auth/login', {
             method: 'POST',
@@ -107,20 +111,48 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
 
       {codeNeeded ? (
         <>
-          <Callout tone="info">{t.auth.mfaPrompt}</Callout>
+          <Callout tone="info">{useRecovery ? t.auth.recoveryPrompt : t.auth.mfaPrompt}</Callout>
 
-          <Field label={t.auth.mfaCode} required error={errors.code?.[0]}>
-            {(props) => (
-              <Input
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={10}
-                autoFocus
-                {...props}
-              />
-            )}
-          </Field>
+          {useRecovery ? (
+            <Field label={t.auth.recoveryCode} required error={errors.recovery_code?.[0]}>
+              {(props) => (
+                <Input
+                  name="recovery_code"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  maxLength={40}
+                  autoFocus
+                  {...props}
+                />
+              )}
+            </Field>
+          ) : (
+            <Field label={t.auth.mfaCode} required error={errors.code?.[0]}>
+              {(props) => (
+                <Input
+                  name="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={10}
+                  autoFocus
+                  {...props}
+                />
+              )}
+            </Field>
+          )}
+
+          <button
+            type="button"
+            className="text-sm text-blue hover:underline"
+            onClick={() => {
+              setUseRecovery(!useRecovery);
+              setErrors({});
+              setMessage(null);
+            }}
+          >
+            {useRecovery ? t.auth.mfaUseApp : t.auth.mfaUseRecovery}
+          </button>
         </>
       ) : (
         <>
@@ -151,6 +183,7 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
             className="text-blue hover:underline"
             onClick={() => {
               setCodeNeeded(false);
+              setUseRecovery(false);
               setErrors({});
               setMessage(null);
             }}

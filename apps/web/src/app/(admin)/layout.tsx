@@ -89,8 +89,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="max-w-md rounded-xl border border-amber/40 bg-amber-soft p-6 text-navy">
           <h1 className="text-lg font-bold">{t.admin.security.required}</h1>
           <p className="mt-2 text-sm">{t.admin.security.intro}</p>
+          {/* Lands on the setup already started: QR code, key and code field. */}
           <Link
-            href="/dashboard/security"
+            href="/dashboard/security?setup=1"
             className="mt-4 inline-block rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-soft"
           >
             {t.admin.security.setUpNow}

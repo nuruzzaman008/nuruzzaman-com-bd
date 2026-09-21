@@ -79,7 +79,7 @@ jobs:
           DB_DATABASE: nuruzzaman_test
           DB_USERNAME: root
           DB_PASSWORD: devroot
-        run: php vendor/bin/phpunit --filter='LessonAttachmentVideoTest|CourseMediaPricingTest|UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest|EngineeringToolsPriceTest|CreditPricingTest|RetirePostTest|AdminProductPricesTest|ReleaseDownloadsTest|AffiliateProgramTest|AdminMediaLibraryTest|MediaAttachmentTest|MarkdownVideoEmbedTest|PostUpdateRevalidationTest|AdminContentCreationTest|SiteCodeSettingsTest|PostDeletionTest|ContentDeletionGuardsTest|AdminListFiltersTest|BulkStatusChangeTest|OrderDeletionTest|SecurityHardeningTest|SessionEndpointTest|OperationalHealthTest|AuthTest|PaymentIntegrityTest|PaymentValidationTest|RefundTest|CheckoutTest|CartPricingTest|ManualPaymentTest|FulfillmentTest|ApiContractTest'
+        run: php vendor/bin/phpunit --filter='LessonAttachmentVideoTest|CourseMediaPricingTest|UploadLibraryTest|CoursePlayerUploadsTest|LessonDocumentLinkTest|LessonDeletionTest|AdminListSearchTest|ProductListingTest|EngineeringToolsPriceTest|CreditPricingTest|RetirePostTest|AdminProductPricesTest|ReleaseDownloadsTest|AffiliateProgramTest|AdminMediaLibraryTest|MediaAttachmentTest|MarkdownVideoEmbedTest|PostUpdateRevalidationTest|AdminContentCreationTest|SiteCodeSettingsTest|PostDeletionTest|ContentDeletionGuardsTest|AdminListFiltersTest|BulkStatusChangeTest|OrderDeletionTest|SecurityHardeningTest|SessionEndpointTest|OperationalHealthTest|AuthTest|PaymentIntegrityTest|PaymentValidationTest|RefundTest|CheckoutTest|CartPricingTest|ManualPaymentTest|FulfillmentTest|ApiContractTest|TwoFactorTest|TwoFactorRecoveryTest'
 
   deploy:
     needs: upload-api-tests
@@ -228,6 +228,26 @@ jobs:
             .next/routes-manifest.json .next/nb-commit public
           ls -lh "$RUNNER_TEMP/web-build.tar.gz"
 
+      # The host cannot run Composer (proc_open is disabled), so the API's
+      # production dependencies are built here, on the server's PHP version,
+      # for exactly this composer.lock, and shipped beside the site. deploy.sh
+      # uses them only when the lock differs from the live one, and refuses
+      # them if the lock packed inside is not the one being deployed.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Build the API's production dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/api-vendor"
+          cp apps/api/composer.json apps/api/composer.lock "$RUNNER_TEMP/api-vendor/"
+          composer install --working-dir="$RUNNER_TEMP/api-vendor" \
+            --no-dev --no-interaction --prefer-dist --no-scripts --no-autoloader
+          tar -czf "$RUNNER_TEMP/api-vendor.tar.gz" -C "$RUNNER_TEMP/api-vendor" composer.lock vendor
+          ls -lh "$RUNNER_TEMP/api-vendor.tar.gz"
+
       - name: Upload the build
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -237,6 +257,9 @@ jobs:
           scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" -o IdentitiesOnly=yes \
             "$RUNNER_TEMP/web-build.tar.gz" \
             "$DEPLOY_USER@$DEPLOY_HOST:nb-incoming.tar.gz"
+          scp -i ~/.ssh/id_deploy -P "$DEPLOY_PORT" -o IdentitiesOnly=yes \
+            "$RUNNER_TEMP/api-vendor.tar.gz" \
+            "$DEPLOY_USER@$DEPLOY_HOST:nb-incoming-vendor.tar.gz"
 
       - name: Deploy
         env:
@@ -308,11 +331,13 @@ jobs:
           NB_RELEASE_KEEP=5
           NB_BUILD_WEB=0
           NB_WEB_BUILD_ROOT="$BUILD"
+          NB_API_VENDOR_TARBALL="$HOME/nb-incoming-vendor.tar.gz"
           CONF
 
           cd "$REPO"
           NB_DEPLOY_SOURCE="$PWD" NB_DEPLOY_CONFIG="$HOME/.nb-deploy.ci.conf" \
             bash infra/cpanel/deploy.sh
+          rm -f "$HOME/nb-incoming-vendor.tar.gz"
 
           # Next caches API responses on disk; without this a content change
           # can sit invisible behind the old cache after a deploy.

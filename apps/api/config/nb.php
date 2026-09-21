@@ -25,6 +25,13 @@ return [
     */
     'build_token' => env('BUILD_TOKEN'),
 
+    /*
+     * The name an authenticator app shows above the account, next to the
+     * email address. The site's domain, because that is what staff recognise
+     * in a list of other accounts.
+     */
+    'mfa_issuer' => env('NB_MFA_ISSUER', 'nuruzzaman.com.bd'),
+
     'site' => [
         'name' => env('NB_SITE_NAME', 'Engr. Md. Nuruzzaman, RSE'),
         'url' => env('NB_SITE_URL', 'https://nuruzzaman.com.bd'),

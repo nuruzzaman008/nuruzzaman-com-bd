@@ -1830,21 +1830,24 @@
         ],
         "operationId": "completeTwoFactorSignIn",
         "summary": "Finish signing in with a two-step code",
-        "description": "The second half of a sign-in that answered `mfa_required`. The session\nholds who is halfway through for five minutes. Three wrong codes lock\nthe account's challenge for fifteen minutes.\n",
+        "description": "The second half of a sign-in that answered `mfa_required` (password or\nGoogle). The session holds who is halfway through for five minutes.\nEach code works once. Three wrong codes lock the account's challenge\nfor fifteen minutes.\n",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "code"
-                ],
+                "description": "Either the six digits from the authenticator app, or one recovery code.",
                 "properties": {
                   "code": {
                     "type": "string",
                     "maxLength": 10,
                     "description": "The six digits the authenticator app shows"
+                  },
+                  "recovery_code": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "description": "One of the recovery codes, used up by this request"
                   }
                 }
               }
@@ -1904,7 +1907,9 @@
                       "type": "object",
                       "required": [
                         "secret",
-                        "otpauth_uri"
+                        "otpauth_uri",
+                        "issuer",
+                        "account"
                       ],
                       "properties": {
                         "secret": {
@@ -1914,6 +1919,14 @@
                         "otpauth_uri": {
                           "type": "string",
                           "description": "The same secret as an otpauth:// URI for a QR code"
+                        },
+                        "issuer": {
+                          "type": "string",
+                          "description": "The name the app shows above the account"
+                        },
+                        "account": {
+                          "type": "string",
+                          "description": "The account name the app shows (the email address)"
                         }
                       }
                     }
@@ -2045,11 +2058,19 @@
                     "data": {
                       "type": "object",
                       "required": [
-                        "mfa_enabled"
+                        "mfa_enabled",
+                        "recovery_codes"
                       ],
                       "properties": {
                         "mfa_enabled": {
                           "type": "boolean"
+                        },
+                        "recovery_codes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Shown this once; only their hashes are kept"
                         }
                       }
                     }
@@ -2086,13 +2107,17 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "code"
-                ],
+                "description": "Either the six digits from the authenticator app, or one recovery code.",
                 "properties": {
                   "code": {
                     "type": "string",
-                    "maxLength": 10
+                    "maxLength": 10,
+                    "description": "The six digits the authenticator app shows"
+                  },
+                  "recovery_code": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "description": "One of the recovery codes, used up by this request"
                   }
                 }
               }
@@ -2128,6 +2153,80 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/me/mfa/recovery-codes": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "regenerateRecoveryCodes",
+        "summary": "Replace the recovery codes",
+        "description": "Needs the password, from a session that has typed a code (403 otherwise). The old codes stop working.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "description": "The account's current password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A new set, shown this once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "recovery_codes"
+                      ],
+                      "properties": {
+                        "recovery_codes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
@@ -17486,6 +17585,10 @@
           "mfa_session_verified": {
             "type": "boolean",
             "description": "Whether this session has typed a code. Staff are asked for one before the dashboard opens when it has not."
+          },
+          "mfa_recovery_codes_remaining": {
+            "type": "integer",
+            "description": "Unused recovery codes. Only on the signed-in account itself, and only when two-step verification is on."
           },
           "roles": {
             "type": "array",

@@ -80,6 +80,39 @@ describe('LoginForm two-step verification', () => {
     expect(request).toHaveBeenCalledWith('/auth/mfa', { method: 'POST', body: { code: '654321' } });
   });
 
+  it('asks in plain words for the 6-digit code from the app', () => {
+    params.current = new URLSearchParams('mfa=1');
+
+    render(<LoginForm />);
+
+    expect(screen.getByText('Enter the 6-digit code from your authenticator app.')).toBeTruthy();
+  });
+
+  it('takes a recovery code instead when the phone is not to hand', async () => {
+    params.current = new URLSearchParams('mfa=1');
+    request.mockResolvedValueOnce({ data: admin });
+
+    render(<LoginForm />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use a recovery code instead' }));
+    expect(screen.queryByLabelText(/Verification code/)).toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/Recovery code/), {
+      target: { value: 'ABCD-EFGH-JKLM-NPQR' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify the code' }));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalled());
+    expect(request).toHaveBeenCalledWith('/auth/mfa', {
+      method: 'POST',
+      body: { recovery_code: 'ABCD-EFGH-JKLM-NPQR' },
+    });
+
+    // And back again.
+    fireEvent.click(screen.getByRole('button', { name: 'Use the code from the app instead' }));
+    expect(screen.getByLabelText(/Verification code/)).toBeTruthy();
+  });
+
   it('offers the password again when the code step has expired', () => {
     params.current = new URLSearchParams('mfa=1');
 
@@ -107,6 +140,24 @@ describe('MfaStepUp', () => {
     expect(request).toHaveBeenCalledWith('/me/mfa/verify', {
       method: 'POST',
       body: { code: '112233' },
+    });
+  });
+
+  it('accepts a recovery code as well', async () => {
+    request.mockResolvedValueOnce({ data: { mfa_session_verified: true } });
+
+    render(<MfaStepUp />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use a recovery code instead' }));
+    fireEvent.change(screen.getByLabelText(/Recovery code/), {
+      target: { value: 'WXYZ-2345-6789-ABCD' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify the code' }));
+
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+    expect(request).toHaveBeenCalledWith('/me/mfa/verify', {
+      method: 'POST',
+      body: { recovery_code: 'WXYZ-2345-6789-ABCD' },
     });
   });
 

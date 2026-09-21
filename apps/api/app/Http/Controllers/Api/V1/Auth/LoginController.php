@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Services\Commerce\CartService;
 use App\Support\Audit;
 use App\Support\MfaSession;
-use App\Support\Totp;
+use App\Support\TwoFactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -117,14 +117,16 @@ class LoginController extends Controller
     }
 
     /**
-     * The second step: the six-digit code from the authenticator app.
+     * The second step: the six-digit code from the authenticator app, or one
+     * of the recovery codes when the phone is not to hand.
      *
-     * Five wrong codes lock the account's challenge for fifteen minutes, which
-     * is what stops a stolen password being walked through the code space.
+     * Three wrong answers lock the account's challenge for fifteen minutes,
+     * which is what stops a stolen password being walked through the code
+     * space, and each code works only once.
      */
     public function challenge(Request $request): JsonResponse
     {
-        $input = $request->validate(['code' => ['required', 'string', 'max:10']]);
+        $input = MfaController::validateSecondFactor($request);
 
         // Without the website's session there is nothing halfway through to
         // finish, and asking the session store would be a server error.
@@ -160,16 +162,26 @@ class LoginController extends Controller
             ]);
         }
 
-        if (! Totp::verify((string) $user->mfa_secret, $input['code'])) {
+        $method = TwoFactor::attempt($user, $input['code'] ?? null, $input['recovery_code'] ?? null);
+
+        if ($method === null) {
             RateLimiter::hit($throttleKey, self::LOCK_MINUTES * 60);
 
             Audit::record('auth.mfa_failed', $user, [], $user->getKey());
 
-            throw ValidationException::withMessages(['code' => 'That code is not right.']);
+            $field = filled($input['code'] ?? null) ? 'code' : 'recovery_code';
+
+            throw ValidationException::withMessages([$field => 'That code is not right.']);
         }
 
         RateLimiter::clear($throttleKey);
         $request->session()->forget(self::PENDING_KEY);
+
+        if ($method === 'recovery_code') {
+            Audit::record('auth.mfa_recovery_code_used', $user, [
+                'recovery_codes_left' => TwoFactor::remainingRecoveryCodes($user),
+            ], $user->getKey());
+        }
 
         return $this->completeSignIn($request, $user, (bool) ($pending['remember'] ?? false), viaMfa: true);
     }

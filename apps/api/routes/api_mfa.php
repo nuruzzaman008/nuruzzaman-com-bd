@@ -21,5 +21,6 @@ Route::middleware(['auth:sanctum', 'active', 'throttle:verify-email'])->group(fu
     Route::post('me/mfa', [MfaController::class, 'start']);
     Route::post('me/mfa/confirm', [MfaController::class, 'confirm']);
     Route::post('me/mfa/verify', [MfaController::class, 'verify']);
+    Route::post('me/mfa/recovery-codes', [MfaController::class, 'recoveryCodes']);
     Route::delete('me/mfa', [MfaController::class, 'destroy']);
 });

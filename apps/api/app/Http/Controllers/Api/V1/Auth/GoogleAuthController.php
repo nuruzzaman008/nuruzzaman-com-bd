@@ -169,7 +169,18 @@ class GoogleAuthController extends Controller
         // worth being able to find in the audit log later.
         Audit::record('auth.login', $user, ['via' => 'google', 'staff' => $staff], $user->getKey());
 
-        return redirect()->away($this->frontend().($staff ? '/dashboard' : '/account'));
+        /*
+          Staff without two-step verification go straight to setting it up: the
+          dashboard is shut to them until they have (RequireStaffMfa), and
+          landing there first would only show them the same screen.
+        */
+        $destination = match (true) {
+            $staff && ! $user->hasTwoFactor() => '/dashboard/security?setup=1',
+            $staff => '/dashboard',
+            default => '/account',
+        };
+
+        return redirect()->away($this->frontend().$destination);
     }
 
     private function register(string $email, string $googleId, string $name): User

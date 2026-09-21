@@ -45,6 +45,13 @@ sync_tree() {
   (cd "$sync_src" && tar -cf - "${sync_excludes[@]}" .) | (cd "$sync_dest" && tar -xf -)
 }
 
+# Whether a vendor tarball was built for exactly this composer.lock. The lock
+# is packed at the top of the tarball, beside vendor/, by the deploy workflow;
+# anything else - a different lock, no lock, an unreadable archive - is no.
+vendor_lock_matches() {
+  tar -xzOf "$1" composer.lock 2>/dev/null | cmp -s - "$2"
+}
+
 ACCOUNT="$(realpath "$HOME")"
 check_target() {
   [[ "$(realpath -m "$1")" = "$ACCOUNT/$2" && ! -L "$1" ]] || fail "Unsafe target: $1"
@@ -90,8 +97,21 @@ if [ "$DEPLOY_API" = 1 ]; then
     REUSE_VENDOR=1
     printf 'Dependencies unchanged: reusing the installed vendor tree.\n'
   fi
-  if [ "$REUSE_VENDOR" != 1 ]; then
-    "$PHP_BIN" -r 'exit(is_callable("proc_open") ? 0 : 1);' || fail 'composer.lock has changed and Composer needs proc_open to fetch packages, which this host disables. Install dependencies where proc_open exists and ship the vendor tree, or ask the host to enable it.'
+  # When the lock has moved, a vendor tree built in CI for exactly this lock
+  # file stands in for the download this host cannot do (the deploy workflow
+  # builds one on every run). It is refused unless the composer.lock packed
+  # inside it is byte for byte the one being deployed, so it can never carry
+  # packages the lock does not name.
+  SHIPPED_VENDOR=0
+  if [ "$REUSE_VENDOR" != 1 ] && [ -n "${NB_API_VENDOR_TARBALL:-}" ]; then
+    [ -s "$NB_API_VENDOR_TARBALL" ] || fail 'NB_API_VENDOR_TARBALL is set, but that file is missing or empty.'
+    vendor_lock_matches "$NB_API_VENDOR_TARBALL" "$SOURCE/apps/api/composer.lock" \
+      || fail 'The shipped vendor tree was built from a different composer.lock than the one being deployed.'
+    SHIPPED_VENDOR=1
+    printf 'Dependencies changed: using the vendor tree built in CI for this composer.lock.\n'
+  fi
+  if [ "$REUSE_VENDOR" != 1 ] && [ "$SHIPPED_VENDOR" != 1 ]; then
+    "$PHP_BIN" -r 'exit(is_callable("proc_open") ? 0 : 1);' || fail 'composer.lock has changed and Composer needs proc_open to fetch packages, which this host disables. Ship the vendor tree the deploy workflow builds (NB_API_VENDOR_TARBALL), or ask the host to enable proc_open.'
   fi
   COMPOSER_FILE="${NB_COMPOSER_PHAR:-}"
   if [ -z "$COMPOSER_FILE" ]; then
@@ -252,6 +272,11 @@ if [ "$DEPLOY_API" = 1 ]; then
     # post-autoload-dump hook runs artisan package:discover through Process,
     # which needs proc_open. The deploy runs package:discover itself against
     # the live application a few lines further down, where it belongs.
+    "$PHP_BIN" "$COMPOSER_FILE" dump-autoload --working-dir="$API_STAGE" --no-dev --no-interaction --no-scripts --optimize
+  elif [ "$SHIPPED_VENDOR" = 1 ]; then
+    # Built without an autoloader in CI; this host writes its own, which is
+    # pure PHP and needs no subprocess.
+    tar -xzf "$NB_API_VENDOR_TARBALL" -C "$API_STAGE" vendor
     "$PHP_BIN" "$COMPOSER_FILE" dump-autoload --working-dir="$API_STAGE" --no-dev --no-interaction --no-scripts --optimize
   else
     "$PHP_BIN" "$COMPOSER_FILE" install --working-dir="$API_STAGE" --no-dev --no-interaction --prefer-dist --no-scripts --optimize-autoloader

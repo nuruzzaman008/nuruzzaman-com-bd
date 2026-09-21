@@ -2,128 +2,87 @@
 
 namespace App\Support;
 
+use PragmaRX\Google2FA\Exceptions\Contracts\Google2FA as Google2FAException;
+use PragmaRX\Google2FA\Google2FA;
 use SensitiveParameter;
 
 /**
- * Time-based one-time passwords (RFC 6238), as every authenticator app makes
- * them: SHA-1, six digits, a new one every thirty seconds.
+ * Time-based one-time passwords (RFC 6238), as Google Authenticator and every
+ * other authenticator app make them: SHA-1, six digits, a new one every thirty
+ * seconds.
  *
- * Written out rather than pulled in, because it is thirty lines of hashing and
- * one more dependency on a shared host is one more thing to keep patched. The
- * secret never leaves the server except once, when it is shown to the person
- * setting the app up.
+ * The arithmetic is pragmarx/google2fa's, the library Laravel Fortify uses;
+ * this class only fixes the settings in one place and answers in the terms the
+ * rest of the application needs. The secret never leaves the server except
+ * once, while the person setting the app up is looking at it.
  */
 final class Totp
 {
-    private const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    /** Seconds each code is valid for. */
+    public const PERIOD = 30;
 
-    private const DIGITS = 6;
-
-    private const PERIOD = 30;
-
-    /** A step either side, so a clock a few seconds out still works. */
+    /** A step either side, so a phone clock a few seconds out still works. */
     private const WINDOW = 1;
 
-    /** 160 bits, the size RFC 4226 recommends for a SHA-1 secret. */
+    /** 32 base32 characters: 160 bits, the size RFC 4226 recommends for SHA-1. */
+    private const SECRET_LENGTH = 32;
+
+    private static function engine(): Google2FA
+    {
+        $engine = new Google2FA;
+        $engine->setWindow(self::WINDOW);
+
+        return $engine;
+    }
+
     public static function generateSecret(): string
     {
-        return self::base32Encode(random_bytes(20));
+        return self::engine()->generateSecretKey(self::SECRET_LENGTH);
     }
 
     /**
-     * Constant-time check of a code against the secret, over the window.
-     * Codes are compared as strings, so "012345" is not read as 12345.
+     * The time step a code belongs to, when it is right and newer than the
+     * last step this account used; null otherwise.
+     *
+     * Returning the step rather than yes or no is what lets the caller refuse
+     * the same code twice: the step is stored, and anything at or before it
+     * no longer counts.
      */
-    public static function verify(#[SensitiveParameter] string $secret, string $code, ?int $at = null): bool
-    {
-        $code = preg_replace('/\D/', '', $code) ?? '';
+    public static function match(
+        #[SensitiveParameter] string $secret,
+        #[SensitiveParameter] string $code,
+        ?int $lastUsedStep = null,
+    ): ?int {
+        $code = preg_replace('/\s+/', '', $code) ?? '';
 
-        if (strlen($code) !== self::DIGITS) {
-            return false;
+        if (! preg_match('/^\d{6}$/', $code)) {
+            return null;
         }
 
-        $counter = intdiv($at ?? time(), self::PERIOD);
-        $valid = false;
-
-        for ($step = -self::WINDOW; $step <= self::WINDOW; $step++) {
-            // No early return: every candidate is compared, so the time taken
-            // says nothing about which step matched.
-            $valid = hash_equals(self::at($secret, $counter + $step), $code) || $valid;
+        try {
+            $step = self::engine()->verifyKeyNewer($secret, $code, $lastUsedStep ?? 0);
+        } catch (Google2FAException) {
+            // A stored secret the library cannot read verifies nothing.
+            return null;
         }
 
-        return $valid;
+        return is_int($step) ? $step : null;
     }
 
-    /** The code for one counter value, zero-padded to six digits. */
-    public static function at(#[SensitiveParameter] string $secret, int $counter): string
+    /** The code for one time step. Tests use it to act as the phone. */
+    public static function at(#[SensitiveParameter] string $secret, int $step): string
     {
-        $key = self::base32Decode($secret);
-
-        if ($key === '') {
-            return str_repeat('0', self::DIGITS);
-        }
-
-        $hash = hash_hmac('sha1', pack('J', $counter), $key, true);
-        $offset = ord($hash[strlen($hash) - 1]) & 0x0F;
-        $binary = ((ord($hash[$offset]) & 0x7F) << 24)
-            | ((ord($hash[$offset + 1]) & 0xFF) << 16)
-            | ((ord($hash[$offset + 2]) & 0xFF) << 8)
-            | (ord($hash[$offset + 3]) & 0xFF);
-
-        return str_pad((string) ($binary % (10 ** self::DIGITS)), self::DIGITS, '0', STR_PAD_LEFT);
+        return self::engine()->oathTotp($secret, $step);
     }
 
-    /** The otpauth:// URI an authenticator app reads from a QR code. */
+    public static function currentStep(): int
+    {
+        return intdiv(time(), self::PERIOD);
+    }
+
+    /** The otpauth:// address the QR code carries: issuer, account and secret. */
     public static function uri(#[SensitiveParameter] string $secret, string $account, string $issuer): string
     {
-        return 'otpauth://totp/'.rawurlencode($issuer).':'.rawurlencode($account).'?'.http_build_query([
-            'secret' => $secret,
-            'issuer' => $issuer,
-            'algorithm' => 'SHA1',
-            'digits' => self::DIGITS,
-            'period' => self::PERIOD,
-        ]);
-    }
-
-    public static function base32Encode(string $bytes): string
-    {
-        $bits = '';
-
-        foreach (str_split($bytes) as $byte) {
-            $bits .= str_pad(decbin(ord($byte)), 8, '0', STR_PAD_LEFT);
-        }
-
-        $encoded = '';
-
-        foreach (str_split($bits, 5) as $chunk) {
-            $encoded .= self::ALPHABET[bindec(str_pad($chunk, 5, '0', STR_PAD_RIGHT))];
-        }
-
-        return $encoded;
-    }
-
-    public static function base32Decode(#[SensitiveParameter] string $secret): string
-    {
-        $bits = '';
-
-        foreach (str_split(strtoupper(preg_replace('/[^A-Za-z2-7]/', '', $secret) ?? '')) as $character) {
-            $index = strpos(self::ALPHABET, $character);
-
-            if ($index === false) {
-                return '';
-            }
-
-            $bits .= str_pad(decbin($index), 5, '0', STR_PAD_LEFT);
-        }
-
-        $bytes = '';
-
-        foreach (str_split($bits, 8) as $chunk) {
-            if (strlen($chunk) === 8) {
-                $bytes .= chr(bindec($chunk));
-            }
-        }
-
-        return $bytes;
+        return self::engine()->getQRCodeUrl($issuer, $account, $secret);
     }
 }

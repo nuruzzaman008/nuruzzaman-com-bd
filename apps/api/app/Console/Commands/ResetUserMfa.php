@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\TwoFactor;
 use Illuminate\Console\Command;
 
 /**
@@ -35,7 +36,8 @@ class ResetUserMfa extends Command
             return self::SUCCESS;
         }
 
-        $user->forceFill(['mfa_secret' => null, 'mfa_confirmed_at' => null])->save();
+        // Recovery codes and the replay marker go with it.
+        TwoFactor::clear($user);
 
         Audit::record('auth.mfa_reset_by_owner', $user, ['email' => $user->email], $user->getKey());
 

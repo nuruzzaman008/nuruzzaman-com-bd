@@ -25,7 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     protected $hidden = [
-        'password', 'remember_token', 'mfa_secret',
+        'password', 'remember_token', 'mfa_secret', 'mfa_recovery_codes', 'mfa_last_used_step',
     ];
 
     protected function casts(): array
@@ -35,6 +35,9 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'mfa_secret' => 'encrypted',
             'mfa_confirmed_at' => 'datetime',
+            // Hashes only; see App\Support\TwoFactor.
+            'mfa_recovery_codes' => 'array',
+            'mfa_last_used_step' => 'integer',
             'last_login_at' => 'datetime',
         ];
     }

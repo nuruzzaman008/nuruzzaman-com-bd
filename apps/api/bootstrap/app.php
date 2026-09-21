@@ -91,6 +91,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Two-step codes are never written back into the session with the rest
+        // of a failed form, the way Laravel does for input it redisplays.
+        $exceptions->dontFlash(['code', 'recovery_code', 'password', 'current_password', 'password_confirmation']);
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

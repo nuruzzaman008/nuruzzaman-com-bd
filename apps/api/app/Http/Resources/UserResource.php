@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\User;
 use App\Support\MfaSession;
+use App\Support\TwoFactor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,12 @@ class UserResource extends JsonResource
             // Whether this session has typed a code. The dashboard asks for one
             // when it has not, rather than letting every admin page fail.
             'mfa_session_verified' => $this->mfa_confirmed_at !== null && MfaSession::isVerified($request, $this->resource),
+            // Only on the account's own record: nobody else needs to know how
+            // many ways back in someone has left.
+            'mfa_recovery_codes_remaining' => $this->when(
+                $this->mfa_confirmed_at !== null && $request->user()?->is($this->resource),
+                fn () => TwoFactor::remainingRecoveryCodes($this->resource),
+            ),
             'roles' => $this->roleNames()->values(),
             'permissions' => $this->when(
                 $this->isStaff(),
