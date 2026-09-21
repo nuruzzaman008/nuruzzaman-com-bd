@@ -162,14 +162,15 @@ describe('LessonForm', () => {
     ).toBeInTheDocument();
   });
 
-  it('keeps the lesson text and the rarely changed settings folded away, still saved with the lesson', () => {
+  it('keeps the rarely changed settings folded away, still saved with the lesson, and the text under the video open', () => {
     setup();
 
     const settings = screen.getByText(/^More settings/).closest('details')!;
     expect(settings).not.toHaveAttribute('open');
-    expect(
-      screen.getByText('Lesson content / instructions (optional)').closest('details'),
-    ).not.toHaveAttribute('open');
+    // A video lesson is video + text, so the place to write the text is open.
+    expect(screen.getByText('Text under the video (optional)').closest('details')).toHaveAttribute(
+      'open',
+    );
 
     fireEvent.change(screen.getByLabelText('Lesson title'), { target: { value: 'Loads' } });
     fireEvent.change(within(settings).getByLabelText('Unlock days after enrollment'), {
@@ -188,6 +189,40 @@ describe('LessonForm', () => {
     expect(
       screen.getByText('Lesson content / instructions (optional)').closest('details'),
     ).toHaveAttribute('open');
+  });
+
+  it('says what students will see for each type', () => {
+    setup();
+
+    expect(screen.getByText(/Students see: the video, with the text under it/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Lesson type'), { target: { value: 'text' } });
+    expect(
+      screen.getByText(
+        'Students see: the text, and a Download button for each file. No video plays.',
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Lesson type'), { target: { value: 'download' } });
+    expect(
+      screen.getByText('Students see: only a Download button for each file. No text is shown.'),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the text box for a downloads-only lesson but still saves the text already written', () => {
+    setup({ ...existing, body_markdown: 'Read this before the class.' }, ['video01']);
+
+    fireEvent.change(screen.getByLabelText('Lesson type'), { target: { value: 'download' } });
+
+    expect(
+      screen.getByText('Lesson content / instructions (optional)').closest('details'),
+    ).toHaveAttribute('hidden');
+    save();
+
+    expect(draft().values).toMatchObject({
+      type: 'download',
+      body_markdown: 'Read this before the class.',
+    });
   });
 
   it('ends with Save and Cancel only - a lesson is deleted from its row in the list', () => {

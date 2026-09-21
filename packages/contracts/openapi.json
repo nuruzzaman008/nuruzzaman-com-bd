@@ -17132,10 +17132,15 @@
             "type": "string"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "description": "video: the player and the text; the video file itself is not among the assets. text: the text and every file, no player. download: the files only, no text."
           },
           "body_html": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for a downloads-only lesson, which shows no text."
           },
           "duration_seconds": {
             "type": [

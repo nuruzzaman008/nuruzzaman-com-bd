@@ -53,6 +53,22 @@ export type LessonDraft = {
  * for a title with no English letters - `lesson-NN`; made unique among the
  * course's other lessons, which the API requires.
  */
+/** What a learner sees for each lesson type, shown under the type picker. */
+const LESSON_TYPE_HINTS: Record<string, { bn: string; en: string }> = {
+  video: {
+    bn: 'ছাত্ররা দেখবে: ভিডিও, আর তার নিচে লেখা। ভিডিও ফাইল নিচের "ফাইল ও ডকুমেন্ট" দিয়ে আপলোড করুন, অথবা উপরে YouTube লিংক দিন — আপলোড করা ভিডিও শুধু চলবে, download করা যাবে না। আলাদা করে যোগ করা PDF বা লিংক ভিডিওর নিচে থাকবে।',
+    en: 'Students see: the video, with the text under it. Upload the video file with "Files & documents" below, or paste a YouTube link - an uploaded video only plays, it is not offered for download. PDFs or links you add as well appear under the video.',
+  },
+  text: {
+    bn: 'ছাত্ররা দেখবে: লেখা, আর প্রতিটি ফাইলের Download বোতাম। কোনো ভিডিও চলবে না।',
+    en: 'Students see: the text, and a Download button for each file. No video plays.',
+  },
+  download: {
+    bn: 'ছাত্ররা দেখবে: শুধু প্রতিটি ফাইলের Download বোতাম। লেখা দেখানো হয় না।',
+    en: 'Students see: only a Download button for each file. No text is shown.',
+  },
+};
+
 export function lessonSlug(
   typed: string,
   title: string,
@@ -217,7 +233,7 @@ export function LessonForm({
   const [links, setLinks] = useState<DocumentLinkDraft[]>([]);
   const [addingLink, setAddingLink] = useState(false);
   const [bodyOpen, setBodyOpen] = useState(
-    Boolean(lesson?.body_markdown) || lesson?.type === 'text',
+    Boolean(lesson?.body_markdown) || ['video', 'text'].includes(lesson?.type ?? 'video'),
   );
   const fileInputId = useId();
   const taken = courseLessonSlugs.filter((row) => row !== lesson?.slug);
@@ -233,8 +249,8 @@ export function LessonForm({
   function changeType(value: string) {
     setType(value);
 
-    // A text lesson is its text, so the place to write it opens.
-    if (value === 'text') {
+    // Video and files lessons both carry text, so the place to write it opens.
+    if (value === 'text' || value === 'video') {
       setBodyOpen(true);
     }
   }
@@ -314,15 +330,23 @@ export function LessonForm({
             onChange={(event) => changeType(event.target.value)}
             className={INPUT}
           >
-            <option value="video">{bn ? 'ভিডিও + ফাইল' : 'Video + files'}</option>
-            <option value="text">{bn ? 'লেখা + ফাইল' : 'Text + files'}</option>
-            <option value="download">{bn ? 'ফাইল / রিসোর্স' : 'Download / resources'}</option>
+            <option value="video">{bn ? 'ভিডিও + লেখা' : 'Video + text'}</option>
+            <option value="text">{bn ? 'ফাইল + লেখা' : 'Files + text'}</option>
+            <option value="download">{bn ? 'শুধু ডাউনলোড' : 'Downloads only'}</option>
             {lesson && ['quiz', 'assignment'].includes(lesson.type) ? (
               <option value={lesson.type}>{lesson.type}</option>
             ) : null}
           </select>
         </label>
       </div>
+
+      {/* What the learner will see, in the terms of the type just picked. The
+          API decides it (LessonResource); this only says so. */}
+      {LESSON_TYPE_HINTS[type] ? (
+        <p className="rounded-md bg-surface px-3 py-2 text-sm text-ink">
+          {bn ? LESSON_TYPE_HINTS[type].bn : LESSON_TYPE_HINTS[type].en}
+        </p>
+      ) : null}
 
       {type === 'video' ? (
         <label className={`block ${LABEL}`}>
@@ -445,13 +469,30 @@ export function LessonForm({
         ) : null}
       </div>
 
+      {type === 'download' ? (
+        <p className="text-sm text-muted">
+          {bn
+            ? 'শুধু-ডাউনলোড পাঠে লেখা দেখানো হয় না। আগে লেখা থাকলে সেটা মুছবে না — ধরন বদলালে আবার দেখা যাবে।'
+            : 'Downloads-only lessons show no text. Text already written is kept, and comes back if you change the type.'}
+        </p>
+      ) : null}
+
+      {/* Hidden rather than removed for a downloads-only lesson, so the text
+          already written is still sent - and kept - when the lesson is saved. */}
       <details
         className={PANEL}
+        hidden={type === 'download'}
         open={bodyOpen}
         onToggle={(event) => setBodyOpen(event.currentTarget.open)}
       >
         <summary className="cursor-pointer text-sm font-semibold text-navy">
-          {bn ? 'পাঠের লেখা / নির্দেশনা (ঐচ্ছিক)' : 'Lesson content / instructions (optional)'}
+          {type === 'video'
+            ? bn
+              ? 'ভিডিওর নিচের লেখা (ঐচ্ছিক)'
+              : 'Text under the video (optional)'
+            : bn
+              ? 'পাঠের লেখা / নির্দেশনা (ঐচ্ছিক)'
+              : 'Lesson content / instructions (optional)'}
         </summary>
         <label htmlFor="lesson-body" className="sr-only">
           {bn ? 'পাঠের লেখা / নির্দেশনা (Markdown)' : 'Lesson content / instructions (Markdown)'}

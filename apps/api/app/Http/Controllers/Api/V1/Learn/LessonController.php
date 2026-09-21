@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Learn;
 
+use App\Enums\LessonType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LessonResource;
 use App\Models\Certificate;
@@ -9,6 +10,7 @@ use App\Models\Course;
 use App\Models\CourseReview;
 use App\Models\Enrollment;
 use App\Models\Lesson;
+use App\Models\LessonAsset;
 use App\Services\Lms\EnrollmentService;
 use App\Services\Video\VideoPlaybackService;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +28,9 @@ class LessonController extends Controller
         $lesson = $course->lessons()->where('slug', $lessonSlug)->with('section')->firstOrFail();
         $this->enrollments->assertAccess($request->user(), $lesson);
         $asset = $lesson->assets()->findOrFail($assetId);
+
+        // The video a video lesson plays is watched there, not downloaded.
+        abort_if($asset->playsAsVideoIn($lesson), 403, 'This video plays in the lesson and is not offered for download.');
 
         // A linked document opens where it lives - Google Drive, Dropbox - but
         // only after the same enrolment check a stored file gets.
@@ -68,7 +73,11 @@ class LessonController extends Controller
         // What each lesson holds, so the player's list can say so without
         // loading every lesson: a video, how many files, a quiz or assignment.
         $course->load(['sections.lessons' => fn ($query) => $query
-            ->withCount('assets')
+            ->withCount(['assets', 'assets as video_files_count' => fn ($assets) => $assets
+                ->where('disk', '!=', LessonAsset::LINK_DISK)
+                ->where(fn ($path) => $path
+                    ->where('storage_path', 'like', '%.mp4')
+                    ->orWhere('storage_path', 'like', '%.webm'))])
             ->with(['quiz:id,lesson_id', 'assignment:id,lesson_id'])]);
 
         // isUnlocked() falls back to the section's drip window when the lesson
@@ -128,8 +137,11 @@ class LessonController extends Controller
                         'title' => $lesson->title,
                         'type' => $lesson->type->value,
                         'duration_seconds' => $lesson->duration_seconds,
-                        'has_video' => filled($lesson->video_url) || filled($lesson->video_asset_id),
-                        'assets_count' => (int) $lesson->assets_count,
+                        // A video lesson's video file is its video, not one of its files.
+                        'has_video' => filled($lesson->video_url) || filled($lesson->video_asset_id)
+                            || ($lesson->type === LessonType::Video && $lesson->video_files_count > 0),
+                        'assets_count' => (int) $lesson->assets_count
+                            - ($lesson->type === LessonType::Video ? (int) $lesson->video_files_count : 0),
                         'has_quiz' => $lesson->quiz !== null,
                         'has_assignment' => $lesson->assignment !== null,
                         'is_completed' => in_array($lesson->getKey(), $completed, true),

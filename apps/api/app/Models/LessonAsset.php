@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LessonType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -44,6 +45,16 @@ class LessonAsset extends Model
             'webm' => 'video/webm',
             default => null,
         };
+    }
+
+    /**
+     * In a video lesson a video file is what the player plays, so it is not
+     * also offered as a download. In a files lesson the same file is just a
+     * file.
+     */
+    public function playsAsVideoIn(Lesson $lesson): bool
+    {
+        return $lesson->type === LessonType::Video && $this->playableVideoMime() !== null;
     }
 
     public function getKindAttribute(): string

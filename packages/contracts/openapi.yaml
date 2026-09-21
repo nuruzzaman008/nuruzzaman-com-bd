@@ -575,8 +575,12 @@ components:
       properties:
         slug: { type: string }
         title: { type: string }
-        type: { type: string }
-        body_html: { type: string }
+        type:
+          type: string
+          description: 'video: the player and the text; the video file itself is not among the assets. text: the text and every file, no player. download: the files only, no text.'
+        body_html:
+          type: [string, 'null']
+          description: 'Null for a downloads-only lesson, which shows no text.'
         duration_seconds: { type: [integer, 'null'] }
         is_free_preview: { type: boolean }
         position: { type: integer }
