@@ -71,7 +71,7 @@ class LoginController extends Controller
 
         // Checked rather than signed in, because an account with two-step
         // verification is not signed in until the code is right.
-        if (! Auth::validate($credentials)) {
+        if (! Auth::guard('web')->validate($credentials)) {
             RateLimiter::hit($throttleKey, self::LOCK_MINUTES * 60);
 
             Audit::record('auth.login_failed', null, ['email' => $credentials['email']]);
@@ -86,7 +86,7 @@ class LoginController extends Controller
         RateLimiter::clear($throttleKey);
 
         /** @var User $user */
-        $user = Auth::getLastAttempted();
+        $user = Auth::guard('web')->getLastAttempted();
 
         if (! $user->isActive()) {
             throw ValidationException::withMessages(['email' => 'This account is not active.']);
@@ -167,7 +167,7 @@ class LoginController extends Controller
     /** Signing in for real: new session id, login stamp, cart and audit row. */
     private function completeSignIn(Request $request, User $user, bool $remember, bool $viaMfa = false): JsonResponse
     {
-        Auth::login($user, $remember);
+        Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
 
         $user->forceFill([

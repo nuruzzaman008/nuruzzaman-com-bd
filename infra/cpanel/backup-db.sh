@@ -66,8 +66,12 @@ printf '[client]\nuser=%s\npassword=%s\nhost=%s\n' "$db_user" "$db_pass" "${db_h
 chmod 600 "$option_file"
 
 # --single-transaction so the site keeps serving while this runs.
+#
+# --no-tablespaces because a cPanel database user has no PROCESS privilege:
+# without it mysqldump writes a warning on every run, and a daily warning is
+# how a real failure ends up unread.
 mysqldump --defaults-extra-file="$option_file" \
-  --single-transaction --quick --routines --triggers --events \
+  --single-transaction --quick --routines --triggers --events --no-tablespaces \
   --default-character-set=utf8mb4 "$DATABASE" \
   | gzip -9 \
   | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass "file:$KEY_FILE" \

@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\ActivationRequestStatus;
+use App\Enums\LicenseStatus;
 use App\Enums\OrderStatus;
 use App\Enums\Role as RoleEnum;
 use App\Models\ActivationRequest;
 use App\Models\Order;
+use App\Models\SoftwareLicense;
 use App\Models\User;
 use App\Support\MachineIdentifier;
+use App\Support\Reference;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -19,9 +22,25 @@ class ActivationRequestTest extends TestCase
 
     private const MACHINE_ID = 'A1B2-C3D4-E5F6-9F3C';
 
-    private function paidOrderFor(User $user): Order
+    /**
+     * A paid order with the software licence it issued: activation needs one,
+     * because a course order has no machine to activate (ActivationService).
+     */
+    private function paidOrderFor(User $user, int $deviceLimit = 3): Order
     {
-        return Order::factory()->for($user)->paid()->create();
+        $order = Order::factory()->for($user)->paid()->create();
+
+        SoftwareLicense::query()->create([
+            'license_code' => Reference::license(),
+            'user_id' => $user->getKey(),
+            'order_id' => $order->getKey(),
+            'product_name' => 'NB Engineering Tools',
+            'status' => LicenseStatus::Issued,
+            'device_limit' => $deviceLimit,
+            'issued_at' => now(),
+        ]);
+
+        return $order;
     }
 
     public function test_a_customer_can_submit_a_request_against_their_own_paid_order(): void

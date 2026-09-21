@@ -6,6 +6,7 @@ use App\Enums\Role as RoleEnum;
 use App\Models\User;
 use App\Support\Totp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -169,7 +170,7 @@ class TwoFactorTest extends TestCase
         $user = $this->customer();
         $secret = $this->enrol($user);
 
-        $stored = (string) User::query()->whereKey($user->getKey())->value('mfa_secret');
+        $stored = (string) DB::table('users')->where('id', $user->getKey())->value('mfa_secret');
         $this->assertNotSame($secret, $stored);
         $this->assertStringNotContainsString($secret, $this->actingAs($user->fresh())->getJson('/api/v1/me')->getContent());
     }
