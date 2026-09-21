@@ -12,6 +12,7 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Str;
 
 /**
  * Course Q&A.
@@ -46,7 +47,8 @@ class QuestionController extends Controller
     public function store(Request $request, string $courseSlug): CourseQuestionResource
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            // Optional: the box under a lesson asks for the question only.
+            'title' => ['nullable', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
             'lesson' => ['nullable', 'string', 'max:180'],
         ]);
@@ -65,8 +67,11 @@ class QuestionController extends Controller
             'lesson_id' => $lesson?->getKey(),
             'enrollment_id' => $enrollment->getKey(),
             'user_id' => $request->user()->getKey(),
-            'title' => $validated['title'],
+            'title' => filled($validated['title'] ?? null)
+                ? $validated['title']
+                : Str::limit(Str::squish($validated['body']), 120),
             'body' => $validated['body'],
+            // Private to the student and the teaching team until published.
             'status' => ContentStatus::InReview,
         ]);
 

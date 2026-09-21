@@ -1,10 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ApiError, type CourseOutline, type Lesson, type LessonNote } from '@nuruzzaman/contracts';
+import {
+  ApiError,
+  type CourseOutline,
+  type CourseQuestion,
+  type Lesson,
+  type LessonNote,
+} from '@nuruzzaman/contracts';
 
 import { CourseOutlineNav } from '@/features/learn/course-outline';
 import { LessonNotes } from '@/features/learn/lesson-notes';
+import { LessonQuestions } from '@/features/learn/lesson-questions';
 import { LessonPlayer } from '@/features/learn/lesson-player';
 import { LessonAssessments } from '@/features/learn/lesson-assessments';
 import { Callout } from '@/components/ui/callout';
@@ -63,6 +70,13 @@ export default async function LessonPage(props: {
     .then((response) => response.data.filter((note) => note.lesson?.slug === lessonSlug))
     .catch(() => []);
 
+  // This student's own questions on this lesson, and any shared with the class.
+  const lessonQuestions: CourseQuestion[] = await sessionApi<{ data: CourseQuestion[] }>(
+    `/learn/${encodeURIComponent(courseSlug)}/questions?lesson=${encodeURIComponent(lessonSlug)}`,
+  )
+    .then((response) => response.data)
+    .catch(() => []);
+
   let lesson: Lesson | null = null;
   let lockedMessage: string | null = null;
 
@@ -105,6 +119,12 @@ export default async function LessonPage(props: {
                 key={`activities-${lessonSlug}`}
                 quizId={lesson.quiz_id}
                 assignmentId={lesson.assignment_id}
+              />
+              <LessonQuestions
+                key={`questions-${lessonSlug}`}
+                courseSlug={courseSlug}
+                lessonSlug={lessonSlug}
+                questions={lessonQuestions}
               />
               <LessonNotes
                 key={`notes-${lessonSlug}`}

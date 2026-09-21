@@ -7,6 +7,7 @@ import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switch
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
+import { UnansweredQuestionsBadge } from '@/features/dashboard/unanswered-questions-badge';
 import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
@@ -160,6 +161,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                       className="block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white"
                     >
                       {dashboardNavLabel(item, t)}
+                      {item.href === '/dashboard/questions' ? <UnansweredQuestionsBadge /> : null}
                     </Link>
                   </li>
                 ))}

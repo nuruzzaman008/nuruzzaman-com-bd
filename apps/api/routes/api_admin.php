@@ -170,6 +170,9 @@ Route::middleware([
 
     Route::get('course-questions', [Admin\QuestionModerationController::class, 'index']);
     Route::post('course-questions/{question:id}/moderate', [Admin\QuestionModerationController::class, 'moderate']);
+    Route::get('course-questions/unanswered-count', [Admin\QuestionModerationController::class, 'unansweredCount']);
+    Route::post('course-questions/{question:id}/replies', [Admin\QuestionModerationController::class, 'reply'])
+        ->middleware('throttle:30,1');
 
     Route::get('comments', [Admin\CommentModerationController::class, 'index']);
     Route::post('comments/{comment:id}/moderate', [Admin\CommentModerationController::class, 'moderate']);

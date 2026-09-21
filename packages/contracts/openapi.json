@@ -13857,13 +13857,16 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "title",
                   "body"
                 ],
                 "properties": {
                   "title": {
-                    "type": "string",
-                    "maxLength": 255
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 255,
+                    "description": "Optional; taken from the start of the question when left out"
                   },
                   "body": {
                     "type": "string",
@@ -14757,7 +14760,8 @@
           "Admin"
         ],
         "operationId": "listCourseQuestionsForModeration",
-        "summary": "List questions awaiting moderation",
+        "summary": "List student questions",
+        "description": "in_review is private to the student and the teaching team; published is shown to the class. Without a status, the private ones.",
         "security": [
           {
             "sessionCookie": []
@@ -14775,7 +14779,20 @@
                 "in_review",
                 "scheduled",
                 "published",
-                "archived"
+                "archived",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "answered",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
               ]
             }
           }
@@ -14807,6 +14824,121 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/course-questions/unanswered-count": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "countUnansweredCourseQuestions",
+        "summary": "How many student questions still wait for an answer",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "count"
+                      ],
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/course-questions/{question}/replies": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminReplyToCourseQuestion",
+        "summary": "Answer a student question as the teaching team",
+        "description": "For anyone who may edit the course (super admins, admins, instructors); no enrolment needed. The student is emailed.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "question",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "body"
+                ],
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "maxLength": 5000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The question with its replies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CourseQuestion"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
           }
         }
       }
@@ -19342,6 +19474,21 @@
           },
           "reply_count": {
             "type": "integer"
+          },
+          "course": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "In the dashboard's list.",
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
           },
           "lesson": {
             "type": [

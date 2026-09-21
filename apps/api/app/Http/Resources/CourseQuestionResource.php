@@ -21,6 +21,10 @@ class CourseQuestionResource extends JsonResource
             'is_pinned' => (bool) $this->is_pinned,
             'is_mine' => $this->user_id === $request->user()?->getKey(),
             'reply_count' => (int) $this->reply_count,
+            'course' => $this->whenLoaded('course', fn () => $this->course ? [
+                'slug' => $this->course->slug,
+                'title' => $this->course->title,
+            ] : null),
             'lesson' => $this->whenLoaded('lesson', fn () => $this->lesson ? [
                 'slug' => $this->lesson->slug,
                 'title' => $this->lesson->title,

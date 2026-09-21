@@ -142,7 +142,10 @@ export const dashboardNav: {
   },
   {
     headingKey: 'learning',
-    items: [{ href: '/dashboard/courses', key: 'courses' }],
+    items: [
+      { href: '/dashboard/courses', key: 'courses' },
+      { href: '/dashboard/questions', key: 'questions' },
+    ],
   },
   {
     headingKey: 'support',
