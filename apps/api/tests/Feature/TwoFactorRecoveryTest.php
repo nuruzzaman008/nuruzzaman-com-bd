@@ -233,7 +233,8 @@ class TwoFactorRecoveryTest extends TestCase
         [$user] = $this->protectedAccount();
 
         $this->passwordStep($user);
-        $this->postJson('/api/v1/auth/mfa', [])->assertStatus(422)->assertJsonValidationErrors(['code', 'recovery_code']);
+        $this->postJson('/api/v1/auth/mfa', [])->assertStatus(422)
+            ->assertJsonValidationErrors(['code', 'recovery_code'], 'error.fields');
     }
 
     public function test_a_recovery_code_also_answers_the_dashboard_s_request_for_a_code(): void
