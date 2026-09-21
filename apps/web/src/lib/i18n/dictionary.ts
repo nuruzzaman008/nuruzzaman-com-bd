@@ -726,7 +726,11 @@ const bn = {
     activation: {
       submitted: 'জমা হয়েছে',
       in_review: 'যাচাই চলছে',
+      under_review: 'যাচাই চলছে',
+      needs_info: 'আরও তথ্য দরকার',
       approved: 'অনুমোদিত',
+      completed: 'সম্পন্ন',
+      deactivated: 'ডিঅ্যাক্টিভেট করা',
       rejected: 'প্রত্যাখ্যাত',
       cancelled: 'বাতিল',
     },
@@ -928,6 +932,9 @@ const bn = {
     phoneOptional: 'ফোন (ঐচ্ছিক)',
     passwordHint: 'অন্তত ১০ অক্ষর, অক্ষর ও সংখ্যা মিলিয়ে।',
     remember: 'এই ডিভাইসে মনে রাখুন',
+    mfaPrompt: 'আপনার authenticator অ্যাপে দেখানো ৬ সংখ্যার কোডটি দিন।',
+    mfaCode: 'যাচাইকরণ কোড',
+    mfaVerify: 'কোড যাচাই করুন',
     signingIn: 'সাইন ইন হচ্ছে…',
     creating: 'তৈরি হচ্ছে…',
     createAccount: 'অ্যাকাউন্ট তৈরি করুন',
@@ -1191,6 +1198,7 @@ const bn = {
       tickets: 'টিকিট',
       users: 'ব্যবহারকারী',
       settings: 'সেটিংস',
+      security: 'নিরাপত্তা',
       auditLog: 'অডিট লগ',
     },
 
@@ -1601,6 +1609,29 @@ const bn = {
       reviewWarning: 'ইঞ্জিনিয়ার রিভিউ রেকর্ড করা হয়নি। রিভিউ ছাড়া প্রকাশ করা উচিত নয়।',
     },
 
+    security: {
+      title: 'নিরাপত্তা',
+      intro:
+        'ড্যাশবোর্ডে ঢুকতে স্টাফ অ্যাকাউন্টে দুই ধাপের যাচাই বাধ্যতামূলক: পাসওয়ার্ডের পাশাপাশি অ্যাপে আসা ৬ সংখ্যার কোড লাগবে।',
+      start: 'সেট আপ শুরু করুন',
+      stepApp: 'ফোনে Google Authenticator, Microsoft Authenticator বা Aegis-এর মতো একটি অ্যাপ ইনস্টল করুন।',
+      stepSecret: 'অ্যাপে "manually enter a key" বেছে নিয়ে এই কী-টি লিখুন:',
+      stepCode: 'অ্যাপে যে ৬ সংখ্যার কোড আসবে সেটি নিচে দিন।',
+      openInApp: 'অথবা অ্যাপে সরাসরি খুলুন (otpauth লিংক)',
+      code: 'অ্যাপের কোড',
+      confirm: 'চালু করুন',
+      enabled: 'দুই ধাপের যাচাই চালু হয়েছে।',
+      alreadyOn: 'এই অ্যাকাউন্টে দুই ধাপের যাচাই চালু আছে।',
+      passwordToTurnOff: 'নিশ্চিত করতে পাসওয়ার্ড দিন',
+      turnOff: 'বন্ধ করুন',
+      disabled: 'দুই ধাপের যাচাই বন্ধ করা হয়েছে।',
+      failed: 'কাজটি সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।',
+      lostPhone:
+        'ফোন হারালে সাইট থেকে এটি রিসেট করা যায় না; মালিক সার্ভারে php artisan nb:mfa-reset চালিয়ে রিসেট করবেন।',
+      required: 'ড্যাশবোর্ড ব্যবহার করতে প্রথমে দুই ধাপের যাচাই চালু করুন।',
+      setUpNow: 'এখনই সেট আপ করুন',
+    },
+
     activationReview: {
       startReview: 'রিভিউ শুরু করুন',
       needsInfo: 'আরও তথ্য দরকার',
@@ -1608,6 +1639,11 @@ const bn = {
       approve: 'অনুমোদন করুন',
       backToReview: 'রিভিউতে ফেরত',
       markComplete: 'সম্পন্ন হিসেবে চিহ্নিত করুন',
+      deactivate: 'ডিঅ্যাক্টিভেট করুন (মেশিন ছেড়ে দিন)',
+      reactivate: 'আবার অ্যাক্টিভেট করুন',
+      overrideDeviceLimit: 'ডিভাইস লিমিট অগ্রাহ্য করে অ্যাক্টিভেট করুন',
+      overrideDeviceLimitHint:
+        'লাইসেন্সের সীমার বেশি মেশিনে চালু করতে চাইলে। এটি অডিট লগে রেকর্ড থাকবে।',
       finalState: 'এই রিকোয়েস্টটি চূড়ান্ত অবস্থায় আছে; আর কোনো পরিবর্তন করা যাবে না।',
       updated: 'রিকোয়েস্ট হালনাগাদ করা হয়েছে।',
       failed: 'হালনাগাদ করা যায়নি।',
@@ -2534,7 +2570,11 @@ const en: Dictionary = {
     activation: {
       submitted: 'Submitted',
       in_review: 'In review',
+      under_review: 'In review',
+      needs_info: 'More information needed',
       approved: 'Approved',
+      completed: 'Completed',
+      deactivated: 'Deactivated',
       rejected: 'Rejected',
       cancelled: 'Cancelled',
     },
@@ -2732,6 +2772,9 @@ const en: Dictionary = {
     phoneOptional: 'Phone (optional)',
     passwordHint: 'At least 10 characters, letters and numbers together.',
     remember: 'Remember me on this device',
+    mfaPrompt: 'Enter the six-digit code your authenticator app is showing.',
+    mfaCode: 'Verification code',
+    mfaVerify: 'Verify the code',
     signingIn: 'Signing in\u2026',
     creating: 'Creating\u2026',
     createAccount: 'Create account',
@@ -2987,6 +3030,7 @@ const en: Dictionary = {
       tickets: 'Tickets',
       users: 'Users',
       settings: 'Settings',
+      security: 'Security',
       auditLog: 'Audit log',
     },
 
@@ -3404,6 +3448,29 @@ const en: Dictionary = {
         'No engineer review has been recorded. This should not be published without one.',
     },
 
+    security: {
+      title: 'Security',
+      intro:
+        'Staff accounts need two-step verification to use the dashboard: the password, and then a six-digit code from an app on your phone.',
+      start: 'Start the setup',
+      stepApp: 'Install an authenticator app such as Google Authenticator, Microsoft Authenticator or Aegis.',
+      stepSecret: 'In the app, choose "enter a key manually" and type this key:',
+      stepCode: 'Enter the six-digit code the app then shows.',
+      openInApp: 'Or open it straight in the app (otpauth link)',
+      code: 'Code from the app',
+      confirm: 'Turn it on',
+      enabled: 'Two-step verification is on.',
+      alreadyOn: 'Two-step verification is on for this account.',
+      passwordToTurnOff: 'Your password, to confirm',
+      turnOff: 'Turn it off',
+      disabled: 'Two-step verification has been turned off.',
+      failed: 'That could not be completed. Please try again.',
+      lostPhone:
+        'If the phone is lost, this cannot be reset from the website: the owner clears it on the server with php artisan nb:mfa-reset.',
+      required: 'Set up two-step verification to use the dashboard.',
+      setUpNow: 'Set it up now',
+    },
+
     activationReview: {
       startReview: 'Start the review',
       needsInfo: 'More information needed',
@@ -3411,6 +3478,11 @@ const en: Dictionary = {
       approve: 'Approve',
       backToReview: 'Back to review',
       markComplete: 'Mark as complete',
+      deactivate: 'Deactivate (release the machine)',
+      reactivate: 'Activate again',
+      overrideDeviceLimit: 'Activate past the device limit',
+      overrideDeviceLimitHint:
+        'For running on more machines than the licence allows. It is recorded in the audit log.',
       finalState: 'This request is in a final state; it cannot be changed any further.',
       updated: 'The request has been updated.',
       failed: 'That could not be updated.',

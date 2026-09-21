@@ -30,10 +30,19 @@ export type PublicFetchOptions = {
   query?: RequestOptions['query'];
 };
 
+/**
+ * Set only while the site is being built, by the deploy workflow, which reads
+ * it from the server over SSH. It gives the build its own rate limit on the
+ * API - pre-rendering every page is more requests a minute than a visitor's
+ * browser could ever make. At runtime it is not set, and nothing sends it.
+ */
+const buildToken = process.env.NB_BUILD_TOKEN;
+
 /** Cached read for public pages. Never send a signed-in visitor's data here. */
 export async function publicApi<T>(path: string, options: PublicFetchOptions = {}): Promise<T> {
   return client.request<T>(path, {
     query: options.query,
+    ...(buildToken ? { headers: { 'X-NB-Build-Token': buildToken } } : {}),
     next: {
       tags: options.tags,
       revalidate: options.revalidate ?? 300,

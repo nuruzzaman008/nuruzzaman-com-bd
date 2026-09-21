@@ -787,7 +787,7 @@ components:
         reference: { type: string }
         status:
           type: string
-          enum: [submitted, under_review, needs_info, approved, completed, rejected]
+          enum: [submitted, under_review, needs_info, approved, completed, deactivated, rejected]
         request_type: { type: string, enum: [activation, refill, recovery] }
         machine_id_masked:
           type: string
@@ -2010,7 +2010,50 @@ paths:
                 remember: { type: boolean }
       responses:
         '200':
-          description: Signed in; the session cookie is set on the response
+          description: |
+            Signed in, and the session cookie is set on the response - unless
+            the account has two-step verification on, in which case nothing is
+            signed in yet and `data.mfa_required` is true. Send the code to
+            `/auth/mfa` within five minutes to finish.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    required: [data]
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [mfa_required]
+                        properties:
+                          mfa_required: { type: boolean }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /auth/mfa:
+    post:
+      tags: [Auth]
+      operationId: completeTwoFactorSignIn
+      summary: Finish signing in with a two-step code
+      description: |
+        The second half of a sign-in that answered `mfa_required`. The session
+        holds who is halfway through for five minutes. Three wrong codes lock
+        the account's challenge for fifteen minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, maxLength: 10, description: 'The six digits the authenticator app shows' }
+      responses:
+        '200':
+          description: Signed in
           content:
             application/json:
               schema:
@@ -2018,6 +2061,96 @@ paths:
                 required: [data]
                 properties:
                   data: { $ref: '#/components/schemas/User' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /me/mfa:
+    post:
+      tags: [Account]
+      operationId: startTwoFactorSetup
+      summary: Start setting up two-step verification
+      security: [{ sessionCookie: [] }]
+      description: |
+        Returns the secret once, for the authenticator app to store. It counts
+        for nothing until a code from the app confirms it. Staff must complete
+        this before the admin API will answer them.
+      responses:
+        '200':
+          description: Secret issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [secret, otpauth_uri]
+                    properties:
+                      secret: { type: string, description: 'Base32, to type into an authenticator app' }
+                      otpauth_uri: { type: string, description: 'The same secret as an otpauth:// URI for a QR code' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [Account]
+      operationId: disableTwoFactor
+      summary: Turn two-step verification off
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string, description: "The account's current password" }
+      responses:
+        '200':
+          description: Turned off
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [mfa_enabled]
+                    properties:
+                      mfa_enabled: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /me/mfa/confirm:
+    post:
+      tags: [Account]
+      operationId: confirmTwoFactorSetup
+      summary: Confirm the authenticator app is working
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, maxLength: 10 }
+      responses:
+        '200':
+          description: Two-step verification is on
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [mfa_enabled]
+                    properties:
+                      mfa_enabled: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
 
   /auth/logout:
@@ -3985,6 +4118,10 @@ paths:
         Moves a request through the Phase 1 review workflow and carries back the
         safe customer response the offline vendor process produced. Never paste
         a token, key or recovery blob into `vendor_response`.
+
+        Completing a request binds its machine to the licence and takes one of
+        the licence's seats; `deactivated` releases it. The server refuses a
+        completion with no seat free unless `override_device_limit` is sent.
       parameters:
         - { name: reference, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -3997,11 +4134,17 @@ paths:
               properties:
                 status:
                   type: string
-                  enum: [submitted, under_review, needs_info, approved, completed, rejected]
+                  enum: [submitted, under_review, needs_info, approved, completed, deactivated, rejected]
                 note: { type: [string, 'null'], maxLength: 512 }
                 vendor_response: { type: [string, 'null'], maxLength: 4000 }
                 internal_note: { type: [string, 'null'], maxLength: 4000 }
                 notify: { type: boolean }
+                override_device_limit:
+                  type: boolean
+                  description: |
+                    Completes the activation even though the licence has no seat
+                    free. Recorded on the request's history and in the audit log.
+                    Without it, completing past the device limit is refused.
       responses:
         '200':
           description: Transitioned

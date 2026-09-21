@@ -7,6 +7,7 @@ use App\Support\Audit;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -44,7 +45,12 @@ class PasswordController extends Controller
                 ])->save();
 
                 event(new PasswordReset($user));
-                Audit::record('auth.password_reset', $user, [], $user->getKey());
+
+                // Whoever knew the old password, and every device still signed
+                // in with it, is signed out: their sessions carry the old hash.
+                Audit::record('auth.password_reset', $user, [
+                    'other_sessions_ended' => true,
+                ], $user->getKey());
             },
         );
 
@@ -77,7 +83,18 @@ class PasswordController extends Controller
         ]);
 
         $request->user()->update(['password' => $request->input('password')]);
-        Audit::record('auth.password_changed', $request->user(), [], $request->user()->getKey());
+
+        /*
+          Every other device is signed out: the sessions were tied to the old
+          password, and this rewrites the hash they are checked against. This
+          session survives, because AuthenticateSession stores the new hash in
+          it on the way out.
+        */
+        Auth::logoutOtherDevices($request->input('password'));
+
+        Audit::record('auth.password_changed', $request->user(), [
+            'other_sessions_ended' => true,
+        ], $request->user()->getKey());
 
         return response()->json(['message' => 'Password changed.']);
     }

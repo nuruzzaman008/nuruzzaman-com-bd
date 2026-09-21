@@ -26,6 +26,9 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // An account with two-step verification is not signed in by its password:
+  // the API answers "code needed", and this form asks for it.
+  const [codeNeeded, setCodeNeeded] = useState(false);
 
   // The staff entrance has a destination of its own, so arriving there
   // without one still means the dashboard rather than the customer account.
@@ -40,14 +43,26 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
     const form = new FormData(event.currentTarget);
 
     try {
-      const signedIn = await api<{ data: User }>('/auth/login', {
-        method: 'POST',
-        body: {
-          email: form.get('email'),
-          password: form.get('password'),
-          remember: form.get('remember') === 'on',
-        },
-      });
+      const signedIn = codeNeeded
+        ? await api<{ data: User }>('/auth/mfa', {
+            method: 'POST',
+            body: { code: form.get('code') },
+          })
+        : await api<{ data: User | { mfa_required: true } }>('/auth/login', {
+            method: 'POST',
+            body: {
+              email: form.get('email'),
+              password: form.get('password'),
+              remember: form.get('remember') === 'on',
+            },
+          });
+
+      if ('mfa_required' in signedIn.data) {
+        setBusy(false);
+        setCodeNeeded(true);
+
+        return;
+      }
 
       const destination = loginDestination(signedIn.data.roles, next);
 
@@ -89,20 +104,41 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
         </Callout>
       ) : null}
 
-      <Field label={t.auth.email} required error={errors.email?.[0]}>
-        {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
-      </Field>
+      {codeNeeded ? (
+        <>
+          <Callout tone="info">{t.auth.mfaPrompt}</Callout>
 
-      <Field label={t.auth.password} required error={errors.password?.[0]}>
-        {(props) => (
-          <Input name="password" type="password" autoComplete="current-password" {...props} />
-        )}
-      </Field>
+          <Field label={t.auth.mfaCode} required error={errors.code?.[0]}>
+            {(props) => (
+              <Input
+                name="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={10}
+                autoFocus
+                {...props}
+              />
+            )}
+          </Field>
+        </>
+      ) : (
+        <>
+          <Field label={t.auth.email} required error={errors.email?.[0]}>
+            {(props) => <Input name="email" type="email" autoComplete="email" {...props} />}
+          </Field>
 
-      <Checkbox name="remember" label={t.auth.remember} />
+          <Field label={t.auth.password} required error={errors.password?.[0]}>
+            {(props) => (
+              <Input name="password" type="password" autoComplete="current-password" {...props} />
+            )}
+          </Field>
+
+          <Checkbox name="remember" label={t.auth.remember} />
+        </>
+      )}
 
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
-        {busy ? t.auth.signingIn : t.auth.signInTitle}
+        {busy ? t.auth.signingIn : codeNeeded ? t.auth.mfaVerify : t.auth.signInTitle}
       </Button>
 
       <p className="text-center text-sm text-muted">

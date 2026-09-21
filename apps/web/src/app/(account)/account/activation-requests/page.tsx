@@ -24,6 +24,7 @@ const TONES: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'neutral
   needs_info: 'warning',
   approved: 'info',
   completed: 'success',
+  deactivated: 'neutral',
   rejected: 'danger',
 };
 

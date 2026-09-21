@@ -1777,7 +1777,83 @@
         },
         "responses": {
           "200": {
-            "description": "Signed in; the session cookie is set on the response",
+            "description": "Signed in, and the session cookie is set on the response - unless\nthe account has two-step verification on, in which case nothing is\nsigned in yet and `data.mfa_required` is true. Send the code to\n`/auth/mfa` within five minutes to finish.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "mfa_required"
+                          ],
+                          "properties": {
+                            "mfa_required": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/auth/mfa": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "completeTwoFactorSignIn",
+        "summary": "Finish signing in with a two-step code",
+        "description": "The second half of a sign-in that answered `mfa_required`. The session\nholds who is halfway through for five minutes. Three wrong codes lock\nthe account's challenge for fifteen minutes.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 10,
+                    "description": "The six digits the authenticator app shows"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in",
             "content": {
               "application/json": {
                 "schema": {
@@ -1793,6 +1869,193 @@
                 }
               }
             }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/me/mfa": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "startTwoFactorSetup",
+        "summary": "Start setting up two-step verification",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Returns the secret once, for the authenticator app to store. It counts\nfor nothing until a code from the app confirms it. Staff must complete\nthis before the admin API will answer them.\n",
+        "responses": {
+          "200": {
+            "description": "Secret issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "secret",
+                        "otpauth_uri"
+                      ],
+                      "properties": {
+                        "secret": {
+                          "type": "string",
+                          "description": "Base32, to type into an authenticator app"
+                        },
+                        "otpauth_uri": {
+                          "type": "string",
+                          "description": "The same secret as an otpauth:// URI for a QR code"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "disableTwoFactor",
+        "summary": "Turn two-step verification off",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "description": "The account's current password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Turned off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "mfa_enabled"
+                      ],
+                      "properties": {
+                        "mfa_enabled": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "/me/mfa/confirm": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "confirmTwoFactorSetup",
+        "summary": "Confirm the authenticator app is working",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Two-step verification is on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "mfa_enabled"
+                      ],
+                      "properties": {
+                        "mfa_enabled": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
           },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"
@@ -6525,7 +6788,7 @@
             "sessionCookie": []
           }
         ],
-        "description": "Moves a request through the Phase 1 review workflow and carries back the\nsafe customer response the offline vendor process produced. Never paste\na token, key or recovery blob into `vendor_response`.\n",
+        "description": "Moves a request through the Phase 1 review workflow and carries back the\nsafe customer response the offline vendor process produced. Never paste\na token, key or recovery blob into `vendor_response`.\n\nCompleting a request binds its machine to the licence and takes one of\nthe licence's seats; `deactivated` releases it. The server refuses a\ncompletion with no seat free unless `override_device_limit` is sent.\n",
         "parameters": [
           {
             "name": "reference",
@@ -6554,6 +6817,7 @@
                       "needs_info",
                       "approved",
                       "completed",
+                      "deactivated",
                       "rejected"
                     ]
                   },
@@ -6580,6 +6844,10 @@
                   },
                   "notify": {
                     "type": "boolean"
+                  },
+                  "override_device_limit": {
+                    "type": "boolean",
+                    "description": "Completes the activation even though the licence has no seat\nfree. Recorded on the request's history and in the audit log.\nWithout it, completing past the device limit is refused.\n"
                   }
                 }
               }
@@ -17412,6 +17680,7 @@
               "needs_info",
               "approved",
               "completed",
+              "deactivated",
               "rejected"
             ]
           },

@@ -96,6 +96,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->roleNames()->intersect($names)->isNotEmpty();
     }
 
+    /** Two-step verification is set up and proven, not just started. */
+    public function hasTwoFactor(): bool
+    {
+        return $this->mfa_confirmed_at !== null && filled($this->mfa_secret);
+    }
+
     /** Super admins implicitly hold every permission. */
     public function hasPermission(string $permission): bool
     {

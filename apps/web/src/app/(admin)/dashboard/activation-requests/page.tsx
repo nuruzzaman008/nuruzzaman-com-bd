@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return privateMetadata(t.admin.activations.title);
 }
 
-const STATUSES = ['submitted', 'under_review', 'needs_info', 'approved', 'completed', 'rejected'];
+const STATUSES = ['submitted', 'under_review', 'needs_info', 'approved', 'completed', 'deactivated', 'rejected'];
 
 export default async function DashboardActivationRequestsPage(props: {
   searchParams: Promise<{ status?: string }>;

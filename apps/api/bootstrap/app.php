@@ -6,12 +6,15 @@ use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForgetHostOnlySessionCookies;
+use App\Http\Middleware\RequireStaffMfa;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\ApiExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,10 +22,25 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Two-step verification lives in its own route file; see routes/api_mfa.php.
+        then: fn () => Route::middleware('api')->prefix('api/v1')->group(base_path('routes/api_mfa.php')),
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // First-party cookie session auth for the Next.js frontend (Sanctum).
         $middleware->statefulApi();
+
+        /*
+          A session carries the password hash it was signed in with, so changing
+          or resetting a password ends every other session by itself - the phone
+          left at a repair shop, the browser in an internet cafe, or whoever
+          took the password. The current device stays signed in, because
+          logoutOtherDevices refreshes this session's copy.
+        */
+        $middleware->api(append: [
+            AuthenticateSession::class,
+            // The dashboard needs two-step verification; see the class.
+            RequireStaffMfa::class,
+        ]);
 
         $middleware->api(prepend: [
             AttachRequestId::class,

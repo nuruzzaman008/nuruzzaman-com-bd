@@ -47,10 +47,40 @@ class AppServiceProvider extends ServiceProvider
         $this->configureNotificationLinks();
     }
 
+    /**
+     * A build of the website, proved by the token kept on this server.
+     *
+     * Not an address: the runners' addresses change with every deploy, and a
+     * published range would let anyone who can rent a machine there past the
+     * limit. The token is in the API's own environment and in one file the
+     * deploy user can read, and nowhere else.
+     */
+    private static function isTrustedBuild(Request $request): bool
+    {
+        $expected = (string) config('nb.build_token');
+
+        return strlen($expected) >= 32
+            && hash_equals($expected, (string) $request->header('X-NB-Build-Token'));
+    }
+
     private function configureRateLimiting(): void
     {
-        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)
-            ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
+        RateLimiter::for('api', function (Request $request) {
+            /*
+              A deploy builds the site on GitHub's runners and pre-renders it
+              through this API: about two hundred calls in a minute, where the
+              limit is 120. The refused ones were how the sitemap and the feed
+              came to be built from nothing. A build carries a token this
+              server generated, so it gets a limit of its own - still a limit,
+              and still per-minute. Anyone who fakes the header without the
+              token stays on 120 like everybody else.
+            */
+            if (self::isTrustedBuild($request)) {
+                return Limit::perMinute(600)->by('build');
+            }
+
+            return Limit::perMinute(120)->by($request->user()?->getAuthIdentifier() ?: $request->ip());
+        });
 
         RateLimiter::for('auth', function (Request $request) {
             $email = strtolower(trim((string) $request->input('email')));

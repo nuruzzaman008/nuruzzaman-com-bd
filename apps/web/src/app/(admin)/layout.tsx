@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ApiError, type User } from '@nuruzzaman/contracts';
 
@@ -12,6 +12,7 @@ import { sessionApi } from '@/lib/api/server';
 import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { pageDictionary } from '@/lib/i18n/page';
+import { PATHNAME_HEADER } from '@/lib/request-path';
 import { dashboardNavLabel, dashboardNav } from '@/lib/site';
 
 const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'instructor', 'support'];
@@ -68,6 +69,31 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <h1 className="text-lg font-bold">{t.admin.verifyRequiredTitle}</h1>
           <p className="mt-2 text-sm">{t.admin.verifyRequired}</p>
           <ResendVerification className="mt-4" />
+        </div>
+      </main>
+    );
+  }
+
+  /*
+    The API refuses everything under /admin to a staff account without two-step
+    verification (RequireStaffMfa), so the shell says so and offers the way to
+    set it up, rather than letting every page fail with an error digest. The
+    security page itself stays reachable, because that is where they go.
+  */
+  const pathname = (await headers()).get(PATHNAME_HEADER);
+
+  if (!user.mfa_enabled && pathname !== '/dashboard/security') {
+    return (
+      <main id="main" className="flex min-h-dvh flex-1 items-center justify-center bg-surface p-6">
+        <div className="max-w-md rounded-xl border border-amber/40 bg-amber-soft p-6 text-navy">
+          <h1 className="text-lg font-bold">{t.admin.security.required}</h1>
+          <p className="mt-2 text-sm">{t.admin.security.intro}</p>
+          <Link
+            href="/dashboard/security"
+            className="mt-4 inline-block rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-soft"
+          >
+            {t.admin.security.setUpNow}
+          </Link>
         </div>
       </main>
     );

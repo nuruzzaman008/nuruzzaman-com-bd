@@ -12,6 +12,19 @@
 */
 
 return [
+    /*
+    |----------------------------------------------------------------------
+    | Build token
+    |----------------------------------------------------------------------
+    |
+    | Proves a request comes from a deploy build of the website, which
+    | pre-renders every page through this API and would otherwise be refused
+    | by the per-address rate limit. Generated on the server; never in the
+    | repository. Empty here means no build gets a higher limit.
+    |
+    */
+    'build_token' => env('BUILD_TOKEN'),
+
     'site' => [
         'name' => env('NB_SITE_NAME', 'Engr. Md. Nuruzzaman, RSE'),
         'url' => env('NB_SITE_URL', 'https://nuruzzaman.com.bd'),

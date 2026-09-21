@@ -66,6 +66,9 @@ class ActivationRequestController extends Controller
             'vendor_response' => ['nullable', 'string', 'max:4000'],
             'internal_note' => ['nullable', 'string', 'max:4000'],
             'notify' => ['sometimes', 'boolean'],
+            // Deliberately going past the licence's device limit. Recorded on
+            // the request's history and in the audit log.
+            'override_device_limit' => ['sometimes', 'boolean'],
         ]);
 
         if (isset($validated['internal_note'])) {
@@ -78,6 +81,7 @@ class ActivationRequestController extends Controller
             $request->user(),
             $validated['note'] ?? null,
             $validated['vendor_response'] ?? null,
+            (bool) ($validated['override_device_limit'] ?? false),
         );
 
         if (($validated['notify'] ?? true) && $updated->user?->email) {

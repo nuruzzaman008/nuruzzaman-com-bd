@@ -41,7 +41,10 @@ const NEXT_STATES: Record<string, { value: string; label: Transition }[]> = {
     { value: 'completed', label: 'markComplete' },
     { value: 'rejected', label: 'reject' },
   ],
-  completed: [],
+  // Completing binds the machine to the licence; deactivating gives the seat
+  // back so another machine can be activated, and the same machine can return.
+  completed: [{ value: 'deactivated', label: 'deactivate' }],
+  deactivated: [{ value: 'completed', label: 'reactivate' }],
   rejected: [],
 };
 
@@ -78,6 +81,7 @@ export function ActivationReview({ request }: { request: ActivationRequest }) {
           vendor_response: form.get('vendor_response') || null,
           internal_note: form.get('internal_note') || null,
           notify: form.get('notify') === 'on',
+          override_device_limit: form.get('override_device_limit') === 'on',
         },
       });
 
@@ -140,6 +144,21 @@ export function ActivationReview({ request }: { request: ActivationRequest }) {
           defaultChecked
           label={t.admin.activationReview.notifyCustomer}
         />
+
+        {/*
+          The server refuses to activate one machine more than the licence
+          allows. This is how a reviewer goes past it on purpose, and the
+          request's history and the audit log both record that they did.
+        */}
+        <div>
+          <Checkbox
+            name="override_device_limit"
+            label={t.admin.activationReview.overrideDeviceLimit}
+          />
+          <p className="mt-1 text-xs text-muted">
+            {t.admin.activationReview.overrideDeviceLimitHint}
+          </p>
+        </div>
 
         <Button type="submit" disabled={busy}>
           {busy ? t.admin.common.saving : t.admin.activationReview.update}

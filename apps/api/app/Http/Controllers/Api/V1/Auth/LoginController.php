@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Services\Commerce\CartService;
 use App\Support\Audit;
+use App\Support\Totp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +23,12 @@ class LoginController extends Controller
 
     /** How long it then refuses, counted from the first of those attempts. */
     private const LOCK_MINUTES = 15;
+
+    /** Where the half-finished sign-in waits for its code. */
+    private const PENDING_KEY = 'auth.mfa_pending';
+
+    /** How long that wait may last. */
+    private const PENDING_SECONDS = 300;
 
     public function __construct(private readonly CartService $carts) {}
 
@@ -61,7 +69,9 @@ class LoginController extends Controller
             ]);
         }
 
-        if (! Auth::attempt($credentials, (bool) $request->boolean('remember'))) {
+        // Checked rather than signed in, because an account with two-step
+        // verification is not signed in until the code is right.
+        if (! Auth::validate($credentials)) {
             RateLimiter::hit($throttleKey, self::LOCK_MINUTES * 60);
 
             Audit::record('auth.login_failed', null, ['email' => $credentials['email']]);
@@ -75,14 +85,89 @@ class LoginController extends Controller
         // who signs in once a month never accumulate into a lock.
         RateLimiter::clear($throttleKey);
 
-        $user = $request->user();
+        /** @var User $user */
+        $user = Auth::getLastAttempted();
 
         if (! $user->isActive()) {
-            Auth::logout();
-
             throw ValidationException::withMessages(['email' => 'This account is not active.']);
         }
 
+        $remember = (bool) $request->boolean('remember');
+
+        if ($user->hasTwoFactor()) {
+            /*
+              The password was right, and that is all it is: nothing is signed
+              in yet. The session only remembers who is halfway through, for
+              five minutes, and the code decides the rest.
+            */
+            $request->session()->put(self::PENDING_KEY, [
+                'id' => $user->getKey(),
+                'remember' => $remember,
+                'at' => now()->getTimestamp(),
+            ]);
+
+            Audit::record('auth.mfa_challenged', $user, [], $user->getKey());
+
+            return response()->json(['data' => ['mfa_required' => true]])
+                ->header('Cache-Control', 'no-store');
+        }
+
+        return $this->completeSignIn($request, $user, $remember);
+    }
+
+    /**
+     * The second step: the six-digit code from the authenticator app.
+     *
+     * Five wrong codes lock the account's challenge for fifteen minutes, which
+     * is what stops a stolen password being walked through the code space.
+     */
+    public function challenge(Request $request): JsonResponse
+    {
+        $input = $request->validate(['code' => ['required', 'string', 'max:10']]);
+        $pending = $request->session()->get(self::PENDING_KEY);
+
+        $user = is_array($pending) && isset($pending['id'])
+            ? User::query()->find($pending['id'])
+            : null;
+
+        if (! $user || ! $user->hasTwoFactor()
+            || now()->getTimestamp() - (int) ($pending['at'] ?? 0) > self::PENDING_SECONDS) {
+            $request->session()->forget(self::PENDING_KEY);
+
+            throw ValidationException::withMessages([
+                'code' => 'That sign-in expired. Enter your email and password again.',
+            ]);
+        }
+
+        $throttleKey = 'mfa:'.$user->getKey();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
+            Audit::record('auth.mfa_locked', $user, [], $user->getKey());
+
+            throw ValidationException::withMessages([
+                'code' => 'Too many wrong codes. Try again in '
+                    .max(1, (int) ceil(RateLimiter::availableIn($throttleKey) / 60)).' minute(s).',
+            ]);
+        }
+
+        if (! Totp::verify((string) $user->mfa_secret, $input['code'])) {
+            RateLimiter::hit($throttleKey, self::LOCK_MINUTES * 60);
+
+            Audit::record('auth.mfa_failed', $user, [], $user->getKey());
+
+            throw ValidationException::withMessages(['code' => 'That code is not right.']);
+        }
+
+        RateLimiter::clear($throttleKey);
+        $request->session()->forget(self::PENDING_KEY);
+
+        return $this->completeSignIn($request, $user, (bool) ($pending['remember'] ?? false), viaMfa: true);
+    }
+
+    /** Signing in for real: new session id, login stamp, cart and audit row. */
+    private function completeSignIn(Request $request, User $user, bool $remember, bool $viaMfa = false): JsonResponse
+    {
+        Auth::login($user, $remember);
         $request->session()->regenerate();
 
         $user->forceFill([
@@ -94,7 +179,7 @@ class LoginController extends Controller
             $this->carts->merge($this->carts->forToken($token), $user);
         }
 
-        Audit::record('auth.login', $user, [], $user->getKey());
+        Audit::record('auth.login', $user, ['mfa' => $viaMfa], $user->getKey());
 
         return (new UserResource($user->load('profile', 'roles')))->response();
     }

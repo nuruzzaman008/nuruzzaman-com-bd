@@ -10,6 +10,7 @@ use App\Services\Payments\FakeGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -107,5 +108,28 @@ class SecurityHardeningTest extends TestCase
 
         $this->postJson('/api/v1/admin/media', ['file' => $svg, 'alt_text' => 'Logo'])->assertStatus(422);
         $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    /** Only a deploy build, holding the server's token, gets the build limit. */
+    public function test_the_build_rate_limit_needs_the_server_s_token(): void
+    {
+        $token = str_repeat('b', 64);
+        config(['nb.build_token' => $token]);
+
+        $limiter = RateLimiter::limiter('api');
+
+        $build = Request::create('/api/v1/posts');
+        $build->headers->set('X-NB-Build-Token', $token);
+        $this->assertSame(600, $limiter($build)->maxAttempts);
+
+        $forged = Request::create('/api/v1/posts');
+        $forged->headers->set('X-NB-Build-Token', 'not-the-token');
+        $this->assertSame(120, $limiter($forged)->maxAttempts);
+
+        $this->assertSame(120, $limiter(Request::create('/api/v1/posts'))->maxAttempts);
+
+        // With none configured, the header is worth nothing at all.
+        config(['nb.build_token' => '']);
+        $this->assertSame(120, $limiter($build)->maxAttempts);
     }
 }

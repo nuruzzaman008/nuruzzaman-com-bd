@@ -156,6 +156,7 @@ export const dashboardNav: {
     items: [
       { href: '/dashboard/users', key: 'users' },
       { href: '/dashboard/settings', key: 'settings' },
+      { href: '/dashboard/security', key: 'security' },
       { href: '/dashboard/audit-log', key: 'auditLog' },
     ],
   },

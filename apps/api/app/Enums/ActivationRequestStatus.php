@@ -14,6 +14,8 @@ enum ActivationRequestStatus: string
     case NeedsInfo = 'needs_info';
     case Approved = 'approved';
     case Completed = 'completed';
+    /** The machine was released, so the licence has that seat free again. */
+    case Deactivated = 'deactivated';
     case Rejected = 'rejected';
 
     /** @return array<int, self> */
@@ -24,7 +26,12 @@ enum ActivationRequestStatus: string
             self::UnderReview => [self::NeedsInfo, self::Approved, self::Rejected],
             self::NeedsInfo => [self::UnderReview, self::Rejected],
             self::Approved => [self::Completed, self::Rejected],
-            self::Completed, self::Rejected => [],
+            // Completing binds the machine to the licence and deactivating
+            // releases it; a released machine can be activated again while the
+            // licence has a seat free.
+            self::Completed => [self::Deactivated],
+            self::Deactivated => [self::Completed],
+            self::Rejected => [],
         };
     }
 

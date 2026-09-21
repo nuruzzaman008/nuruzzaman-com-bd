@@ -111,22 +111,6 @@ jobs:
             bash "$test"
           done
 
-      - name: Build
-        run: npm run build
-
-      # The deployment refuses an artefact that cannot be traced to the commit
-      # being deployed, so the build stamps itself.
-      - name: Stamp the build with this commit
-        run: echo "${{ github.sha }}" > apps/web/.next/nb-commit
-
-      - name: Package the build
-        run: |
-          cd apps/web
-          tar -czf "$RUNNER_TEMP/web-build.tar.gz" \
-            .next/standalone .next/static .next/BUILD_ID \
-            .next/routes-manifest.json .next/nb-commit public
-          ls -lh "$RUNNER_TEMP/web-build.tar.gz"
-
       - name: Authorise SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -204,6 +188,45 @@ jobs:
           ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o BatchMode=yes -o ConnectTimeout=25 \
             -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" 'echo connected as $(whoami)' \
             || { echo; echo 'SSH refused. Check that the public key is AUTHORIZED in cPanel (Import and Authorize are two separate steps), and that DEPLOY_KNOWN_HOSTS matches this host and port.'; exit 1; }
+
+      # The build pre-renders the site through the public API, whose limiter
+      # allows 120 requests a minute per address - a build makes about two
+      # hundred, and the refused ones used to leave the sitemap and the feed
+      # built from nothing. This token, generated on the server and readable
+      # only by the deploy user, raises the limit for the build alone. It is
+      # never in this repository and never in a GitHub secret.
+      - name: Fetch the build token from the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          token=$(ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o BatchMode=yes -o ConnectTimeout=25 -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" 'cat ~/nuruzzaman-web/.build-token 2>/dev/null' | tr -d '[:space:]') || true
+
+          if [ -n "$token" ]; then
+            echo "::add-mask::$token"
+            echo "NB_BUILD_TOKEN=$token" >> "$GITHUB_ENV"
+            echo 'build token: found'
+          else
+            # Not fatal: without it the build is rate limited, as it was before.
+            echo 'build token: not on the server yet; the build will be rate limited'
+          fi
+
+      - name: Build
+        run: npm run build
+
+      # The deployment refuses an artefact that cannot be traced to the commit
+      # being deployed, so the build stamps itself.
+      - name: Stamp the build with this commit
+        run: echo "${{ github.sha }}" > apps/web/.next/nb-commit
+
+      - name: Package the build
+        run: |
+          cd apps/web
+          tar -czf "$RUNNER_TEMP/web-build.tar.gz" \
+            .next/standalone .next/static .next/BUILD_ID \
+            .next/routes-manifest.json .next/nb-commit public
+          ls -lh "$RUNNER_TEMP/web-build.tar.gz"
 
       - name: Upload the build
         env:
