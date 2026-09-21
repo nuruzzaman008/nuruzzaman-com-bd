@@ -8,6 +8,11 @@
     Header always unset X-Powered-By
     Header unset X-Powered-By
 
+    # Two years, as the website itself sends. Without it a browser that reaches
+    # this host first would try plain HTTP once before being redirected, and
+    # that one request can carry the session cookie.
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains"
+
     # A document type that can carry script is never allowed to run one here.
     <FilesMatch "\.(svg|svgz|html?|xhtml|xml)$">
         Header always set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"

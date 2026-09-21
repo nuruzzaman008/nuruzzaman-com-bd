@@ -124,6 +124,18 @@ class TwoFactorTest extends TestCase
         $this->getJson('/api/v1/me')->assertStatus(401);
     }
 
+    public function test_a_code_sent_from_outside_the_website_is_refused(): void
+    {
+        $user = $this->customer(['password' => self::PASSWORD]);
+        $secret = $this->alreadyProtected($user);
+
+        // No Origin, so Sanctum starts no session: there is no half-finished
+        // sign-in to complete, and the answer is a refusal rather than a 500.
+        $this->withoutHeader('Origin')
+            ->postJson('/api/v1/auth/mfa', ['code' => Totp::at($secret, intdiv(time(), 30))])
+            ->assertStatus(422);
+    }
+
     public function test_wrong_codes_lock_the_challenge(): void
     {
         $user = $this->customer(['password' => self::PASSWORD]);

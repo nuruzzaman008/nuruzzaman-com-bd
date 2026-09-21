@@ -124,6 +124,15 @@ class LoginController extends Controller
     public function challenge(Request $request): JsonResponse
     {
         $input = $request->validate(['code' => ['required', 'string', 'max:10']]);
+
+        // Without the website's session there is nothing halfway through to
+        // finish, and asking the session store would be a server error.
+        if (! $request->hasSession()) {
+            throw ValidationException::withMessages([
+                'code' => 'Sign in from the website, then enter the code.',
+            ]);
+        }
+
         $pending = $request->session()->get(self::PENDING_KEY);
 
         $user = is_array($pending) && isset($pending['id'])
