@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useSidebarCollapsed } from '@/components/layout/admin-sidebar';
 import { api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -29,6 +30,8 @@ export function SignOutButton({
 }) {
   const router = useRouter();
   const { t } = useLocale();
+  // On the admin menu's icon rail, the icon alone; everywhere else, unchanged.
+  const railed = useSidebarCollapsed();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -52,8 +55,10 @@ export function SignOutButton({
         type="button"
         onClick={signOut}
         disabled={busy}
+        title={railed ? t.actions.signOut : undefined}
         className={cn(
           'inline-flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60',
+          railed && 'lg:justify-center lg:px-0',
           variant === 'inverse'
             ? 'text-white/80 hover:bg-white/10 hover:text-white'
             : 'text-navy hover:bg-blue-soft hover:text-blue',
@@ -72,14 +77,12 @@ export function SignOutButton({
           <path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2" />
           <path d="M18 15l3-3-3-3M21 12H10" />
         </svg>
-        {busy ? t.actions.signingOut : t.actions.signOut}
+        <span className={railed ? 'lg:sr-only' : undefined}>
+          {busy ? t.actions.signingOut : t.actions.signOut}
+        </span>
       </button>
 
-      {failed ? (
-        <p className="mt-2 px-3 text-xs text-danger">
-{t.account.signOutFailed}
-        </p>
-      ) : null}
+      {failed ? <p className="mt-2 px-3 text-xs text-danger">{t.account.signOutFailed}</p> : null}
     </div>
   );
 }

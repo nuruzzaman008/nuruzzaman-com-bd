@@ -41,14 +41,20 @@ describe('AdminSidebar', () => {
     expect(screen.getByRole('link', { name: 'Products' })).toBeVisible();
   });
 
-  it('collapses, hides the menu and remembers the choice', () => {
-    renderSidebar(false);
+  it('collapses to its icon rail and remembers the choice', () => {
+    const { container } = renderSidebar(false);
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse the menu' }));
 
     const toggle = screen.getByRole('button', { name: 'Expand the menu' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: 'Products' })).not.toBeInTheDocument();
+    expect(container.querySelector('aside')).toHaveAttribute('data-collapsed', 'true');
+    // The links stay: on a wide screen the rail keeps them as icons; on a
+    // phone the menu is hidden by its max-lg:hidden class.
+    expect(screen.getByRole('link', { name: 'Products' })).toBeInTheDocument();
+    expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toHaveClass(
+      'max-lg:hidden',
+    );
     // The layout reads this on the server, so the next page renders collapsed.
     expect(cookie()).toBe('collapsed');
   });
@@ -64,12 +70,13 @@ describe('AdminSidebar', () => {
   });
 
   it('renders collapsed when the cookie says so, and opens again', () => {
-    renderSidebar(true);
+    const { container } = renderSidebar(true);
 
-    expect(screen.queryByRole('link', { name: 'Products' })).not.toBeInTheDocument();
+    expect(container.querySelector('aside')).toHaveAttribute('data-collapsed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand the menu' }));
 
+    expect(container.querySelector('aside')).not.toHaveAttribute('data-collapsed');
     expect(screen.getByRole('link', { name: 'Products' })).toBeVisible();
     expect(cookie()).toBe('open');
   });

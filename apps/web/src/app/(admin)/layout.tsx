@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 import { ApiError, type User } from '@nuruzzaman/contracts';
 
 import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switcher';
-import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { AdminNavGroup, AdminNavLink } from '@/components/layout/admin-nav-link';
+import { AdminSidebar, WhenSidebarOpen } from '@/components/layout/admin-sidebar';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
 import { UnansweredQuestionsBadge } from '@/features/dashboard/unanswered-questions-badge';
@@ -128,45 +129,44 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         collapseLabel={t.admin.sidebarCollapse}
         expandLabel={t.admin.sidebarExpand}
       >
-        <div className="p-5">
-          <Link href="/" className="flex items-center gap-2 text-white hover:text-amber">
-            <span
-              aria-hidden="true"
-              className="font-latin grid size-8 place-items-center rounded-lg bg-amber text-xs font-bold text-navy"
-            >
-              NB
-            </span>
-            <span className="text-sm font-bold">{t.admin.shellTitle}</span>
-          </Link>
+        {/* Folded to the icon rail, only the menu itself stays. */}
+        <WhenSidebarOpen>
+          <div className="p-5">
+            <Link href="/" className="flex items-center gap-2 text-white hover:text-amber">
+              <span
+                aria-hidden="true"
+                className="font-latin grid size-8 place-items-center rounded-lg bg-amber text-xs font-bold text-navy"
+              >
+                NB
+              </span>
+              <span className="text-sm font-bold">{t.admin.shellTitle}</span>
+            </Link>
 
-          <p className="mt-4 text-xs text-white/60">
-            {user.name}
-            <span className="font-latin mt-0.5 block">{user.roles.join(', ')}</span>
-          </p>
+            <p className="mt-4 text-xs text-white/60">
+              {user.name}
+              <span className="font-latin mt-0.5 block">{user.roles.join(', ')}</span>
+            </p>
 
-          <AdminLanguageSwitcher className="mt-3 -ms-2.5" />
-        </div>
+            <AdminLanguageSwitcher className="mt-3 -ms-2.5" />
+          </div>
+        </WhenSidebarOpen>
 
         <nav aria-label={t.admin.navLabel} className="px-3 pb-6">
           {dashboardNav.map((group) => (
-            <div key={group.headingKey} className="mb-5">
-              <p className="px-2 text-[0.65rem] font-semibold tracking-[0.15em] text-white/50 uppercase">
-                {t.admin.group[group.headingKey]}
-              </p>
-              <ul className="mt-1.5 space-y-0.5">
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10 hover:text-white"
-                    >
-                      {dashboardNavLabel(item, t)}
-                      {item.href === '/dashboard/questions' ? <UnansweredQuestionsBadge /> : null}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <AdminNavGroup key={group.headingKey} heading={t.admin.group[group.headingKey]}>
+              {group.items.map((item) => (
+                <li key={item.href}>
+                  <AdminNavLink
+                    href={item.href}
+                    icon={item.key}
+                    label={dashboardNavLabel(item, t)}
+                    badge={
+                      item.href === '/dashboard/questions' ? <UnansweredQuestionsBadge /> : undefined
+                    }
+                  />
+                </li>
+              ))}
+            </AdminNavGroup>
           ))}
         </nav>
 
@@ -174,13 +174,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               altogether. Both are here because the admin shell has no site header
               or footer to fall back on. */}
         <div className="border-t border-white/15 px-3 py-4">
-          <Link
-            href="/account"
-            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
-          >
-            {t.actions.myAccount}
-          </Link>
-          {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <Link href="/dashboard/payments" className="mb-3 block rounded px-3 py-2 text-sm hover:bg-white/10">{locale === 'en' ? 'Payment verification' : 'Payment যাচাই'}</Link>}
+          <AdminNavLink href="/account" icon="account" label={t.actions.myAccount} />
+          {user.roles.some((role) => ['admin', 'super_admin'].includes(role)) ? (
+            <AdminNavLink
+              href="/dashboard/payments"
+              icon="payments"
+              label={locale === 'en' ? 'Payment verification' : 'Payment যাচাই'}
+            />
+          ) : null}
           <SignOutButton variant="inverse" className="mt-1" />
         </div>
       </AdminSidebar>

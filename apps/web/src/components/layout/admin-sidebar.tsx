@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { createContext, useContext, useId, useState } from 'react';
 
 import { ADMIN_SIDEBAR_COOKIE } from '@/lib/admin-sidebar';
 import { cn } from '@/lib/cn';
@@ -14,16 +14,33 @@ function persistSidebar(collapsed: boolean): void {
   document.cookie = `${ADMIN_SIDEBAR_COOKIE}=${collapsed ? 'collapsed' : 'open'};path=/;max-age=31536000;samesite=lax`;
 }
 
+/** Whether the menu is folded to its icon rail. False outside the sidebar. */
+const SidebarCollapsedContext = createContext(false);
+
+export function useSidebarCollapsed(): boolean {
+  return useContext(SidebarCollapsedContext);
+}
+
+/** Drawn only while the menu is open: the name, the language, the headings. */
+export function WhenSidebarOpen({ children }: { children: React.ReactNode }) {
+  const collapsed = useSidebarCollapsed();
+
+  // Hidden rather than unmounted, so the language switcher keeps its state.
+  return <div className={collapsed ? 'lg:hidden' : undefined}>{children}</div>;
+}
+
 /**
- * The admin menu, collapsible to a narrow rail.
+ * The admin menu, collapsible to a narrow rail of icons.
  *
  * Collapsed, the editors get the width back - the product and article editors
  * put a live SEO analysis beside the writing area, and with the menu open on a
- * laptop screen the writing area is the one that gets squeezed.
+ * laptop screen the writing area is the one that gets squeezed. The icons stay,
+ * each a link to its page with the name on hover, so the menu is still one
+ * click away.
  *
- * The contents are hidden rather than unmounted, so the sign-out button and the
- * language switcher keep their state, and the choice is remembered in a cookie
- * the layout reads on the server.
+ * On a phone the menu sits above the page instead, and collapsing it hides it
+ * altogether, as before. The choice is remembered in a cookie the layout reads
+ * on the server.
  */
 export function AdminSidebar({
   initialCollapsed,
@@ -53,7 +70,7 @@ export function AdminSidebar({
       className={cn(
         'relative border-b border-line bg-navy text-white lg:border-e lg:border-b-0',
         'lg:transition-[width] lg:duration-200',
-        collapsed ? 'lg:w-14' : 'lg:w-64',
+        collapsed ? 'lg:w-16' : 'lg:w-64',
       )}
     >
       <button
@@ -86,9 +103,11 @@ export function AdminSidebar({
         </svg>
       </button>
 
-      <div id={contentId} hidden={collapsed}>
-        {children}
-      </div>
+      <SidebarCollapsedContext.Provider value={collapsed}>
+        <div id={contentId} className={collapsed ? 'max-lg:hidden' : undefined}>
+          {children}
+        </div>
+      </SidebarCollapsedContext.Provider>
     </aside>
   );
 }

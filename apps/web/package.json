@@ -15,6 +15,7 @@
     "preview": "node tools/preview.mjs"
   },
   "dependencies": {
+    "lucide-react": "^1.47.0",
     "next": "16.3.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
