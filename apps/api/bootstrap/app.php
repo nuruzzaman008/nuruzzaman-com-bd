@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AttachRequestId;
+use App\Http\Middleware\EndSessionsOnPasswordChange;
 use App\Http\Middleware\EnforceIdempotency;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserHasRole;
@@ -13,7 +14,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -37,7 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
           logoutOtherDevices refreshes this session's copy.
         */
         $middleware->api(append: [
-            AuthenticateSession::class,
+            EndSessionsOnPasswordChange::class,
             // The dashboard needs two-step verification; see the class.
             RequireStaffMfa::class,
         ]);

@@ -90,7 +90,7 @@ class PasswordController extends Controller
           session survives, because AuthenticateSession stores the new hash in
           it on the way out.
         */
-        Auth::logoutOtherDevices($request->input('password'));
+        Auth::guard('web')->logoutOtherDevices($request->input('password'));
 
         Audit::record('auth.password_changed', $request->user(), [
             'other_sessions_ended' => true,

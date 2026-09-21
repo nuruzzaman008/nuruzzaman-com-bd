@@ -26,7 +26,7 @@ class PasswordSessionTest extends TestCase
     /** What a session signed in before the change carries. */
     private function staleSession(User $user): array
     {
-        return ['password_hash_web' => $user->getAuthPassword()];
+        return ['nb.password_hash' => $user->getAuthPassword()];
     }
 
     public function test_changing_the_password_keeps_this_session_and_ends_the_others(): void
