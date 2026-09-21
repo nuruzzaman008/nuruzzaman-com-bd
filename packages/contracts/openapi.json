@@ -7115,6 +7115,80 @@
         }
       }
     },
+    "/admin/users/{user}/mfa/reset": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminResetStaffTwoFactor",
+        "summary": "Reset another staff member's two-step verification",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "description": "Super admins may reset any other staff account; admins any other staff\naccount except a super admin's. Never the acting account, never a\ncustomer. Needs the acting person's own current authenticator code,\nwhich works once; three wrong codes lock it for fifteen minutes. The\naccount that was reset is emailed.\n",
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 10,
+                    "description": "The acting person's own six-digit code"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Two-step verification cleared; they set it up again on their next dashboard visit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationFailed"
+          }
+        }
+      }
+    },
     "/admin/users/{user}/roles": {
       "put": {
         "tags": [

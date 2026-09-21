@@ -49,6 +49,33 @@ class UserPolicy
         return $user->hasRole(RoleEnum::SuperAdmin) && ! $user->is($target);
     }
 
+    /**
+     * Clearing another staff member's two-step verification, for when they have
+     * lost the phone and the recovery codes.
+     *
+     * Super admins and admins only, never on their own account (that is what
+     * their own Security page is for), and only for staff: customers are not
+     * made to use it in the first place. A super admin is, as above, out of
+     * reach of anyone who is not one - otherwise an administrator could strip
+     * the owner's second step.
+     */
+    public function resetTwoFactor(User $user, User $target): bool
+    {
+        if ($user->is($target) || ! $target->isStaff()) {
+            return false;
+        }
+
+        if (! $user->hasRole(RoleEnum::SuperAdmin) && ! $user->hasRole(RoleEnum::Admin)) {
+            return false;
+        }
+
+        if ($target->hasRole(RoleEnum::SuperAdmin)) {
+            return $user->hasRole(RoleEnum::SuperAdmin);
+        }
+
+        return true;
+    }
+
     public function delete(User $user, User $target): bool
     {
         return $user->hasRole(RoleEnum::SuperAdmin) && ! $user->is($target);
