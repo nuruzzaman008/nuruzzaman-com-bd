@@ -191,6 +191,12 @@ class MoneyReceiptTest extends TestCase
         $this->actingAs($student)
             ->getJson('/api/v1/account/orders/'.$unpaid->number.'/receipt')
             ->assertNotFound();
+    }
+
+    /** On its own: an earlier actingAs() in the same test would stay signed in. */
+    public function test_a_signed_out_visitor_gets_nothing(): void
+    {
+        $order = $this->paidOrder();
 
         $this->getJson('/api/v1/account/orders/'.$order->number.'/receipt')->assertUnauthorized();
     }
