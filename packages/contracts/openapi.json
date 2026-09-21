@@ -1936,6 +1936,7 @@
         ],
         "operationId": "disableTwoFactor",
         "summary": "Turn two-step verification off",
+        "description": "Needs the password, from a session that has typed a code (403 otherwise).",
         "security": [
           {
             "sessionCookie": []
@@ -1989,6 +1990,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "422": {
             "$ref": "#/components/responses/ValidationFailed"

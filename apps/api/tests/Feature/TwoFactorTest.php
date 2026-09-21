@@ -295,6 +295,19 @@ class TwoFactorTest extends TestCase
         $this->assertFalse($user->fresh()->hasTwoFactor());
     }
 
+    /** Password alone is not enough: the session must have typed a code. */
+    public function test_a_session_without_the_code_cannot_turn_it_off(): void
+    {
+        $user = $this->customer(['password' => self::PASSWORD]);
+        $this->alreadyProtected($user);
+
+        $this->be($user->fresh())
+            ->deleteJson('/api/v1/me/mfa', ['password' => self::PASSWORD])
+            ->assertStatus(403);
+
+        $this->assertTrue($user->fresh()->hasTwoFactor());
+    }
+
     public function test_the_owner_can_clear_it_from_the_server_when_a_phone_is_lost(): void
     {
         $user = $this->customer();

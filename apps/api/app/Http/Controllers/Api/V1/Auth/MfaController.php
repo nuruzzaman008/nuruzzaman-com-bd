@@ -118,13 +118,23 @@ class MfaController extends Controller
         return response()->json(['data' => ['mfa_session_verified' => true]]);
     }
 
-    /** Turning it off needs the password, so a borrowed session cannot. */
+    /**
+     * Turning it off needs the password and a session that has typed a code.
+     * With the password alone, a stolen remember-me cookie plus a leaked
+     * password could switch it off and set up an app of their own.
+     */
     public function destroy(Request $request): JsonResponse
     {
         $request->validate(['password' => ['required', 'current_password']]);
 
         $user = $request->user();
+
+        if ($user->hasTwoFactor() && ! MfaSession::isVerified($request, $user)) {
+            abort(403, 'Enter the code from your authenticator app first.');
+        }
+
         $user->forceFill(['mfa_secret' => null, 'mfa_confirmed_at' => null])->save();
+        $request->session()->forget(MfaSession::VERIFIED);
 
         Audit::record('auth.mfa_disabled', $user, [], $user->getKey());
 

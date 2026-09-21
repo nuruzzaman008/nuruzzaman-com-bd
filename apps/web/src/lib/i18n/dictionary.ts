@@ -935,6 +935,7 @@ const bn = {
     mfaPrompt: 'আপনার authenticator অ্যাপে দেখানো ৬ সংখ্যার কোডটি দিন।',
     mfaCode: 'যাচাইকরণ কোড',
     mfaVerify: 'কোড যাচাই করুন',
+    mfaStartOver: 'ইমেইল ও পাসওয়ার্ড দিয়ে আবার শুরু করুন',
     signingIn: 'সাইন ইন হচ্ছে…',
     creating: 'তৈরি হচ্ছে…',
     createAccount: 'অ্যাকাউন্ট তৈরি করুন',
@@ -1630,6 +1631,10 @@ const bn = {
         'ফোন হারালে সাইট থেকে এটি রিসেট করা যায় না; মালিক সার্ভারে php artisan nb:mfa-reset চালিয়ে রিসেট করবেন।',
       required: 'ড্যাশবোর্ড ব্যবহার করতে প্রথমে দুই ধাপের যাচাই চালু করুন।',
       setUpNow: 'এখনই সেট আপ করুন',
+      stepUpTitle: 'কোডটি দিন',
+      stepUpIntro:
+        'এই সেশনে এখনো অ্যাপের কোড দেওয়া হয়নি (যেমন Google দিয়ে বা "মনে রাখুন" দিয়ে ঢুকেছেন)। ড্যাশবোর্ড খুলতে অ্যাপে দেখানো ৬ সংখ্যার কোডটি দিন।',
+      stepUpVerify: 'কোড যাচাই করুন',
     },
 
     activationReview: {
@@ -2775,6 +2780,7 @@ const en: Dictionary = {
     mfaPrompt: 'Enter the six-digit code your authenticator app is showing.',
     mfaCode: 'Verification code',
     mfaVerify: 'Verify the code',
+    mfaStartOver: 'Start again with your email and password',
     signingIn: 'Signing in\u2026',
     creating: 'Creating\u2026',
     createAccount: 'Create account',
@@ -3469,6 +3475,10 @@ const en: Dictionary = {
         'If the phone is lost, this cannot be reset from the website: the owner clears it on the server with php artisan nb:mfa-reset.',
       required: 'Set up two-step verification to use the dashboard.',
       setUpNow: 'Set it up now',
+      stepUpTitle: 'Enter your code',
+      stepUpIntro:
+        'This session has not seen a code from your app yet (for example, you came in through Google or a remembered sign-in). Enter the six-digit code your app shows to open the dashboard.',
+      stepUpVerify: 'Verify the code',
     },
 
     activationReview: {

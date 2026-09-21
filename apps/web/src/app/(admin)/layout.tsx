@@ -7,6 +7,7 @@ import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switch
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
+import { MfaStepUp } from '@/features/dashboard/mfa-step-up';
 import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
@@ -94,6 +95,26 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             {t.admin.security.setUpNow}
           </Link>
+        </div>
+      </main>
+    );
+  }
+
+  /*
+    Set up is not the same as typed into this session. A staff session that
+    came in through Google or a remember-me cookie has not seen a code, and the
+    API refuses it the admin endpoints until it has - the security page
+    included, since turning the second step off is exactly what a borrowed
+    session would want.
+  */
+  if (user.mfa_enabled && !user.mfa_session_verified) {
+    return (
+      <main id="main" className="flex min-h-dvh flex-1 items-center justify-center bg-surface p-6">
+        <div className="w-full max-w-md rounded-xl border border-amber/40 bg-amber-soft p-6 text-navy">
+          <h1 className="text-lg font-bold">{t.admin.security.stepUpTitle}</h1>
+          <p className="mt-2 text-sm">{t.admin.security.stepUpIntro}</p>
+          <MfaStepUp className="mt-4" />
+          <SignOutButton className="mt-3" />
         </div>
       </main>
     );

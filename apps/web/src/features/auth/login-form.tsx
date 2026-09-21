@@ -27,8 +27,9 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // An account with two-step verification is not signed in by its password:
-  // the API answers "code needed", and this form asks for it.
-  const [codeNeeded, setCodeNeeded] = useState(false);
+  // the API answers "code needed", and this form asks for it. Google sign-in
+  // lands here with ?mfa=1 for the same reason.
+  const [codeNeeded, setCodeNeeded] = useState(searchParams.get('mfa') === '1');
 
   // The staff entrance has a destination of its own, so arriving there
   // without one still means the dashboard rather than the customer account.
@@ -142,9 +143,25 @@ export function LoginForm({ defaultNext }: { defaultNext?: string } = {}) {
       </Button>
 
       <p className="text-center text-sm text-muted">
-        <Link href="/forgot-password" className="text-blue hover:underline">
-          {t.auth.forgotPassword}
-        </Link>
+        {codeNeeded ? (
+          // The half-finished sign-in lasts five minutes; after that, or on a
+          // second device, the way on is the password again.
+          <button
+            type="button"
+            className="text-blue hover:underline"
+            onClick={() => {
+              setCodeNeeded(false);
+              setErrors({});
+              setMessage(null);
+            }}
+          >
+            {t.auth.mfaStartOver}
+          </button>
+        ) : (
+          <Link href="/forgot-password" className="text-blue hover:underline">
+            {t.auth.forgotPassword}
+          </Link>
+        )}
       </p>
     </form>
   );
