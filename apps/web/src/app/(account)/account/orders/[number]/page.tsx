@@ -57,6 +57,18 @@ export default async function AccountOrderPage(props: {
         <Badge tone={order.status === 'fulfilled' ? 'success' : 'info'}>{statusLabel('order', order.status, locale)}</Badge>
       </div>
 
+      {/* Paid orders have an invoice, and with it the money receipt the receipt
+          email carried. A plain link, not next/link: the PDF comes from the API. */}
+      {order.invoice_number ? (
+        <a
+          href={`/api/v1/account/orders/${encodeURIComponent(order.number)}/receipt`}
+          download
+          className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-white px-4 text-sm font-semibold text-navy hover:border-blue hover:text-blue"
+        >
+          {locale === 'en' ? 'Download money receipt (PDF)' : 'মানি রিসিট ডাউনলোড করুন (PDF)'}
+        </a>
+      ) : null}
+
       {order.status === 'pending_payment' && <ButtonLink className="mt-5" href={`/checkout/payment/${order.number}`}>{locale === 'en' ? 'Payment options / verification status' : 'Payment option / যাচাইয়ের status'}</ButtonLink>}
 
       <div className="mt-6 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_20rem]">

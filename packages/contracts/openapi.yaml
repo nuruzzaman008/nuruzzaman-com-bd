@@ -2728,6 +2728,25 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /account/orders/{number}/receipt:
+    get:
+      tags: [Account]
+      operationId: downloadMyMoneyReceipt
+      summary: Download the money receipt PDF for one of my paid orders
+      description: 'The same PDF the receipt email carried. 404 until the order is paid.'
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: number, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The receipt
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /account/orders/{number}/invoice:
     get:
       tags: [Account]

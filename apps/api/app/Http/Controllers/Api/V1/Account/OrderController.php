@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api\V1\Account;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Services\Receipts\MoneyReceipt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
@@ -31,6 +34,25 @@ class OrderController extends Controller
         $this->authorize('view', $order);
 
         return new OrderResource($order);
+    }
+
+    /**
+     * The money receipt PDF for a paid order - the same document the receipt
+     * email carried, for when that email is lost.
+     */
+    public function receipt(Request $request, string $number, MoneyReceipt $receipts): StreamedResponse
+    {
+        $order = Order::query()->where('number', $number)->with(['invoice', 'items'])->firstOrFail();
+        $this->authorize('view', $order);
+
+        $invoice = $receipts->ensureFor($order);
+        abort_unless($invoice, 404, 'There is no receipt for this order yet: it has not been paid.');
+
+        return Storage::disk($invoice->document_disk)->download(
+            $invoice->document_path,
+            'Money-receipt-'.$invoice->number.'.pdf',
+            ['Content-Type' => 'application/pdf', 'Cache-Control' => 'private, no-store'],
+        );
     }
 
     public function invoice(Request $request, string $number): JsonResponse

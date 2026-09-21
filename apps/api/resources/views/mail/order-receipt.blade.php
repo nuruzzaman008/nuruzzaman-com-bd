@@ -3,7 +3,7 @@
 
 Assalamu alaikum {{ $order->billing_name }},
 
-Your order has been confirmed. The details are below.
+Your order has been confirmed. The details are below, and your money receipt is attached as a PDF.
 
 <x-mail::table>
 | Item | Qty | Amount (BDT) |

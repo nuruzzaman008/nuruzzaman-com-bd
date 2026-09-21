@@ -51,6 +51,8 @@ Route::middleware(['auth:sanctum', 'active', EnsureCustomerAccount::class])->gro
     Route::get('account/orders', [Account\OrderController::class, 'index']);
     Route::get('account/orders/{number}', [Account\OrderController::class, 'show']);
     Route::get('account/orders/{number}/invoice', [Account\OrderController::class, 'invoice']);
+    Route::get('account/orders/{number}/receipt', [Account\OrderController::class, 'receipt'])
+        ->middleware('throttle:api');
 
     Route::get('account/downloads', [Account\DownloadController::class, 'index']);
     Route::post('account/downloads/{slug}', [Account\DownloadController::class, 'store'])
