@@ -21,6 +21,19 @@ class TwoFactorTest extends TestCase
 
     private const PASSWORD = 'correct-horse-42';
 
+    /**
+     * An account that already has an authenticator, set up without signing in:
+     * actingAs() would leave the test authenticated, and these tests are about
+     * what a password alone can do from a cold start.
+     */
+    private function alreadyProtected(User $user): string
+    {
+        $secret = Totp::generateSecret();
+        $user->forceFill(['mfa_secret' => $secret, 'mfa_confirmed_at' => now()])->save();
+
+        return $secret;
+    }
+
     /** Sets up an authenticator for a user the way the dashboard does. */
     private function enrol(User $user): string
     {
@@ -81,11 +94,7 @@ class TwoFactorTest extends TestCase
     public function test_the_password_alone_no_longer_signs_a_protected_account_in(): void
     {
         $user = $this->customer(['password' => self::PASSWORD]);
-        $secret = $this->enrol($user);
-
-        // A fresh browser: password first.
-        $this->flushSession();
-        $this->post('/api/v1/auth/logout');
+        $secret = $this->alreadyProtected($user);
 
         $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => self::PASSWORD])
             ->assertOk()
@@ -107,9 +116,7 @@ class TwoFactorTest extends TestCase
     public function test_a_code_without_a_password_first_is_refused(): void
     {
         $user = $this->customer(['password' => self::PASSWORD]);
-        $secret = $this->enrol($user);
-
-        $this->flushSession();
+        $secret = $this->alreadyProtected($user);
 
         $this->postJson('/api/v1/auth/mfa', ['code' => Totp::at($secret, intdiv(time(), 30))])
             ->assertStatus(422);
@@ -120,10 +127,11 @@ class TwoFactorTest extends TestCase
     public function test_wrong_codes_lock_the_challenge(): void
     {
         $user = $this->customer(['password' => self::PASSWORD]);
-        $secret = $this->enrol($user);
-        $this->flushSession();
+        $secret = $this->alreadyProtected($user);
 
-        $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => self::PASSWORD])->assertOk();
+        $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => self::PASSWORD])
+            ->assertOk()
+            ->assertJsonPath('data.mfa_required', true);
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             $this->postJson('/api/v1/auth/mfa', ['code' => '000000'])->assertStatus(422);
