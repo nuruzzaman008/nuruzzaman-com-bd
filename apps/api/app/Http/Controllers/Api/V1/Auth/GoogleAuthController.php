@@ -6,6 +6,7 @@ use App\Enums\Role as RoleEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Auth\GoogleAvatar;
 use App\Services\Commerce\CartService;
 use App\Support\Audit;
 use App\Support\MfaSession;
@@ -47,7 +48,10 @@ class GoogleAuthController extends Controller
 
     private const STATE_KEY = 'google_oauth_state';
 
-    public function __construct(private readonly CartService $carts) {}
+    public function __construct(
+        private readonly CartService $carts,
+        private readonly GoogleAvatar $avatars,
+    ) {}
 
     public function redirect(Request $request): RedirectResponse
     {
@@ -129,6 +133,9 @@ class GoogleAuthController extends Controller
         if (! $user->google_id) {
             $user->forceFill(['google_id' => $googleId])->save();
         }
+
+        // The Google account's photo, when this account has none of its own.
+        $this->avatars->importIfMissing($user, $profile->json('picture'));
 
         $staff = $user->roles()->whereIn('name', self::STAFF_ROLES)->exists();
 
