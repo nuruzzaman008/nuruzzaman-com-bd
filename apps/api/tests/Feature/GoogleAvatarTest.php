@@ -46,7 +46,8 @@ class GoogleAvatarTest extends TestCase
                 'name' => 'Rahim Uddin',
                 'picture' => $picture,
             ]),
-            '*' => $pictureResponse ?? Http::response(base64_decode(self::PNG), 200, ['Content-Type' => 'image/png']),
+            // Only Google's image host: every stub is run for every request.
+            '*.googleusercontent.com/*' => $pictureResponse ?? Http::response(base64_decode(self::PNG), 200, ['Content-Type' => 'image/png']),
         ]);
     }
 
@@ -77,7 +78,7 @@ class GoogleAvatarTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://lh3.googleusercontent.com/a/abc123=s256-c');
 
         // The site shows it the same way as an uploaded one.
-        $this->getJson('/api/v1/me')->assertOk()->assertJsonPath('data.profile.has_photo', true);
+        $this->getJson('/api/v1/me')->assertSuccessful()->assertJsonPath('data.profile.has_photo', true);
         $this->get('/api/v1/me/avatar')->assertOk();
     }
 
@@ -137,7 +138,7 @@ class GoogleAvatarTest extends TestCase
 
         $this->googleCallback()->assertRedirectContains('/account');
 
-        $this->getJson('/api/v1/me')->assertOk()->assertJsonPath('data.email', 'down@example.com');
+        $this->getJson('/api/v1/me')->assertSuccessful()->assertJsonPath('data.email', 'down@example.com');
         $this->assertNull($this->avatarOf('down@example.com'));
     }
 
