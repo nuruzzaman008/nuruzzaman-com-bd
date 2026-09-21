@@ -143,6 +143,18 @@ describe('MfaStepUp', () => {
     });
   });
 
+  it('on the page before the dashboard, goes on to the page that was asked for', async () => {
+    request.mockResolvedValueOnce({ data: { mfa_session_verified: true } });
+
+    render(<MfaStepUp nextHref="/dashboard/orders" />);
+
+    fireEvent.change(screen.getByLabelText(/Verification code/), { target: { value: '445566' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify the code' }));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/dashboard/orders'));
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
   it('accepts a recovery code as well', async () => {
     request.mockResolvedValueOnce({ data: { mfa_session_verified: true } });
 

@@ -13,21 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Where staff set up the authenticator app the dashboard requires. Reachable
- * even while the rest of the dashboard is closed to them, because it reads
- * their own account rather than anything under /admin.
- *
- * `?setup=1` is where "Set it up now" and a Google sign-in without two-step
- * verification land, and starts the setup straight away.
+ * Looking after two-step verification once it is on: recovery codes left, a
+ * new set of them, turning it off to move to a new phone. Setting it up in
+ * the first place happens before the dashboard, on /dashboard/two-step.
  */
-export default async function DashboardSecurityPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ setup?: string }>;
-}) {
+export default async function DashboardSecurityPage() {
   const { t } = await adminDictionary();
   const me = await sessionApi<{ data: User }>('/me');
-  const { setup } = await searchParams;
 
   return (
     <div>
@@ -37,7 +29,6 @@ export default async function DashboardSecurityPage({
         <TwoFactorSetup
           enabled={me.data.mfa_enabled}
           recoveryCodesRemaining={me.data.mfa_recovery_codes_remaining ?? null}
-          autoStart={setup === '1'}
         />
       </div>
     </div>

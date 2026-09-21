@@ -325,7 +325,7 @@ class TwoFactorRecoveryTest extends TestCase
 
         $this->withSession(['google_oauth_state' => 'test-state'])
             ->get('/api/v1/auth/google/callback?state=test-state&code=test-code')
-            ->assertRedirectContains('/dashboard/security?setup=1');
+            ->assertRedirectContains('/dashboard/two-step');
 
         // Signed in, able to set it up, and still shut out of the dashboard.
         $this->getJson('/api/v1/me')->assertOk();

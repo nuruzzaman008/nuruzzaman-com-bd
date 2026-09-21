@@ -16,7 +16,14 @@ import { useSession } from '@/lib/session/session-provider';
  * dashboard shut until it has seen one (RequireStaffMfa), so this is the way
  * through, not the lock itself.
  */
-export function MfaStepUp({ className }: { className?: string }) {
+export function MfaStepUp({
+  className,
+  nextHref,
+}: {
+  className?: string;
+  /** Where to go once the code is accepted; otherwise the current page reloads. */
+  nextHref?: string;
+}) {
   const { t } = useLocale();
   const router = useRouter();
   const { refresh } = useSession();
@@ -44,7 +51,12 @@ export function MfaStepUp({ className }: { className?: string }) {
       });
 
       void refresh();
-      router.refresh();
+
+      if (nextHref) {
+        router.replace(nextHref);
+      } else {
+        router.refresh();
+      }
     } catch (caught) {
       setBusy(false);
 

@@ -1631,6 +1631,7 @@ const bn = {
       intro:
         'ড্যাশবোর্ডে ঢুকতে স্টাফ অ্যাকাউন্টে দুই ধাপের যাচাই বাধ্যতামূলক: পাসওয়ার্ডের পাশাপাশি অ্যাপে আসা ৬ সংখ্যার কোড লাগবে।',
       start: 'সেট আপ শুরু করুন',
+      twoStepTitle: 'দুই ধাপের যাচাই',
       setupTitle: 'Google Authenticator সেট আপ করুন',
       stepApp: 'ফোনে Google Authenticator (অথবা Microsoft Authenticator, Aegis-এর মতো যেকোনো authenticator অ্যাপ) ইনস্টল করুন।',
       stepScan: 'অ্যাপে "+" চেপে "Scan a QR code" বেছে নিন, তারপর এই QR কোডটি স্ক্যান করুন:',
@@ -3509,6 +3510,7 @@ const en: Dictionary = {
       intro:
         'Staff accounts need two-step verification to use the dashboard: the password, and then a six-digit code from an app on your phone.',
       start: 'Start the setup',
+      twoStepTitle: 'Two-step verification',
       setupTitle: 'Set up Google Authenticator',
       stepApp: 'Install Google Authenticator on your phone (or any authenticator app, such as Microsoft Authenticator or Aegis).',
       stepScan: 'In the app, tap "+" and choose "Scan a QR code", then scan this QR code:',

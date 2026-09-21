@@ -170,12 +170,12 @@ class GoogleAuthController extends Controller
         Audit::record('auth.login', $user, ['via' => 'google', 'staff' => $staff], $user->getKey());
 
         /*
-          Staff without two-step verification go straight to setting it up: the
-          dashboard is shut to them until they have (RequireStaffMfa), and
-          landing there first would only show them the same screen.
+          Staff without two-step verification go straight to setting it up, on
+          the page before the dashboard: the dashboard is shut to them until
+          they have (RequireStaffMfa).
         */
         $destination = match (true) {
-            $staff && ! $user->hasTwoFactor() => '/dashboard/security?setup=1',
+            $staff && ! $user->hasTwoFactor() => '/dashboard/two-step',
             $staff => '/dashboard',
             default => '/account',
         };

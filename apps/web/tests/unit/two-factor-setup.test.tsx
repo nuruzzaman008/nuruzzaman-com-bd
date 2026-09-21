@@ -44,6 +44,7 @@ beforeEach(() => {
   request.mockReset();
   refreshSession.mockReset();
   router.refresh.mockReset();
+  router.replace.mockReset();
 });
 
 describe('TwoFactorSetup', () => {
@@ -82,6 +83,26 @@ describe('TwoFactorSetup', () => {
 
     expect(screen.queryByText(CODES[0])).toBeNull();
     expect(router.refresh).toHaveBeenCalled();
+  });
+
+  it('on the page before the dashboard, goes on to it once the codes are saved', async () => {
+    request.mockResolvedValueOnce({ data: { secret: SECRET, otpauth_uri: URI } });
+    request.mockResolvedValueOnce({ data: { mfa_enabled: true, recovery_codes: CODES } });
+
+    render(<TwoFactorSetup enabled={false} autoStart completeHref="/dashboard/orders" />);
+
+    await screen.findByRole('img', { name: 'QR code for setting up Google Authenticator' });
+    fireEvent.change(screen.getByLabelText(/6-digit code from the app/), {
+      target: { value: '123456' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify and enable' }));
+    await screen.findByText(CODES[0]);
+
+    // Not before the codes are saved: they would be lost.
+    expect(router.replace).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'I have saved these codes' }));
+
+    expect(router.replace).toHaveBeenCalledWith('/dashboard/orders');
   });
 
   it('starts at once when arriving from "Set it up now", and only once', async () => {

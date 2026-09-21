@@ -9,7 +9,7 @@ The next time you open the dashboard you will be asked to set up Google Authenti
 
 **If you did not ask for this,** tell the site owner straight away and change your password.
 
-<x-mail::button :url="rtrim($site['url'], '/') . '/dashboard/security?setup=1'">
+<x-mail::button :url="rtrim($site['url'], '/') . '/dashboard/two-step'">
 Set it up again
 </x-mail::button>
 

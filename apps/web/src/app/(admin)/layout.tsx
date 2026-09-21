@@ -7,13 +7,13 @@ import { AdminLanguageSwitcher } from '@/components/layout/admin-language-switch
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
-import { MfaStepUp } from '@/features/dashboard/mfa-step-up';
 import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
 import { ADMIN_LOCALE_COOKIE, adminLocaleFrom } from '@/lib/i18n/admin-locale';
 import { pageDictionary } from '@/lib/i18n/page';
 import { PATHNAME_HEADER } from '@/lib/request-path';
+import { TWO_STEP_PATH, twoStepHref } from '@/lib/two-step';
 import { dashboardNavLabel, dashboardNav } from '@/lib/site';
 
 const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'instructor', 'support'];
@@ -76,49 +76,48 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   /*
-    The API refuses everything under /admin to a staff account without two-step
-    verification (RequireStaffMfa), so the shell says so and offers the way to
-    set it up, rather than letting every page fail with an error digest. The
-    security page itself stays reachable, because that is where they go.
+    Two-step verification comes before the dashboard, on a page of its own
+    (/dashboard/two-step) with none of the dashboard around it: no menu to
+    wander into, and no admin widgets failing because the API is still shut
+    to this session (RequireStaffMfa). A staff account without it is sent
+    there to set it up; one that has it, in a session that has not typed a
+    code yet (Google, a remember-me cookie), is sent there to type one.
   */
-  const pathname = (await headers()).get(PATHNAME_HEADER);
+  const pathname = (await headers()).get(PATHNAME_HEADER) ?? '';
+  const needsTwoStep = !user.mfa_enabled || !user.mfa_session_verified;
 
-  if (!user.mfa_enabled && pathname !== '/dashboard/security') {
+  if (pathname === TWO_STEP_PATH) {
+    if (!needsTwoStep) {
+      redirect('/dashboard');
+    }
+
     return (
-      <main id="main" className="flex min-h-dvh flex-1 items-center justify-center bg-surface p-6">
-        <div className="max-w-md rounded-xl border border-amber/40 bg-amber-soft p-6 text-navy">
-          <h1 className="text-lg font-bold">{t.admin.security.required}</h1>
-          <p className="mt-2 text-sm">{t.admin.security.intro}</p>
-          {/* Lands on the setup already started: QR code, key and code field. */}
-          <Link
-            href="/dashboard/security?setup=1"
-            className="mt-4 inline-block rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-soft"
-          >
-            {t.admin.security.setUpNow}
-          </Link>
+      <main
+        id="main"
+        className="flex min-h-dvh flex-1 items-start justify-center bg-surface px-4 py-10 sm:items-center"
+      >
+        <div className="w-full max-w-2xl">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-navy">
+              <span
+                aria-hidden="true"
+                className="font-latin grid size-8 place-items-center rounded-lg bg-amber text-xs font-bold text-navy"
+              >
+                NB
+              </span>
+              <span className="text-sm font-bold">{t.admin.shellTitle}</span>
+            </span>
+            <AdminLanguageSwitcher tone="light" />
+          </div>
+          {children}
+          <SignOutButton className="mt-4" />
         </div>
       </main>
     );
   }
 
-  /*
-    Set up is not the same as typed into this session. A staff session that
-    came in through Google or a remember-me cookie has not seen a code, and the
-    API refuses it the admin endpoints until it has - the security page
-    included, since turning the second step off is exactly what a borrowed
-    session would want.
-  */
-  if (user.mfa_enabled && !user.mfa_session_verified) {
-    return (
-      <main id="main" className="flex min-h-dvh flex-1 items-center justify-center bg-surface p-6">
-        <div className="w-full max-w-md rounded-xl border border-amber/40 bg-amber-soft p-6 text-navy">
-          <h1 className="text-lg font-bold">{t.admin.security.stepUpTitle}</h1>
-          <p className="mt-2 text-sm">{t.admin.security.stepUpIntro}</p>
-          <MfaStepUp className="mt-4" />
-          <SignOutButton className="mt-3" />
-        </div>
-      </main>
-    );
+  if (needsTwoStep) {
+    redirect(twoStepHref(pathname));
   }
 
   return (

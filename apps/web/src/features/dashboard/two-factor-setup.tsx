@@ -26,11 +26,14 @@ export function TwoFactorSetup({
   enabled,
   recoveryCodesRemaining = null,
   autoStart = false,
+  completeHref,
 }: {
   enabled: boolean;
   recoveryCodesRemaining?: number | null;
-  /** Arriving from "Set it up now": begin at once rather than show a second button. */
+  /** On the page before the dashboard: begin at once rather than show a second button. */
   autoStart?: boolean;
+  /** Where to go once the recovery codes are saved; otherwise stay and refresh. */
+  completeHref?: string;
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -172,7 +175,12 @@ export function TwoFactorSetup({
     setRecoveryCodes(null);
     setMessage(null);
     void refresh();
-    router.refresh();
+
+    if (completeHref) {
+      router.replace(completeHref);
+    } else {
+      router.refresh();
+    }
   }
 
   async function copyKey() {
