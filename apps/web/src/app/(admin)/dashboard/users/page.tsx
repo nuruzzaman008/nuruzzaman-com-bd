@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
 import { sessionApi } from '@/lib/api/server';
+import { dateTime } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
 import { privateMetadata } from '@/lib/seo';
 
@@ -65,6 +66,19 @@ export default async function DashboardUsersPage(props: {
                   <span className="font-latin block text-xs text-muted">{user.email}</span>
                 </span>
               ),
+            },
+            {
+              // Bangladesh time; newest accounts are listed first.
+              key: 'created',
+              header: locale === 'bn' ? 'অ্যাকাউন্ট খোলা' : 'Account created',
+              render: (user) =>
+                user.created_at ? (
+                  <time dateTime={user.created_at} className="text-sm whitespace-nowrap">
+                    {dateTime(user.created_at, locale)}
+                  </time>
+                ) : (
+                  <span className="text-muted">—</span>
+                ),
             },
             {
               key: 'phone',

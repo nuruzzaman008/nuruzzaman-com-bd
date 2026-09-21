@@ -23,6 +23,8 @@ class UserResource extends JsonResource
             'timezone' => $this->timezone,
             'status' => $this->status,
             'email_verified' => $this->email_verified_at !== null,
+            // When the account was created, for the dashboard's user list.
+            'created_at' => $this->created_at?->toIso8601String(),
             'mfa_enabled' => $this->mfa_confirmed_at !== null,
             // Whether this session has typed a code. The dashboard asks for one
             // when it has not, rather than letting every admin page fail.

@@ -17790,6 +17790,14 @@
           "email_verified": {
             "type": "boolean"
           },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the account was created"
+          },
           "mfa_enabled": {
             "type": "boolean"
           },
