@@ -29,7 +29,7 @@ class ProfileController extends Controller
             'profile.designation' => ['sometimes', 'nullable', 'string', 'max:160'],
             'profile.district' => ['sometimes', 'nullable', 'string', 'max:80'],
             'profile.links' => ['sometimes', 'array', 'max:6'],
-            'profile.links.*' => ['url', 'max:255'],
+            'profile.links.*' => ['url:http,https', 'max:255'],
         ]);
 
         $user = $request->user();

@@ -132,4 +132,20 @@ class SecurityHardeningTest extends TestCase
         config(['nb.build_token' => '']);
         $this->assertSame(120, $limiter($build)->maxAttempts);
     }
+
+    /** A profile link is a web address, not a script or an inline document. */
+    public function test_profile_links_must_be_web_addresses(): void
+    {
+        $user = $this->customer();
+
+        foreach (['data:text/html,<script>alert(1)</script>', 'ftp://example.com/file', 'file:///etc/passwd'] as $link) {
+            $this->actingAs($user)
+                ->patchJson('/api/v1/me', ['profile' => ['links' => [$link]]])
+                ->assertStatus(422);
+        }
+
+        $this->actingAs($user)
+            ->patchJson('/api/v1/me', ['profile' => ['links' => ['https://www.linkedin.com/in/example']]])
+            ->assertOk();
+    }
 }
