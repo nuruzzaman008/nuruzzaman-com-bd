@@ -91,3 +91,21 @@ describe('New product', () => {
     expect(push).toHaveBeenCalledWith('/dashboard/products/12');
   });
 });
+
+describe('New page', () => {
+  it('creates an empty draft page and opens it in the page editor', async () => {
+    request.mockResolvedValue({ data: { id: 25 } });
+    render(<NewContentForm kind="page" />);
+
+    fireEvent.change(screen.getByLabelText(/Title/), { target: { value: 'Our services' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create and edit' }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('/admin/pages', {
+        method: 'POST',
+        body: { title: 'Our services', slug: 'our-services', body_markdown: '' },
+      }),
+    );
+    expect(push).toHaveBeenCalledWith('/dashboard/pages/25');
+  });
+});

@@ -10,14 +10,21 @@ import { useLocale } from '@/lib/i18n/locale-provider';
 import { slugify } from '@/lib/slug';
 
 /**
- * "New article" and "New product": a title, the address it will live at, and
- * straight into the editor.
+ * "New article", "New product" and "New page": a title, the address it will
+ * live at, and straight into the editor.
  *
  * Nothing else is asked here on purpose. An article is created as an empty
  * draft - the writing, the picture, the SEO and the publishing all belong to
  * the editor, which opens as soon as the record exists.
  */
-export type NewContentKind = 'post' | 'product';
+export type NewContentKind = 'post' | 'product' | 'page';
+
+/** Where each kind is created and then edited, under /api/v1/admin and /dashboard. */
+const COLLECTION: Record<NewContentKind, string> = {
+  post: 'posts',
+  product: 'products',
+  page: 'pages',
+};
 
 /** The kinds of product the shop sells; a course listing is made under Courses. */
 const PRODUCT_TYPES = ['software_license', 'credit_refill', 'bundle', 'digital_resource'] as const;
@@ -40,7 +47,7 @@ export function NewContentForm({ kind }: { kind: NewContentKind }) {
     setError(null);
 
     if (!title.trim()) {
-      setError(kind === 'post' ? words.titleNeeded : words.nameNeeded);
+      setError(kind === 'product' ? words.nameNeeded : words.titleNeeded);
 
       return;
     }
@@ -55,20 +62,19 @@ export function NewContentForm({ kind }: { kind: NewContentKind }) {
     setSaving(true);
 
     try {
-      const path = kind === 'post' ? '/admin/posts' : '/admin/products';
+      const collection = COLLECTION[kind];
       const body =
-        kind === 'post'
-          ? { title: title.trim(), slug: address, body_markdown: '' }
-          : { name: title.trim(), slug: address, type };
+        kind === 'product'
+          ? { name: title.trim(), slug: address, type }
+          : { title: title.trim(), slug: address, body_markdown: '' };
 
-      const response = await api<{ data: { id?: number } }>(path, { method: 'POST', body });
+      const response = await api<{ data: { id?: number } }>(`/admin/${collection}`, {
+        method: 'POST',
+        body,
+      });
       const id = response.data.id;
 
-      router.push(
-        id
-          ? `/dashboard/${kind === 'post' ? 'posts' : 'products'}/${id}`
-          : `/dashboard/${kind === 'post' ? 'posts' : 'products'}`,
-      );
+      router.push(id ? `/dashboard/${collection}/${id}` : `/dashboard/${collection}`);
     } catch (caught) {
       const reason = caught instanceof Error ? caught.message : '';
       setError(reason ? `${words.failed} ${reason}` : words.failed);
@@ -85,7 +91,7 @@ export function NewContentForm({ kind }: { kind: NewContentKind }) {
       className="max-w-xl space-y-5"
       aria-label={words.heading[kind]}
     >
-      <Field label={kind === 'post' ? t.admin.common.title : t.admin.common.name} required>
+      <Field label={kind === 'product' ? t.admin.common.name : t.admin.common.title} required>
         {(props) => (
           <Input
             {...props}

@@ -67,8 +67,10 @@ class SiteController extends Controller
                 // already listed, not pages of their own: they are served at the
                 // /en URL of their Bengali counterpart, so listing their slug
                 // would advertise a URL that does not exist.
+                // A page the owner marked noindex is left out as well.
                 'pages' => Page::query()->published()
                     ->where('slug', 'not like', '%-en')
+                    ->whereDoesntHave('seo', fn ($seo) => $seo->where('noindex', true))
                     ->select('slug', 'updated_at')->get()
                     ->map(fn (Page $page) => [
                         'slug' => $page->slug,

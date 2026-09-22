@@ -5,15 +5,7 @@ import type { SitemapFeed } from '@nuruzzaman/contracts';
 import { tryPublicApi } from '@/lib/api/server';
 import { absoluteUrl } from '@/lib/env';
 import { localizePath } from '@/lib/i18n/locale';
-import { pageSlugForPath } from '@/lib/site';
-
-/**
- * Where a CMS page is actually served. A page has no URL of its own: it is the
- * content of a fixed route, and a nested route has a flat slug
- * (/support/installation reads 'support-installation'). Listing the slug as
- * /support-installation advertised a URL that answers "not found".
- */
-const pathForPageSlug = new Map(Object.entries(pageSlugForPath).map(([path, slug]) => [slug, path]));
+import { isSitePage, pagePathForSlug } from '@/lib/site';
 
 /**
  * Only genuinely indexable URLs are listed. The API decides what is publishable
@@ -112,20 +104,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // listed twice with two different lastModified values.
   const listed = new Set(entries.map((entry) => entry.url));
 
-  // A CMS page only moves the date of the route that shows it. One without a
-  // route is not reachable, so it is not listed.
   for (const page of feed.data.pages ?? []) {
-    const path = pathForPageSlug.get(page.slug);
+    /*
+      One of the site's own pages only moves the date of the fixed route that
+      shows it. A nested route has a flat slug (/support/installation reads
+      'support-installation'), so the slug itself is not the URL.
+    */
+    const path = pagePathForSlug(page.slug);
 
-    if (!path || !page.updated_at) {
+    if (isSitePage(page.slug)) {
+      for (const entry of entries) {
+        if (
+          page.updated_at &&
+          (entry.url === absoluteUrl(path) || entry.url === absoluteUrl(localizePath(path, 'en')))
+        ) {
+          entry.lastModified = new Date(page.updated_at);
+        }
+      }
+
       continue;
     }
 
-    for (const entry of entries) {
-      if (entry.url === absoluteUrl(path) || entry.url === absoluteUrl(localizePath(path, 'en'))) {
-        entry.lastModified = new Date(page.updated_at);
-      }
-    }
+    // A page the owner added in the dashboard, served at /{slug}.
+    const lastModified = page.updated_at ? new Date(page.updated_at) : now;
+    entries.push(
+      { url: absoluteUrl(path), lastModified, changeFrequency: 'monthly', priority: 0.6 },
+      {
+        url: absoluteUrl(localizePath(path, 'en')),
+        lastModified,
+        changeFrequency: 'monthly',
+        priority: 0.5,
+      },
+    );
+    listed.add(absoluteUrl(path));
   }
 
   for (const [key, prefix, priority, changeFrequency] of dynamic) {

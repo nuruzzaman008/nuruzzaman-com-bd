@@ -6,6 +6,7 @@ use App\Enums\ContentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PageRequest;
 use App\Http\Resources\PageResource;
+use App\Jobs\RevalidateFrontend;
 use App\Models\Page;
 use App\Services\Content\PublishingService;
 use App\Support\Audit;
@@ -35,14 +36,16 @@ class PageController extends Controller
     {
         $this->authorize('create', Page::class);
 
-        $page = Page::create($request->safe()->except('seo') + [
+        $page = Page::create($this->attributes($request) + [
             'status' => ContentStatus::Draft,
             'updated_by' => $request->user()->getKey(),
         ]);
 
         if ($request->has('seo')) {
-            $page->seo()->updateOrCreate([], $request->validated('seo'));
+            $this->saveSeo($page, $request->validated('seo'));
         }
+
+        Audit::record('page.created', $page, ['slug' => $page->slug]);
 
         return new PageResource($page->load('seo'));
     }
@@ -51,11 +54,21 @@ class PageController extends Controller
     {
         $this->authorize('update', $page);
 
-        $page->update($request->safe()->except('seo') + ['updated_by' => $request->user()->getKey()]);
+        $previousSlug = $page->slug;
+
+        $page->update($this->attributes($request) + ['updated_by' => $request->user()->getKey()]);
 
         if ($request->has('seo')) {
-            $page->seo()->updateOrCreate([], $request->validated('seo'));
+            $this->saveSeo($page, $request->validated('seo'));
         }
+
+        // The words only, not the body itself: the audit log says who changed
+        // what, and a policy's full text would bury everything else in it.
+        Audit::record('page.updated', $page, ['fields' => array_keys($request->validated())]);
+
+        // A live page is cached; without this, readers keep the old words until
+        // the cache runs out. The old address too, if it moved.
+        $this->refresh($page, $previousSlug);
 
         return new PageResource($page->fresh()->load('seo'));
     }
@@ -96,6 +109,9 @@ class PageController extends Controller
 
         Audit::record('page.legal_review_recorded', $page, $validated);
 
+        // The DRAFT notice on the live page comes and goes with this.
+        $this->refresh($page);
+
         return new PageResource($page->fresh()->load('seo'));
     }
 
@@ -105,6 +121,50 @@ class PageController extends Controller
 
         $page->delete();
 
+        Audit::record('page.deleted', $page, ['slug' => $page->slug]);
+        $this->refresh($page);
+
         return response()->json(['message' => 'Page moved to trash.']);
+    }
+
+    /** @return array<string, mixed> */
+    private function attributes(PageRequest $request): array
+    {
+        $data = $request->safe()->except('seo');
+
+        // An emptied body arrives as null, but the column holds text.
+        if (array_key_exists('body_markdown', $data)) {
+            $data['body_markdown'] ??= '';
+        }
+
+        return $data;
+    }
+
+    /**
+     * An English document (`about-en`) is read with ?locale=en, and the SEO
+     * resource answers an English request from the `_en` columns, so its own
+     * title and description go there as well as in the plain ones.
+     *
+     * @param  array<string, mixed>  $seo
+     */
+    private function saveSeo(Page $page, array $seo): void
+    {
+        if (str_ends_with($page->slug, '-en')) {
+            foreach (['meta_title', 'meta_description'] as $field) {
+                if (array_key_exists($field, $seo)) {
+                    $seo[$field.'_en'] = $seo[$field];
+                }
+            }
+        }
+
+        $page->seo()->updateOrCreate([], $seo);
+    }
+
+    private function refresh(Page $page, ?string $previousSlug = null): void
+    {
+        RevalidateFrontend::dispatch(array_values(array_unique([
+            ...$this->publishing->tagsFor($page),
+            ...($previousSlug ? ['page:'.$previousSlug] : []),
+        ])));
     }
 }

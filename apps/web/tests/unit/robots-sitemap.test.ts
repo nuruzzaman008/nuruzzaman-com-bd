@@ -11,7 +11,8 @@ vi.mock('@/lib/api/server', () => ({
       pages: [
         { slug: 'about', updated_at: '2026-08-01T00:00:00Z' },
         { slug: 'support-installation', updated_at: '2026-08-02T00:00:00Z' },
-        { slug: 'draft-landing-page-with-no-route', updated_at: '2026-08-01T00:00:00Z' },
+        // Added in the dashboard: no fixed route, so it is served at /{slug}.
+        { slug: 'our-services', updated_at: '2026-08-03T00:00:00Z' },
       ],
       products: [
         { slug: 'nb-engineering-tools', updated_at: '2026-08-01T00:00:00Z' },
@@ -56,13 +57,24 @@ describe('sitemap.xml', () => {
     const urls = entries.map((entry) => entry.url);
 
     expect(urls.some((url) => url.endsWith('/support-installation'))).toBe(false);
-    expect(urls.some((url) => url.includes('draft-landing-page-with-no-route'))).toBe(false);
 
     const installation = urls.filter((url) => new URL(url).pathname === '/support/installation');
     expect(installation).toHaveLength(1);
     expect(entries.find((entry) => entry.url === installation[0])?.lastModified).toEqual(
       new Date('2026-08-02T00:00:00Z'),
     );
+  });
+
+  it('lists a page added in the dashboard at its own address, in both languages', async () => {
+    const { default: sitemap } = await import('@/app/sitemap');
+    const entries = await sitemap();
+    const paths = entries.map((entry) => new URL(entry.url).pathname);
+
+    expect(paths.filter((path) => path === '/our-services')).toHaveLength(1);
+    expect(paths.filter((path) => path === '/en/our-services')).toHaveLength(1);
+    expect(
+      entries.find((entry) => new URL(entry.url).pathname === '/our-services')?.lastModified,
+    ).toEqual(new Date('2026-08-03T00:00:00Z'));
   });
 
   it('lists published content and never a private route', async () => {

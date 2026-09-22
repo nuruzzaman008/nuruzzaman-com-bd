@@ -197,3 +197,33 @@ export const pageSlugForPath: Record<string, string> = {
   '/course-terms': 'course-terms',
   '/engineering-disclaimer': 'engineering-disclaimer',
 };
+
+const pathForPageSlug = new Map(
+  Object.entries(pageSlugForPath).map(([path, slug]) => [slug, path]),
+);
+
+/** The Bengali page an English document (`about-en`) translates, or the slug itself. */
+export function basePageSlug(slug: string): string {
+  return slug.endsWith('-en') ? slug.slice(0, -3) : slug;
+}
+
+/**
+ * One of the site's own pages (about, FAQ, the policies): its address is a
+ * route in the code, so it cannot move, go offline or be deleted from the
+ * dashboard without breaking every link to it.
+ */
+export function isSitePage(slug: string): boolean {
+  return pathForPageSlug.has(basePageSlug(slug));
+}
+
+/**
+ * Where a CMS page is read on the site. The site's own pages keep their route;
+ * any other page is served at /{slug}, and an English document at the /en
+ * address of the page it translates.
+ */
+export function pagePathForSlug(slug: string): string {
+  const base = basePageSlug(slug);
+  const path = pathForPageSlug.get(base) ?? `/${base}`;
+
+  return slug.endsWith('-en') ? `/en${path}` : path;
+}

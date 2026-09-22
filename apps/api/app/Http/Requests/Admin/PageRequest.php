@@ -2,11 +2,30 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Page;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class PageRequest extends FormRequest
 {
+    /**
+     * Addresses the site already answers itself. A new page is served at
+     * /{slug}, so a page given one of these would sit behind the real route
+     * and never be seen. Mirrors the top-level routes in apps/web/src/app and
+     * the redirects in apps/web/next.config.ts.
+     */
+    public const RESERVED_SLUGS = [
+        'about', 'account', 'ads', 'api', 'apple-icon', 'attachment', 'authors', 'blog',
+        'cart', 'checkout', 'connect-autocad', 'contact', 'course-terms', 'courses',
+        'dashboard', 'en', 'engineering-disclaimer', 'engineering-tools', 'faq', 'favicon',
+        'feed', 'forgot-password', 'icon', 'learn', 'login', 'nb-engineering-tools',
+        'nb-engineering-tools-autocad-structural-design-software', 'nb-staff',
+        'opengraph-image', 'privacy-policy', 'products', 'refund-policy', 'register',
+        'reset-password', 'resources', 'robots', 'sanctum', 'search', 'shop', 'sitemap',
+        'software-eula', 'storage', 'support', 'terms', 'topics', 'verify',
+    ];
+
     public function authorize(): bool
     {
         return $this->user() !== null;
@@ -14,16 +33,20 @@ class PageRequest extends FormRequest
 
     public function rules(): array
     {
-        $pageId = $this->route('page')?->getKey();
+        /** @var Page|null $page */
+        $page = $this->route('page');
+        $creating = $this->isMethod('POST');
 
         return [
             'slug' => [
-                $this->isMethod('POST') ? 'required' : 'sometimes',
+                $creating ? 'required' : 'sometimes',
                 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-                Rule::unique('pages', 'slug')->ignore($pageId),
+                Rule::unique('pages', 'slug')->ignore($page?->getKey()),
+                $this->slugIsFree($page),
             ],
-            'title' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:255'],
-            'body_markdown' => [$this->isMethod('POST') ? 'required' : 'sometimes', 'string', 'max:200000'],
+            'title' => [$creating ? 'required' : 'sometimes', 'string', 'max:255'],
+            // An empty page is a valid draft; the controller stores it as ''.
+            'body_markdown' => [$creating ? 'present' : 'sometimes', 'nullable', 'string', 'max:200000'],
             'template' => ['sometimes', 'string', 'in:default,legal,support'],
             'requires_legal_review' => ['sometimes', 'boolean'],
             'seo' => ['sometimes', 'array'],
@@ -33,5 +56,32 @@ class PageRequest extends FormRequest
             'seo.canonical_url' => ['nullable', 'url', 'max:512'],
             'seo.noindex' => ['sometimes', 'boolean'],
         ];
+    }
+
+    /**
+     * A page may keep the address it has; only a new or changed one is checked,
+     * so the seeded /about page can still be saved under 'about'.
+     *
+     * An English document is its Bengali page's slug plus `-en`, served at that
+     * page's /en address; one with no Bengali page could never be reached.
+     */
+    private function slugIsFree(?Page $page): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($page) {
+            if (! is_string($value) || $value === $page?->slug) {
+                return;
+            }
+
+            if (in_array($value, self::RESERVED_SLUGS, true)) {
+                $fail('This address is already used by another part of the site. Choose a different one.');
+
+                return;
+            }
+
+            if (str_ends_with($value, '-en')
+                && ! Page::query()->where('slug', substr($value, 0, -3))->exists()) {
+                $fail('An address ending in -en is the English version of a page. Create the Bengali page first.');
+            }
+        };
     }
 }
