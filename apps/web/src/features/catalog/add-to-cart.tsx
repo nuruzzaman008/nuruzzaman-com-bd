@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import type { Cart, ProductVariant } from '@nuruzzaman/contracts';
@@ -133,9 +134,9 @@ export function AddToCart({ variants, buttonLabel, hidePrice = false, openCart =
         {added ? (
           <Callout tone="success" role="status">
             {t.shop.added}{' '}
-            <a href="/cart" className="font-semibold underline">
+            <Link href="/cart" className="font-semibold underline">
               {t.shop.viewCart}
-            </a>
+            </Link>
           </Callout>
         ) : null}
         {error ? (
