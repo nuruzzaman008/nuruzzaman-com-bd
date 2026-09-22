@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
+import { VerifiedBadge } from '@/components/ui/verified-badge';
 import { sessionApi } from '@/lib/api/server';
 import { dateTime } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
@@ -62,7 +63,15 @@ export default async function DashboardUsersPage(props: {
               header: t.admin.common.name,
               render: (user) => (
                 <span>
-                  <span className="block font-medium text-navy">{user.name}</span>
+                  <span className="flex items-center gap-1 font-medium text-navy">
+                    {user.name}
+                    {user.verified_badge ? (
+                      <VerifiedBadge
+                        label={locale === 'bn' ? 'যাচাইকৃত প্রোফাইল' : 'Verified profile'}
+                        className="size-4"
+                      />
+                    ) : null}
+                  </span>
                   <span className="font-latin block text-xs text-muted">{user.email}</span>
                 </span>
               ),

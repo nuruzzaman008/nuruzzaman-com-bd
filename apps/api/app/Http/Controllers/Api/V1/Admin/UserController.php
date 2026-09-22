@@ -26,7 +26,8 @@ class UserController extends Controller
         ]);
 
         $users = User::query()
-            ->with('roles')
+            // The profile too, for the blue badge beside each name.
+            ->with(['roles', 'profile'])
             ->when($validated['q'] ?? null, fn ($query, $term) => $query->where(fn ($inner) => $inner
                 ->where('name', 'like', '%'.$term.'%')
                 ->orWhere('email', 'like', '%'.$term.'%')))

@@ -742,6 +742,15 @@ components:
           description: 'Unused recovery codes. Only on the signed-in account itself, and only when two-step verification is on.'
         roles: { type: array, items: { type: string } }
         permissions: { type: array, items: { type: string } }
+        verified_badge:
+          type: boolean
+          description: 'The blue badge beside the name: a verified email, every profile field filled and a photo. Present when the profile is included.'
+        badge_missing:
+          type: array
+          description: 'What is still needed for the badge, in the order the profile form shows it. Present when the profile is included.'
+          items:
+            type: string
+            enum: [email_verified, photo, name, phone, display_name, headline, organization, designation, district, bio]
         profile:
           type: object
           required: [display_name, headline, bio, organization, designation, district, links]

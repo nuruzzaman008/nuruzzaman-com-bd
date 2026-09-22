@@ -25,3 +25,13 @@ it('lets the owner upload a photo as multipart data', async () => {
   expect(request).toHaveBeenCalledWith('/me/avatar', { method: 'POST', body: expect.any(FormData) });
   expect(screen.getByRole('img', { name: 'Profile photo' })).toHaveAttribute('src', '/api/v1/me/avatar?v=1');
 });
+it('shows the blue badge beside a verified, complete profile', () => {
+  render(<ProfileEditor initial={{ ...user, verified_badge: true, badge_missing: [] }} admin />);
+  expect(screen.getByRole('img', { name: 'Verified profile' })).toBeInTheDocument();
+  expect(screen.queryByText(/still needed/)).not.toBeInTheDocument();
+});
+it('says what is still needed for the badge instead', () => {
+  render(<ProfileEditor initial={{ ...user, verified_badge: false, badge_missing: ['photo', 'designation', 'bio'] }} admin />);
+  expect(screen.queryByRole('img', { name: 'Verified profile' })).not.toBeInTheDocument();
+  expect(screen.getByText('For the blue badge, still needed: profile photo, designation, about / bio')).toBeInTheDocument();
+});

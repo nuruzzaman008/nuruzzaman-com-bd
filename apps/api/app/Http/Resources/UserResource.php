@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\User;
 use App\Support\MfaSession;
+use App\Support\ProfileBadge;
 use App\Support\TwoFactor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -40,6 +41,9 @@ class UserResource extends JsonResource
                 $this->isStaff(),
                 fn () => $this->permissionNames()->values(),
             ),
+            // The blue badge beside the name, and what is left to earn it.
+            'verified_badge' => $this->whenLoaded('profile', fn () => ProfileBadge::earned($this->resource)),
+            'badge_missing' => $this->whenLoaded('profile', fn () => ProfileBadge::missing($this->resource)),
             'profile' => $this->whenLoaded('profile', fn () => [
                 'has_photo' => filled($this->profile?->avatar_path),
                 'display_name' => $this->profile?->display_name,
