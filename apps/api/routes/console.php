@@ -2,6 +2,7 @@
 
 use App\Jobs\ReconcilePayments;
 use App\Jobs\RecordQueueHeartbeat;
+use App\Services\Notifications\NotificationMaintenance;
 use App\Support\OperationalHealth;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -44,3 +45,24 @@ Schedule::call(fn () => OperationalHealth::beat(OperationalHealth::SCHEDULER_KEY
     ->everyFiveMinutes();
 
 Schedule::job(new RecordQueueHeartbeat)->everyFiveMinutes();
+
+// Notification center (App\Services\Notifications\NotificationMaintenance).
+Artisan::command('notifications:retry-emails', function (NotificationMaintenance $maintenance) {
+    $this->info($maintenance->retryDue().' notification email(s) queued again.');
+})->purpose('Queue failed notification emails for another attempt');
+
+Artisan::command('notifications:prune', function (NotificationMaintenance $maintenance) {
+    $removed = $maintenance->prune();
+    $this->info("Removed {$removed['notifications']} old read notification(s) and {$removed['emails']} old sent email record(s).");
+})->purpose('Remove read notifications after 90 days and sent email records after 180');
+
+// Failed notification emails get another go every ten minutes, up to five
+// attempts; the email log can resend any of them by hand after that.
+Schedule::call(fn () => Artisan::call('notifications:retry-emails'))
+    ->name('notifications:retry-emails')
+    ->everyTenMinutes()
+    ->withoutOverlapping();
+
+Schedule::call(fn () => Artisan::call('notifications:prune'))
+    ->name('notifications:prune')
+    ->dailyAt('02:40');

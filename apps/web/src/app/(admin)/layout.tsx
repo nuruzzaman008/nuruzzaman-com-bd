@@ -9,6 +9,7 @@ import { AdminSidebar, WhenSidebarOpen } from '@/components/layout/admin-sidebar
 import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
 import { UnansweredQuestionsBadge } from '@/features/dashboard/unanswered-questions-badge';
+import { NotificationBell } from '@/features/notifications/notification-bell';
 import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
@@ -187,6 +188,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </AdminSidebar>
 
       <main id="main" className="min-w-0 flex-1 p-5 sm:p-8">
+        {/* Top right on every dashboard page, and still there with the menu folded. */}
+        <div className="mb-4 flex justify-end">
+          <NotificationBell
+            scope="admin"
+            allHref="/dashboard/notifications"
+            settingsHref="/dashboard/notifications/settings"
+          />
+        </div>
         {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <PendingPaymentAlert />}
         {children}
       </main>

@@ -118,7 +118,10 @@ export const dashboardNav: {
 }[] = [
   {
     headingKey: 'overview',
-    items: [{ href: '/dashboard', key: 'dashboard' }],
+    items: [
+      { href: '/dashboard', key: 'dashboard' },
+      { href: '/dashboard/notifications', key: 'notifications' },
+    ],
   },
   {
     headingKey: 'content',

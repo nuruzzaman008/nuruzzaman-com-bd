@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Banknote,
+  Bell,
   CircleUserRound,
   Download,
   FileText,
@@ -34,6 +35,7 @@ import { useSidebarCollapsed } from './admin-sidebar';
 /** One icon per menu entry, keyed like the dictionary's admin.nav labels. */
 const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
+  notifications: Bell,
   posts: Newspaper,
   pages: FileText,
   media: ImageIcon,

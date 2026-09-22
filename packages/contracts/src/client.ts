@@ -261,6 +261,21 @@ export type AuditLogEntry = Json<
   paths['/admin/audit-logs']['get']['responses']['200']
 >['data'][number];
 
+export type NotificationList = Json<paths['/me/notifications']['get']['responses']['200']>;
+export type NotificationItem = NotificationList['data'][number];
+export type NotificationFeed = Json<paths['/me/notifications/feed']['get']['responses']['200']>;
+export type NotificationUnread = Json<
+  paths['/me/notifications/read-all']['post']['responses']['200']
+>;
+export type NotificationPreference = Json<
+  paths['/me/notification-preferences']['get']['responses']['200']
+>['data'][number];
+export type NotificationEmailLog = Json<
+  paths['/admin/notification-emails']['get']['responses']['200']
+>;
+export type NotificationEmailEntry = NotificationEmailLog['data'][number];
+export type FailedMailJob = NotificationEmailLog['failed_jobs'][number];
+
 /** Paginated list envelope used by index endpoints. */
 export type Paginated<T> = {
   data: T[];

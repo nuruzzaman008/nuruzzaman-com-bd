@@ -22,8 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        // Two-step verification lives in its own route file; see routes/api_mfa.php.
-        then: fn () => Route::middleware('api')->prefix('api/v1')->group(base_path('routes/api_mfa.php')),
+        // Two-step verification and the notification center live in their own
+        // route files; see routes/api_mfa.php and routes/api_notifications.php.
+        then: function () {
+            Route::middleware('api')->prefix('api/v1')->group(base_path('routes/api_mfa.php'));
+            Route::middleware('api')->prefix('api/v1')->group(base_path('routes/api_notifications.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // First-party cookie session auth for the Next.js frontend (Sanctum).

@@ -6,6 +6,7 @@ import { ApiError } from '@nuruzzaman/contracts';
 import { PATHNAME_HEADER, REQUEST_PATH_HEADER, loginRedirect } from '@/lib/request-path';
 
 import { AccountSidebar } from '@/components/layout/account-sidebar';
+import { NotificationBell } from '@/features/notifications/notification-bell';
 import { isAdministrator } from '@/lib/account-routing';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
@@ -66,7 +67,15 @@ export default async function AccountLayout({ children }: { children: React.Reac
                 navigation would be no use to them. */}
             {isAdministrator(user.roles) ? <div /> : <AccountSidebar user={user} />}
 
-            <div>{children}</div>
+            <div>
+              {/* Staff are only here to verify an address; their bell is in the dashboard. */}
+              {isAdministrator(user.roles) ? null : (
+                <div className="mb-4 flex justify-end">
+                  <NotificationBell scope="me" allHref="/account/notifications" />
+                </div>
+              )}
+              {children}
+            </div>
           </div>
         </Container>
       </main>
