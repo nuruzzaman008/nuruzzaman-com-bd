@@ -1295,7 +1295,7 @@ components:
     NotificationItem:
       type: object
       description: One notification, worded in the language asked for.
-      required: [id, type, category, title, body, detail, url, read, created_at]
+      required: [id, type, category, title, body, detail, url, read, created_at, conversation, person]
       properties:
         id: { type: string, format: uuid }
         type: { type: string, description: 'Event key, for example order.paid or ticket.staff_replied' }
@@ -1306,6 +1306,85 @@ components:
         url: { type: [string, 'null'], description: 'Site-relative page the notification opens, if any' }
         read: { type: boolean }
         created_at: { type: [string, 'null'], format: date-time }
+        conversation:
+          description: The conversation it belongs to, which the bell can open in the chat window.
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [kind, key]
+              properties:
+                kind: { type: string, enum: [ticket, contact, question, comment] }
+                key: { type: string }
+        person:
+          type: object
+          description: Who it is about. The photo address is only given to staff who may see user profiles.
+          required: [name, avatar_url]
+          properties:
+            name: { type: [string, 'null'] }
+            avatar_url: { type: [string, 'null'] }
+    PendingCount:
+      type: object
+      required: [key, count, url]
+      properties:
+        key: { type: string, enum: [payments, tickets, contacts, questions, comments, activations] }
+        count: { type: integer }
+        url: { type: string }
+    ConversationPerson:
+      type: object
+      required: [name, email, avatar_url]
+      properties:
+        name: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        avatar_url: { type: [string, 'null'] }
+    ConversationSummary:
+      type: object
+      required: [kind, key, title, subtitle, status, waiting, preview, preview_from, at, person, url]
+      properties:
+        kind: { type: string, enum: [ticket, contact, question, comment] }
+        key: { type: string, description: 'Ticket reference, or the id of the contact message, question or comment' }
+        title: { type: string }
+        subtitle: { type: [string, 'null'] }
+        status: { type: string }
+        waiting: { type: boolean, description: 'Waiting for the team to reply or decide' }
+        preview: { type: [string, 'null'] }
+        preview_from: { type: string, enum: [customer, staff] }
+        at: { type: [string, 'null'], format: date-time }
+        person: { $ref: '#/components/schemas/ConversationPerson' }
+        url: { type: string }
+    ConversationMessage:
+      type: object
+      required: [id, from, author, body, at, avatar_url]
+      properties:
+        id: { type: string }
+        from: { type: string, enum: [customer, staff, note], description: 'note = internal ticket note, never shown to the customer' }
+        author: { type: [string, 'null'] }
+        body: { type: string }
+        at: { type: [string, 'null'], format: date-time }
+        avatar_url: { type: [string, 'null'] }
+    ConversationThread:
+      type: object
+      required: [kind, key, title, subtitle, status, waiting, at, person, url, can_reply, actions, messages]
+      properties:
+        kind: { type: string, enum: [ticket, contact, question, comment] }
+        key: { type: string }
+        title: { type: string }
+        subtitle: { type: [string, 'null'] }
+        status: { type: string }
+        waiting: { type: boolean }
+        at: { type: [string, 'null'], format: date-time }
+        person: { $ref: '#/components/schemas/ConversationPerson' }
+        url: { type: string }
+        can_reply: { type: boolean }
+        actions:
+          type: object
+          required: [internal_note, resolve, moderate]
+          properties:
+            internal_note: { type: boolean }
+            resolve: { type: boolean }
+            moderate: { type: boolean }
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ConversationMessage' }
     NotificationUnread:
       type: object
       required: [meta]
@@ -1343,6 +1422,11 @@ components:
           required: [unread]
           properties:
             unread: { type: integer }
+            pending:
+              type: array
+              description: Staff only - what is still waiting on this person
+              items: { $ref: '#/components/schemas/PendingCount' }
+            messages_waiting: { type: integer, description: 'Staff only - conversations waiting for a reply' }
     NotificationPreference:
       type: object
       required: [category, email, default]
@@ -8618,3 +8702,100 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/conversations:
+    get:
+      tags: [Admin]
+      operationId: listConversations
+      summary: The message inbox - tickets, contact messages, student questions and comments
+      description: Each kind is only listed to staff who may act on it. Replies go to each kind's own endpoint.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: kind, in: query, schema: { type: string, enum: [ticket, contact, question, comment] } }
+        - { name: filter, in: query, schema: { type: string, enum: [all, waiting] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ConversationSummary' }
+                  meta:
+                    type: object
+                    required: [kinds, waiting]
+                    properties:
+                      kinds:
+                        type: array
+                        items: { type: string, enum: [ticket, contact, question, comment] }
+                      waiting:
+                        type: object
+                        additionalProperties: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /admin/conversations/{kind}/{key}:
+    get:
+      tags: [Admin]
+      operationId: showConversation
+      summary: One conversation as chat messages
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: kind, in: path, required: true, schema: { type: string, enum: [ticket, contact, question, comment] } }
+        - { name: key, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/ConversationThread' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/contact-messages/{message}/replies:
+    post:
+      tags: [Admin]
+      operationId: replyToContactMessage
+      summary: Answer a contact form message by email
+      description: The answer is emailed to the address the sender gave and kept with the message. Needs support.manage.
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { name: message, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, minLength: 2, maxLength: 5000 }
+      responses:
+        '201':
+          description: Saved and queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [id, handled_at]
+                    properties:
+                      id: { type: integer }
+                      handled_at: { type: [string, 'null'], format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }

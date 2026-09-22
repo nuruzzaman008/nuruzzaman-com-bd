@@ -3,9 +3,31 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { SupportTickets } from '@/features/support/tickets';
 const request = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api/browser', () => ({ api: request }));
-vi.mock('@/lib/i18n/locale-provider', () => ({ useLocale: () => ({ locale: 'en' }) }));
+vi.mock('@/lib/i18n/locale-provider', async () => {
+  const { getDictionary } = await import('@/lib/i18n/dictionary');
+
+  return { useLocale: () => ({ locale: 'en' as const, t: getDictionary('en') }) };
+});
 const ticket = { reference: 'TKT-TEST', name: 'Test Buyer', mobile: '01712345678', subject: 'Installation help', category: 'installation', status: 'open', messages: [{ id: 1, body: 'Please help with installation.', author_kind: 'customer', is_internal: false, at: '2026-09-09T00:00:00Z' }] };
-beforeEach(() => { vi.clearAllMocks(); request.mockImplementation((path: string, options?: { method?: string }) => Promise.resolve(options?.method || path.endsWith('TKT-TEST') ? { data: ticket } : { data: [ticket], meta: { last_page: 1 } })); });
+/** The staff side reads the same ticket through the message inbox. */
+const thread = {
+  kind: 'ticket', key: 'TKT-TEST', title: 'Installation help', subtitle: 'TKT-TEST', status: 'open', waiting: true,
+  at: '2026-09-09T00:00:00Z', person: { name: 'Test Buyer', email: null, avatar_url: null }, url: '/dashboard/messages?c=ticket:TKT-TEST',
+  can_reply: true, actions: { internal_note: true, resolve: true, moderate: false },
+  messages: [{ id: 'm1', from: 'customer', author: 'Test Buyer', body: 'Please help with installation.', at: '2026-09-09T00:00:00Z', avatar_url: null }],
+};
+function answer(listTicket: Record<string, unknown> = ticket) {
+  request.mockImplementation((path: string, options?: { method?: string }) =>
+    Promise.resolve(
+      path === '/admin/conversations/ticket/TKT-TEST'
+        ? { data: thread }
+        : options?.method || path.endsWith('TKT-TEST')
+          ? { data: listTicket }
+          : { data: [listTicket], meta: { last_page: 1 } },
+    ),
+  );
+}
+beforeEach(() => { vi.clearAllMocks(); answer(); });
 it('requires customer contact details and creates a ticket with its conversation', async () => {
   render(<SupportTickets />);
   fireEvent.click(screen.getByText('Create support ticket'));
@@ -16,26 +38,38 @@ it('requires customer contact details and creates a ticket with its conversation
   fireEvent.change(screen.getByLabelText('Subject'), { target: { value: 'Installation help' } });
   fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Please help with installation.' } });
   fireEvent.click(screen.getByRole('button', { name: 'Submit ticket' }));
-  await screen.findByLabelText('Your reply');
+  // The new ticket opens as a chat, the message already in it.
+  await screen.findByRole('textbox', { name: 'Write a reply…' });
+  expect(await screen.findByText('Please help with installation.')).toBeInTheDocument();
   expect(request).toHaveBeenCalledWith('/account/support-tickets', { method: 'POST', body: { name: 'Test Buyer', mobile: '01712345678', subject: 'Installation help', category: 'general', message: 'Please help with installation.' } });
 });
 it.each([false, true])('opens and sends replies with admin=%s', async admin => {
   render(<SupportTickets admin={admin} />);
   fireEvent.click(await screen.findByRole('button', { name: 'Open / Reply' }));
-  fireEvent.change(await screen.findByLabelText('Your reply'), { target: { value: 'Please check again.' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Send reply' }));
-  await screen.findByText('Reply saved.');
-  expect(request).toHaveBeenCalledWith(`/${admin ? 'admin' : 'account'}/support-tickets/TKT-TEST/replies`, { method: 'POST', body: { message: 'Please check again.', ...(admin ? { is_internal: false } : {}) } });
-  expect(screen.getByLabelText('Your reply')).toHaveValue('');
+  const box = await screen.findByRole('textbox', { name: 'Write a reply…' });
+  await screen.findByText('Please help with installation.');
+  fireEvent.change(box, { target: { value: 'Please check again.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+  await waitFor(() => expect(request).toHaveBeenCalledWith(`/${admin ? 'admin' : 'account'}/support-tickets/TKT-TEST/replies`, { method: 'POST', body: { message: 'Please check again.', ...(admin ? { is_internal: false } : {}) } }));
+  await waitFor(() => expect(box).toHaveValue(''));
 });
 it('keeps the draft when sending fails', async () => {
   render(<SupportTickets admin />);
   fireEvent.click(await screen.findByRole('button', { name: 'Open / Reply' }));
-  fireEvent.change(await screen.findByLabelText('Your reply'), { target: { value: 'Keep my draft' } });
+  const box = await screen.findByRole('textbox', { name: 'Write a reply…' });
+  await screen.findByText('Please help with installation.');
+  fireEvent.change(box, { target: { value: 'Keep my draft' } });
   request.mockRejectedValueOnce(new Error('Connection failed'));
-  fireEvent.click(screen.getByRole('button', { name: 'Send reply' }));
-  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Connection failed'));
-  expect(screen.getByLabelText('Your reply')).toHaveValue('Keep my draft');
+  fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Could not send. Please try again.'));
+  expect(box).toHaveValue('Keep my draft');
+});
+
+it('opens the ticket a notification points at', async () => {
+  render(<SupportTickets initialTicket="TKT-TEST" />);
+
+  expect(await screen.findByText('Please help with installation.')).toBeInTheDocument();
+  expect(request).toHaveBeenCalledWith('/account/support-tickets/TKT-TEST');
 });
 
 it('shows the admin who wrote in, and what about, on one compact line', async () => {
@@ -57,14 +91,7 @@ it('does not show a contact line to the customer, only to staff', async () => {
 it('leaves no stray separator when the API returns no contact details', async () => {
   // The deployed API omits name and mobile, and the panel rendered
   // "{name} · {mobile}" regardless - so it read "· —" and told staff nothing.
-  const bare = { ...ticket, name: '', mobile: null };
-  request.mockImplementation((path: string, options?: { method?: string }) =>
-    Promise.resolve(
-      options?.method || path.endsWith('TKT-TEST')
-        ? { data: bare }
-        : { data: [bare], meta: { last_page: 1 } },
-    ),
-  );
+  answer({ ...ticket, name: '', mobile: null });
 
   render(<SupportTickets admin />);
 

@@ -7,6 +7,14 @@ export async function generateMetadata() {
   return privateMetadata(t.customer.support.title);
 }
 
-export default function SupportPage() {
-  return <SupportTickets />;
+/** `?ticket=REF` - where a "support replied" notification lands - opens that conversation. */
+export default async function SupportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ticket?: string }>;
+}) {
+  const { ticket } = await searchParams;
+  const reference = ticket && /^[A-Za-z0-9-]{3,40}$/.test(ticket) ? ticket : undefined;
+
+  return <SupportTickets initialTicket={reference} />;
 }

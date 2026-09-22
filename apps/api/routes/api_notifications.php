@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\ContactMessageController;
+use App\Http\Controllers\Api\V1\Admin\ConversationController;
 use App\Http\Controllers\Api\V1\Admin\NotificationEmailController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\NotificationPreferenceController;
@@ -35,7 +37,15 @@ Route::middleware(['auth:sanctum', 'active', 'throttle:api'])->prefix('me')->gro
 Route::middleware([
     'auth:sanctum', 'active', 'verified', 'throttle:api',
     'role:super_admin,admin,editor,instructor,support',
-])->prefix('admin')->group($inbox);
+])->prefix('admin')->group(function () use ($inbox) {
+    $inbox();
+
+    // The message inbox. Which kinds each person sees is decided per kind by
+    // ConversationService; replies go to each kind's own endpoint.
+    Route::get('conversations', [ConversationController::class, 'index']);
+    Route::get('conversations/{kind}/{key}', [ConversationController::class, 'show']);
+    Route::post('contact-messages/{message:id}/replies', [ContactMessageController::class, 'reply']);
+});
 
 // The email log names recipients and failure reasons: administrators only.
 Route::middleware(['auth:sanctum', 'active', 'verified', 'throttle:api', 'role:super_admin,admin'])

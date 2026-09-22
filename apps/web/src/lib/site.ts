@@ -121,6 +121,7 @@ export const dashboardNav: {
     items: [
       { href: '/dashboard', key: 'dashboard' },
       { href: '/dashboard/notifications', key: 'notifications' },
+      { href: '/dashboard/messages', key: 'messages' },
     ],
   },
   {

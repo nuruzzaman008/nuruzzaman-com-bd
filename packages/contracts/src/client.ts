@@ -275,6 +275,13 @@ export type NotificationEmailLog = Json<
 >;
 export type NotificationEmailEntry = NotificationEmailLog['data'][number];
 export type FailedMailJob = NotificationEmailLog['failed_jobs'][number];
+export type PendingCount = NonNullable<NotificationFeed['meta']['pending']>[number];
+export type ConversationList = Json<paths['/admin/conversations']['get']['responses']['200']>;
+export type ConversationSummary = ConversationList['data'][number];
+export type ConversationThread = Json<
+  paths['/admin/conversations/{kind}/{key}']['get']['responses']['200']
+>['data'];
+export type ConversationMessage = ConversationThread['messages'][number];
 
 /** Paginated list envelope used by index endpoints. */
 export type Paginated<T> = {

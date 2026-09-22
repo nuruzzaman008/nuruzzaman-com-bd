@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\NotificationPresenter;
 use App\Notifications\NotificationType;
+use App\Services\Notifications\AvatarUrls;
+use App\Services\Notifications\ConversationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -24,7 +26,9 @@ use Illuminate\Validation\Rule;
  */
 class NotificationController extends Controller
 {
-    private const FEED_SIZE = 8;
+    private const FEED_SIZE = 12;
+
+    public function __construct(private readonly ConversationService $conversations) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -45,7 +49,7 @@ class NotificationController extends Controller
             ->paginate($validated['per_page'] ?? 20);
 
         return response()->json([
-            'data' => $this->present($page->getCollection(), $locale),
+            'data' => $this->present($page->getCollection(), $locale, $user),
             'meta' => [
                 'current_page' => $page->currentPage(),
                 'last_page' => $page->lastPage(),
@@ -62,13 +66,24 @@ class NotificationController extends Controller
         $user = $this->owner($request);
         $validated = $request->validate(['locale' => ['sometimes', Rule::in(['bn', 'en'])]]);
 
+        $meta = ['unread' => $user->unreadNotifications()->count()];
+
+        // Staff also get what is waiting on them - the "still to do" row and
+        // the number of conversations waiting for a reply - so the one bell
+        // covers everything.
+        if ($user->isStaff()) {
+            $meta['pending'] = $this->conversations->pending($user);
+            $meta['messages_waiting'] = array_sum($this->conversations->waiting($user));
+        }
+
         return response()
             ->json([
                 'data' => $this->present(
                     $user->notifications()->limit(self::FEED_SIZE)->get(),
                     $validated['locale'] ?? $user->locale,
+                    $user,
                 ),
-                'meta' => ['unread' => $user->unreadNotifications()->count()],
+                'meta' => $meta,
             ])
             ->header('Cache-Control', 'private, no-store');
     }
@@ -136,18 +151,30 @@ class NotificationController extends Controller
      * @param  iterable<DatabaseNotification>  $notifications
      * @return list<array<string, mixed>>
      */
-    private function present(iterable $notifications, string $locale): array
+    private function present(iterable $notifications, string $locale, User $viewer): array
     {
+        $notifications = collect($notifications);
+        $avatars = new AvatarUrls($viewer);
+        $avatars->load($notifications->map(fn ($notification) => $notification->data['actor_id'] ?? null)->all());
+
         $items = [];
         foreach ($notifications as $notification) {
-            $view = NotificationPresenter::present($notification->type, (array) $notification->data, $locale);
+            $data = (array) $notification->data;
+            $view = NotificationPresenter::present($notification->type, $data, $locale);
             if (! $view) {
                 continue;
             }
+            $person = [
+                'name' => $view['person_name'],
+                'avatar_url' => $avatars->for($data['actor_id'] ?? null),
+            ];
+            unset($view['person_name']);
+
             $items[] = $view + [
                 'id' => $notification->id,
                 'read' => $notification->read_at !== null,
                 'created_at' => $notification->created_at?->toIso8601String(),
+                'person' => $person,
             ];
         }
 

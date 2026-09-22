@@ -16,6 +16,11 @@ class SupportTicketMessage extends Model
         return ['is_internal' => 'boolean'];
     }
 
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(SupportTicket::class, 'support_ticket_id');

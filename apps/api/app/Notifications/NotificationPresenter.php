@@ -78,7 +78,7 @@ final class NotificationPresenter
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{type: string, category: string, title: string, body: string, detail: ?string, url: ?string}|null
+     * @return array{type: string, category: string, title: string, body: string, detail: ?string, url: ?string, conversation: ?array{kind: string, key: string}, person_name: ?string}|null
      */
     public static function present(string $type, array $data, string $locale): ?array
     {
@@ -114,25 +114,25 @@ final class NotificationPresenter
                 self::join([$t[$type], $s('reference')]),
                 self::join([$s('customer'), $s('subject')]),
                 $s('excerpt'),
-                '/dashboard/support-tickets',
+                self::chat('ticket', $s('reference')),
             ],
             NotificationType::ContactReceived => [
                 $t['contact.received'],
                 self::join([$s('name'), $s('email'), $s('subject')]),
                 $s('excerpt'),
-                null,
+                self::chat('contact', $s('contact_message_id')),
             ],
             NotificationType::QuestionAsked => [
                 self::join([$t['question.asked'], $s('course')]),
                 self::join([$s('customer'), $s('title')]),
                 $s('excerpt'),
-                '/dashboard/questions',
+                self::chat('question', $s('question_id')),
             ],
             NotificationType::CommentPending => [
                 $t['comment.pending'],
                 self::join([$s('author'), $s('post')]),
                 $s('excerpt'),
-                '/dashboard/comments',
+                self::chat('comment', $s('comment_id')),
             ],
             NotificationType::UserRegistered => [
                 $t['user.registered'],
@@ -171,7 +171,7 @@ final class NotificationPresenter
                 self::join([$t['ticket.staff_replied'], $s('reference')]),
                 $s('subject') ?? '',
                 $s('excerpt'),
-                '/account/support',
+                $s('reference') ? '/account/support?ticket='.rawurlencode($s('reference')) : '/account/support',
             ],
             NotificationType::QuestionAnswered => [
                 $t['question.answered'],
@@ -196,7 +196,41 @@ final class NotificationPresenter
             'body' => $body,
             'detail' => $detail,
             'url' => $url,
+            'conversation' => self::conversation($kind, $data),
+            // The person the notification is about, for the name and photo
+            // beside it. Customers' notifications come from the site itself.
+            'person_name' => $kind->forStaff()
+                ? ($s('customer') ?? $s('name') ?? $s('author') ?? $s('email'))
+                : null,
         ];
+    }
+
+    /**
+     * The conversation a notification belongs to, so the bell can open it in
+     * the chat window.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{kind: string, key: string}|null
+     */
+    private static function conversation(NotificationType $kind, array $data): ?array
+    {
+        [$conversation, $field] = match ($kind) {
+            NotificationType::TicketOpened, NotificationType::TicketCustomerReplied,
+            NotificationType::TicketStaffReplied => ['ticket', 'reference'],
+            NotificationType::ContactReceived => ['contact', 'contact_message_id'],
+            NotificationType::QuestionAsked => ['question', 'question_id'],
+            NotificationType::CommentPending => ['comment', 'comment_id'],
+            default => [null, null],
+        };
+        $key = $field ? self::text($data, $field) : null;
+
+        return $conversation && $key ? ['kind' => $conversation, 'key' => $key] : null;
+    }
+
+    /** The dashboard message inbox, open at one conversation when it is known. */
+    private static function chat(string $kind, ?string $key): string
+    {
+        return $key === null ? '/dashboard/messages' : '/dashboard/messages?c='.$kind.':'.rawurlencode($key);
     }
 
     /** A short, single-line excerpt of something a person wrote. */

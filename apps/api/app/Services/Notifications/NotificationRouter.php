@@ -52,6 +52,7 @@ class NotificationRouter
 
         $data = [
             'order_id' => $order->getKey(),
+            'actor_id' => $order->user_id,
             'number' => $order->number,
             'amount_minor' => (int) $order->total_minor,
             'currency' => $order->currency,
@@ -75,6 +76,7 @@ class NotificationRouter
 
         $data = [
             'ticket_id' => $ticket->getKey(),
+            'actor_id' => $ticket->user_id,
             'reference' => $ticket->reference,
             'subject' => $ticket->subject,
             'customer' => $ticket->name ?: $ticket->user?->name,
@@ -102,6 +104,7 @@ class NotificationRouter
 
         $this->notifier->toStaff(NotificationType::QuestionAsked, [
             'question_id' => $question->getKey(),
+            'actor_id' => $question->user_id,
             'course' => $question->course?->title,
             'course_slug' => $question->course?->slug,
             'title' => $question->title,
@@ -143,6 +146,7 @@ class NotificationRouter
 
         $this->notifier->toStaff(NotificationType::CommentPending, [
             'comment_id' => $comment->getKey(),
+            'actor_id' => $comment->user_id,
             'post' => $comment->post?->title,
             'author' => $comment->author_name ?: $comment->user?->name,
             'excerpt' => NotificationPresenter::excerpt($comment->body),
@@ -159,6 +163,7 @@ class NotificationRouter
         if ($event->to_status === 'submitted' && $event->from_status === null) {
             $this->notifier->toStaff(NotificationType::ActivationRequested, [
                 'activation_request_id' => $request->getKey(),
+                'actor_id' => $request->user_id,
                 'reference' => $request->reference,
                 'customer' => $request->user?->name,
                 'autocad_version' => $request->autocad_version ? 'AutoCAD '.$request->autocad_version : null,
@@ -203,6 +208,7 @@ class NotificationRouter
 
         $this->notifier->toStaff(NotificationType::PaymentSubmitted, [
             'order_id' => $order->getKey(),
+            'actor_id' => $order->user_id,
             'number' => $order->number,
             'amount_minor' => (int) $payment->amount_minor,
             'currency' => $payment->currency,
@@ -220,6 +226,7 @@ class NotificationRouter
 
         $this->notifier->toStaff(NotificationType::UserRegistered, [
             'user_id' => $user->getKey(),
+            'actor_id' => $user->getKey(),
             'name' => $user->name,
             'email' => $user->email,
             'via' => $log->context['via'] ?? 'password',
@@ -235,6 +242,7 @@ class NotificationRouter
 
         $this->notifier->toStaff(NotificationType::AffiliateJoined, [
             'affiliate_id' => $affiliate->getKey(),
+            'actor_id' => $affiliate->user_id,
             'name' => $affiliate->user?->name,
             'code' => $affiliate->code,
         ]);

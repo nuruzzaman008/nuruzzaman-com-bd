@@ -16,6 +16,7 @@ import {
   LifeBuoy,
   MessageCircleQuestionMark,
   MessageSquare,
+  MessagesSquare,
   Newspaper,
   Package,
   ScrollText,
@@ -36,6 +37,7 @@ import { useSidebarCollapsed } from './admin-sidebar';
 const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   notifications: Bell,
+  messages: MessagesSquare,
   posts: Newspaper,
   pages: FileText,
   media: ImageIcon,
