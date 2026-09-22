@@ -156,7 +156,9 @@ describe('the notification bell', () => {
         unread: 0,
         pending: [
           { key: 'payments', count: 2, url: '/dashboard/payments' },
+          { key: 'risky_payments', count: 1, url: '/dashboard/orders?status=pending_payment' },
           { key: 'comments', count: 0, url: '/dashboard/messages?kind=comment' },
+          { key: 'reviews', count: 3, url: '/dashboard/posts?status=in_review' },
         ],
         messages_waiting: 0,
       },
@@ -167,6 +169,12 @@ describe('the notification bell', () => {
 
     const chip = await screen.findByRole('link', { name: /Payments to verify/ });
     expect(chip.getAttribute('href')).toBe('/dashboard/payments');
+    expect(screen.getByRole('link', { name: /Payments held as risky/ }).getAttribute('href')).toBe(
+      '/dashboard/orders?status=pending_payment',
+    );
+    expect(screen.getByRole('link', { name: /Articles to review/ }).getAttribute('href')).toBe(
+      '/dashboard/posts?status=in_review',
+    );
     expect(screen.queryByText('Comments to approve')).toBeNull();
   });
 

@@ -53,9 +53,12 @@ class DashboardController extends Controller
                         ActivationRequestStatus::UnderReview->value,
                         ActivationRequestStatus::NeedsInfo->value,
                     ])->count(),
-                    'support_tickets_open' => SupportTicket::query()->whereIn('status', [
-                        SupportTicketStatus::Open->value, SupportTicketStatus::Pending->value,
-                    ])->count(),
+                    // Only tickets waiting on us. A staff reply makes a ticket
+                    // pending - waiting on the customer - and the customer's
+                    // next message opens it again, so answering takes it off
+                    // this count until there is something new to answer.
+                    'support_tickets_open' => SupportTicket::query()
+                        ->where('status', SupportTicketStatus::Open->value)->count(),
                     'posts_in_review' => Post::query()->where('status', ContentStatus::InReview->value)->count(),
                 ],
                 'learning' => [

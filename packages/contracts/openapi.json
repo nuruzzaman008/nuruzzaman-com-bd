@@ -21404,11 +21404,13 @@
             "type": "string",
             "enum": [
               "payments",
+              "risky_payments",
               "tickets",
               "contacts",
               "questions",
               "comments",
-              "activations"
+              "activations",
+              "reviews"
             ]
           },
           "count": {

@@ -230,7 +230,7 @@ class ConversationInboxTest extends TestCase
         $this->actingAs($admin)->getJson('/api/v1/admin/notifications/feed')->assertJsonPath('meta.messages_waiting', 3);
 
         $editorPending = collect($this->actingAs($editor)->getJson('/api/v1/admin/notifications/feed')->json('meta.pending'))->pluck('key')->all();
-        $this->assertEqualsCanonicalizing(['questions', 'comments'], $editorPending);
+        $this->assertEqualsCanonicalizing(['questions', 'comments', 'reviews'], $editorPending);
 
         // Customers have none of this.
         $this->actingAs($customer)->getJson('/api/v1/me/notifications/feed')->assertOk()->assertJsonMissingPath('meta.pending');

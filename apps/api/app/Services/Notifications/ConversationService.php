@@ -4,11 +4,14 @@ namespace App\Services\Notifications;
 
 use App\Enums\ActivationRequestStatus;
 use App\Enums\ContentStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\SupportTicketStatus;
 use App\Models\ActivationRequest;
 use App\Models\ContactMessage;
 use App\Models\Course;
 use App\Models\CourseQuestion;
+use App\Models\Payment;
+use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -101,6 +104,13 @@ class ConversationService
 
         if ($user->hasPermission('orders.manage')) {
             $rows[] = ['key' => 'payments', 'count' => DB::table('manual_payment_submissions')->where('status', 'pending')->count(), 'url' => '/dashboard/payments'];
+            // The dashboard's "payments held as risky", so the bell and the
+            // dashboard's "needs attention" list the same work.
+            $rows[] = [
+                'key' => 'risky_payments',
+                'count' => Payment::query()->where('status', PaymentStatus::RiskHold->value)->count(),
+                'url' => '/dashboard/orders?status=pending_payment',
+            ];
         }
         foreach (['ticket' => 'tickets', 'contact' => 'contacts', 'question' => 'questions', 'comment' => 'comments'] as $kind => $key) {
             if (array_key_exists($kind, $waiting)) {
@@ -116,6 +126,13 @@ class ConversationService
                     ActivationRequestStatus::NeedsInfo->value,
                 ])->count(),
                 'url' => '/dashboard/activation-requests',
+            ];
+        }
+        if ($user->hasPermission('posts.publish')) {
+            $rows[] = [
+                'key' => 'reviews',
+                'count' => Post::query()->where('status', ContentStatus::InReview->value)->count(),
+                'url' => '/dashboard/posts?status=in_review',
             ];
         }
 

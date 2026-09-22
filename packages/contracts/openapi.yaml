@@ -1357,7 +1357,9 @@ components:
       type: object
       required: [key, count, url]
       properties:
-        key: { type: string, enum: [payments, tickets, contacts, questions, comments, activations] }
+        key:
+          type: string
+          enum: [payments, risky_payments, tickets, contacts, questions, comments, activations, reviews]
         count: { type: integer }
         url: { type: string }
     ConversationPerson:
