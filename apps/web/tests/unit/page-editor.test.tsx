@@ -173,6 +173,82 @@ describe('PageEditor', () => {
     expect(screen.getByText(/You may not publish/)).toBeInTheDocument();
   });
 
+  it('shows the SEO analysis and a Google preview, live as the page is written', async () => {
+    show(
+      pageWith({
+        seo: {
+          meta_title: null,
+          meta_description: null,
+          focus_keyword: 'about nuruzzaman',
+          canonical_url: null,
+          noindex: false,
+          nofollow: false,
+        },
+      }),
+    );
+
+    const panel = screen.getByRole('region', { name: 'SEO analysis' });
+    expect(panel).toHaveTextContent(/fine · .* worth a look · .* problem/);
+
+    const preview = screen.getByTestId('search-preview');
+    expect(preview).toHaveTextContent('› about');
+    // The layout's template adds the brand to the title.
+    expect(preview).toHaveTextContent('About — Engr. Md. Nuruzzaman, RSE');
+    expect(screen.getByText(/There is no meta description/)).toBeInTheDocument();
+
+    fireEvent.input(screen.getByLabelText(/Meta description/), {
+      target: { value: 'Who Engr. Nuruzzaman is and what he designs.' },
+    });
+    expect(preview).toHaveTextContent('Who Engr. Nuruzzaman is and what he designs.');
+    expect(screen.queryByText(/There is no meta description/)).not.toBeInTheDocument();
+
+    // Whether another page already targets the keyword is asked of the API,
+    // for this page.
+    await waitFor(
+      () =>
+        expect(request).toHaveBeenCalledWith(
+          '/admin/seo/keyword-usage',
+          expect.objectContaining({
+            query: { keyword: 'about nuruzzaman', kind: 'page', id: 1 },
+          }),
+        ),
+      { timeout: 2000 },
+    );
+  });
+
+  it('sends the robots options, and the share image only when it changed', async () => {
+    show(
+      pageWith({
+        id: 7,
+        slug: 'our-services',
+        status: 'draft',
+        published_at: null,
+        share_image: { id: 42, url: 'https://example.test/share.webp', alt: 'Drawings' },
+      }),
+    );
+
+    fireEvent.change(screen.getByLabelText(/Canonical URL/), {
+      target: { value: 'https://nuruzzaman.com.bd/services' },
+    });
+    fireEvent.click(screen.getByLabelText(/nofollow/));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save draft' })[0]!);
+
+    await waitFor(() => expect(calls('/admin/pages/7', 'PATCH')).toHaveLength(1));
+    const first = calls('/admin/pages/7', 'PATCH')[0]![1].body.seo;
+    expect(first).toMatchObject({
+      canonical_url: 'https://nuruzzaman.com.bd/services',
+      nofollow: true,
+      noindex: false,
+    });
+    expect('og_media_id' in first).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove image' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save draft' })[0]!);
+
+    await waitFor(() => expect(calls('/admin/pages/7', 'PATCH')).toHaveLength(2));
+    expect(calls('/admin/pages/7', 'PATCH')[1]![1].body.seo.og_media_id).toBeNull();
+  });
+
   it('records a legal review by name', async () => {
     show(pageWith({ slug: 'privacy-policy', template: 'legal', awaiting_legal_review: true }));
 

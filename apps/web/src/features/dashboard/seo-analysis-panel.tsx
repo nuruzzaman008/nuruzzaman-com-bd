@@ -5,8 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { analyzeSeo, type CheckStatus, type SeoInput } from '@/lib/seo-analysis/analyze';
 import { api } from '@/lib/api/browser';
 import { cn } from '@/lib/cn';
+import { absoluteUrl } from '@/lib/env';
 import { number } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
+import { brand, pagePathForSlug } from '@/lib/site';
 
 /**
  * Item-wise SEO analysis, live as the author types.
@@ -31,6 +33,61 @@ const STATUS_DOTS: Record<CheckStatus, string> = {
   warn: 'bg-warning',
   fail: 'bg-danger',
 };
+
+/** Where each kind of record is read on the site. */
+function publicPath(kind: SeoInput['kind'], slug: string): string {
+  switch (kind) {
+    case 'post':
+      return `/blog/${slug}`;
+    case 'course':
+      return `/courses/${slug}`;
+    case 'product':
+      return `/products/${slug}`;
+    case 'page':
+      return pagePathForSlug(slug);
+  }
+}
+
+/** Cut to what a search result shows, counting Bengali letters as one each. */
+function clip(text: string, limit: number): string {
+  const letters = Array.from(text.trim());
+
+  return letters.length > limit ? `${letters.slice(0, limit - 1).join('').trimEnd()}…` : text.trim();
+}
+
+/**
+ * Roughly how the record appears as a Google result: the title with the
+ * brand the layout appends, the address, and the description - or the
+ * site-wide one that goes out when none was written.
+ *
+ * Built from the same values the page's metadata is, so it shows what will
+ * actually be sent; how Google then words the result is up to Google.
+ */
+function SearchPreview({ values }: { values: SeoInput }) {
+  const { t } = useLocale();
+  const words = t.admin.seoPanel;
+  const title = (values.metaTitle || values.title).trim();
+  const fullTitle = title.includes(brand.owner) ? title : `${title} — ${brand.owner}`;
+  const written = (values.metaDescription || values.excerpt || '').trim();
+  const path = publicPath(values.kind, values.slug.trim() || '…');
+  const host = new URL(absoluteUrl('/')).host;
+  const crumbs = [host, ...path.split('/').filter(Boolean)].join(' › ');
+
+  return (
+    <div className="border-b border-line px-5 py-4">
+      <h3 className="text-xs font-bold tracking-wide text-muted uppercase">{words.preview}</h3>
+      <div className="mt-3 rounded-lg border border-line bg-white p-3" data-testid="search-preview">
+        <p className="font-latin truncate text-xs text-[#202124]">{crumbs}</p>
+        <p className="mt-1 text-base leading-snug text-[#1a0dab]">{clip(fullTitle, 60)}</p>
+        <p className="mt-1 text-sm leading-snug text-[#4d5156]">
+          {clip(written || brand.heroSupport, 160)}
+        </p>
+      </div>
+      {written ? null : <p className="mt-2 text-xs text-warning">{words.previewNoDescription}</p>}
+      <p className="mt-2 text-xs text-muted">{words.previewNote}</p>
+    </div>
+  );
+}
 
 /** Reads a named field out of the editor form. */
 function readField(form: HTMLFormElement, name: string): string {
@@ -202,6 +259,8 @@ export function SeoAnalysisPanel({
           </p>
         )}
       </header>
+
+      {values ? <SearchPreview values={values} /> : null}
 
       {analysis.keywordMissing ? (
         <p className="border-b border-line bg-amber-soft px-5 py-3 text-sm text-navy">

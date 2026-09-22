@@ -22,14 +22,15 @@ class PageController extends Controller
     {
         $this->authorize('viewAny', Page::class);
 
-        return PageResource::collection(Page::query()->orderBy('slug')->paginate(50));
+        // With their SEO, so the list can show each page's SEO score.
+        return PageResource::collection(Page::query()->with('seo.ogImage')->orderBy('slug')->paginate(50));
     }
 
     public function show(Page $page): PageResource
     {
         $this->authorize('view', $page);
 
-        return new PageResource($page->load('seo'));
+        return new PageResource($page->load('seo.ogImage'));
     }
 
     public function store(PageRequest $request): PageResource
@@ -47,7 +48,7 @@ class PageController extends Controller
 
         Audit::record('page.created', $page, ['slug' => $page->slug]);
 
-        return new PageResource($page->load('seo'));
+        return new PageResource($page->load('seo.ogImage'));
     }
 
     public function update(PageRequest $request, Page $page): PageResource
@@ -70,7 +71,7 @@ class PageController extends Controller
         // the cache runs out. The old address too, if it moved.
         $this->refresh($page, $previousSlug);
 
-        return new PageResource($page->fresh()->load('seo'));
+        return new PageResource($page->fresh()->load('seo.ogImage'));
     }
 
     public function transition(Request $request, Page $page): PageResource
@@ -85,7 +86,7 @@ class PageController extends Controller
 
         $this->publishing->transition($page, $target, $request->user(), $validated['note'] ?? null);
 
-        return new PageResource($page->fresh()->load('seo'));
+        return new PageResource($page->fresh()->load('seo.ogImage'));
     }
 
     /**
@@ -112,7 +113,7 @@ class PageController extends Controller
         // The DRAFT notice on the live page comes and goes with this.
         $this->refresh($page);
 
-        return new PageResource($page->fresh()->load('seo'));
+        return new PageResource($page->fresh()->load('seo.ogImage'));
     }
 
     public function destroy(Page $page): JsonResponse

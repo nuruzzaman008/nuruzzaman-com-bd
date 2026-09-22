@@ -5,6 +5,8 @@ import type { Page } from '@nuruzzaman/contracts';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/states';
+import { seoScoreOf } from '@/features/admin/seo-score';
+import { SeoScoreBadge } from '@/features/admin/seo-score-badge';
 import { sessionApi } from '@/lib/api/server';
 import { date } from '@/lib/format';
 import { adminDictionary } from '@/lib/i18n/admin-page';
@@ -30,6 +32,27 @@ export default async function DashboardPagesPage() {
   const { locale, t } = await adminDictionary();
   const words = t.admin.pages;
   const pages = await sessionApi<{ data: Page[] }>('/admin/pages');
+
+  // The editor's own analysis over what the list already has, as the blog
+  // list does; null until a focus keyword is set.
+  const scores = new Map(
+    pages.data.map((page) => [
+      page.id,
+      seoScoreOf(
+        {
+          kind: 'page',
+          title: page.title,
+          slug: page.slug,
+          content: page.body_markdown ?? page.body_html,
+          metaTitle: page.seo?.meta_title ?? '',
+          metaDescription: page.seo?.meta_description ?? '',
+          focusKeyword: page.seo?.focus_keyword ?? '',
+          featuredImage: page.share_image ? { alt: page.share_image.alt } : null,
+        },
+        t,
+      ),
+    ]),
+  );
 
   return (
     <div>
@@ -82,6 +105,18 @@ export default async function DashboardPagesPage() {
                 <Badge tone={TONES[page.status] ?? 'neutral'}>
                   {statusLabel('content', page.status, locale)}
                 </Badge>
+              ),
+            },
+            {
+              key: 'seo',
+              header: 'SEO',
+              render: (page) => (
+                <SeoScoreBadge
+                  score={scores.get(page.id) ?? null}
+                  href={`/dashboard/pages/${page.id}`}
+                  t={t}
+                  locale={locale}
+                />
               ),
             },
             {

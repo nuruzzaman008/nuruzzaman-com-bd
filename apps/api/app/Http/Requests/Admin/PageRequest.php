@@ -54,7 +54,10 @@ class PageRequest extends FormRequest
             'seo.meta_description' => ['nullable', 'string', 'max:320'],
             'seo.focus_keyword' => ['nullable', 'string', 'max:160'],
             'seo.canonical_url' => ['nullable', 'url', 'max:512'],
+            // The share image: the picture on share cards and in search results.
+            'seo.og_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'seo.noindex' => ['sometimes', 'boolean'],
+            'seo.nofollow' => ['sometimes', 'boolean'],
         ];
     }
 

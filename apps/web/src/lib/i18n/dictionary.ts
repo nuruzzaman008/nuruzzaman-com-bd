@@ -567,7 +567,7 @@ const bn = {
     a ranking prediction, and the panel says so.
   */
   seoCheck: {
-    kind: { post: 'আর্টিকেল', course: 'কোর্স', product: 'প্রোডাক্ট' },
+    kind: { post: 'আর্টিকেল', page: 'পেজ', course: 'কোর্স', product: 'প্রোডাক্ট' },
 
     groups: {
       basic: 'মৌলিক SEO',
@@ -1851,6 +1851,12 @@ const bn = {
       metaDescriptionHint: 'Google-এর ফলাফলে শিরোনামের নিচের লেখা; ১৫০–১৬০ অক্ষর ভালো।',
       focusKeyword: 'ফোকাস কিওয়ার্ড',
       noindex: 'Google-এ এই পাতাটি দেখাবেন না (noindex)',
+      nofollow: 'এই পাতার লিংকগুলো Google অনুসরণ করবে না (nofollow)',
+      canonical: 'Canonical URL',
+      canonicalHint: 'সাধারণত ফাঁকা রাখুন। একই লেখা অন্য ঠিকানায় থাকলে, যেটিকে মূল ধরতে হবে তার পুরো URL দিন।',
+      focusHint: 'যে শব্দগুচ্ছে Google-এ এই পাতাটি খুঁজে পাওয়া উচিত। পাশের SEO বিশ্লেষণ এর সাপেক্ষেই হয়।',
+      shareImageHint:
+        'Facebook, WhatsApp-এর শেয়ার কার্ডে আর Google-এর ফলাফলে এই ছবিটি দেখায় (পাতার ভেতরে নয়)। না দিলে সাইটের সাধারণ ছবিটি যায়।',
       saveDraft: 'খসড়া সংরক্ষণ',
       update: 'আপডেট করুন',
       publish: 'প্রকাশ করুন',
@@ -2098,6 +2104,11 @@ const bn = {
       scoreLockedHint: 'ফোকাস কিওয়ার্ড দিলে স্কোর দেখা যাবে।',
       disclaimer:
         'এগুলো পরিচ্ছন্নতার চেক — কোনো র‍্যাঙ্কিংয়ের প্রতিশ্রুতি নয়। সব সবুজ হলেই লেখা ভালো হয়ে যায় না, আর কিছু হলুদ থাকলেও সমস্যা নেই।',
+      preview: 'Google-এ যেমন দেখাবে',
+      previewNote:
+        'আনুমানিক: Google লম্বা শিরোনাম বা বিবরণ কেটে ছোট করে, আর মাঝে মাঝে নিজেই অন্য লেখা বেছে নেয়।',
+      previewNoDescription:
+        'মেটা ডেসক্রিপশন নেই, তাই সাইটের সাধারণ বিবরণটি যাচ্ছে। এই পাতার জন্য একটি লিখুন।',
     },
 
     settingsForm: {
@@ -2719,7 +2730,7 @@ const en: Dictionary = {
   },
 
   seoCheck: {
-    kind: { post: 'article', course: 'course', product: 'product' },
+    kind: { post: 'article', page: 'page', course: 'course', product: 'product' },
 
     groups: {
       basic: 'Basic SEO',
@@ -3996,6 +4007,12 @@ const en: Dictionary = {
       metaDescriptionHint: 'The line under the title in Google results; 150–160 characters is best.',
       focusKeyword: 'Focus keyword',
       noindex: 'Keep this page out of Google (noindex)',
+      nofollow: 'Ask Google not to follow the links on this page (nofollow)',
+      canonical: 'Canonical URL',
+      canonicalHint: 'Usually left empty. When the same text lives at another address, give the full URL of the one to count.',
+      focusHint: 'The phrase this page should be found for on Google. The SEO analysis beside it is measured against it.',
+      shareImageHint:
+        'Shown on Facebook and WhatsApp share cards and in Google results (not on the page itself). Without one, the site-wide image goes out.',
       saveDraft: 'Save draft',
       update: 'Update',
       publish: 'Publish',
@@ -4243,6 +4260,11 @@ const en: Dictionary = {
       scoreLockedHint: 'Set a focus keyword to see the score.',
       disclaimer:
         'These are tidiness checks, not a ranking promise. All green does not make the writing good, and a few amber ones are not a problem.',
+      preview: 'How it may look on Google',
+      previewNote:
+        'An approximation: Google shortens a long title or description, and sometimes picks its own text.',
+      previewNoDescription:
+        'There is no meta description, so the site-wide one goes out. Write one for this page.',
     },
 
     settingsForm: {

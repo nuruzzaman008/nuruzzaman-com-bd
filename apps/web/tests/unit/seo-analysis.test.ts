@@ -209,4 +209,23 @@ ${'শব্দ '.repeat(1200)}`,
     expect(strong.score).toBeLessThanOrEqual(100);
     expect(weak.score).toBeGreaterThanOrEqual(0);
   });
+
+  it('measures a CMS page against its own target and treats its share image as optional', () => {
+    const page: SeoInput = { ...base, kind: 'page', excerpt: undefined };
+    const words = (count: number) => Array.from({ length: count }, () => 'শব্দ').join(' ');
+
+    // 300 words is enough for a page (an article needs 600).
+    expect(find({ ...page, content: words(320) }, 'content-length')?.status).toBe('pass');
+    expect(find({ ...base, content: words(320) }, 'content-length')?.status).toBe('warn');
+    expect(find({ ...page, content: words(320) }, 'content-length')?.message).toContain('পেজ');
+
+    // A page shows no picture of its own, so a missing share image is a suggestion.
+    expect(find({ ...page, featuredImage: null }, 'featured-image')?.status).toBe('warn');
+    expect(find({ ...page, featuredImage: { alt: 'স্ট্রাকচারাল ডিজাইন' } }, 'featured-image')?.status).toBe(
+      'pass',
+    );
+
+    // No summary field on a page, so no summary check.
+    expect(find(page, 'has-excerpt')).toBeUndefined();
+  });
 });

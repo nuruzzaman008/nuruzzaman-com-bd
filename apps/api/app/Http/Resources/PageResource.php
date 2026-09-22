@@ -41,6 +41,19 @@ class PageResource extends JsonResource
             'published_at' => $this->published_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'seo' => new SeoResource($this->whenLoaded('seo')),
+            /*
+             * The share image for the editor: which file it is and how it is
+             * described. A page has no cover of its own; this picture is what
+             * share cards and search results show for it.
+             */
+            'share_image' => $this->when(
+                $this->relationLoaded('seo') && (bool) $request->user()?->hasPermission('pages.view'),
+                fn () => ($image = $this->seo?->ogImage) ? [
+                    'id' => $image->id,
+                    'url' => $image->url(),
+                    'alt' => $image->alt_text,
+                ] : null,
+            ),
         ];
     }
 }

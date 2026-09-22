@@ -53,8 +53,8 @@ export type SeoAnalysis = {
 };
 
 export type SeoInput = {
-  /** post | course | product — only used to word a few messages. */
-  kind: 'post' | 'course' | 'product';
+  /** post | page | course | product — words a few messages and sets a few targets. */
+  kind: 'post' | 'page' | 'course' | 'product';
   focusKeyword: string;
   title: string;
   metaTitle: string;
@@ -181,6 +181,8 @@ function paragraphs(content: string): string[] {
 /** Minimum body length worth publishing, per kind. */
 const MIN_WORDS: Record<SeoInput['kind'], number> = {
   post: 600,
+  // About, a policy, a support page: complete matters more than long.
+  page: 300,
   course: 200,
   product: 200,
 };
@@ -340,12 +342,14 @@ export function analyzeSeo(input: SeoInput, t: Dictionary): SeoAnalysis {
     // An article with no upload still shows generated cover art at the top of
     // its page, so that is a warning. A product or a course page shows nothing
     // in that place - a course's art appears only on its listing card - so for
-    // those it is a failure.
+    // those it is a failure. A CMS page (about, a policy) has no picture there
+    // by design; its image only goes on share cards, so it is a suggestion.
     const generated = input.kind === 'post';
+    const optional = generated || input.kind === 'page';
 
     additional.push({
       id: 'featured-image',
-      status: !featured ? (generated ? 'warn' : 'fail') : described ? 'pass' : 'warn',
+      status: !featured ? (optional ? 'warn' : 'fail') : described ? 'pass' : 'warn',
       message: !featured
         ? generated
           ? say.featuredImageGenerated

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Page;
 use App\Models\SeoMeta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class SeoKeywordController extends Controller
     {
         abort_unless(
             $request->user()?->hasPermission('posts.view')
+            || $request->user()?->hasPermission('pages.view')
             || $request->user()?->hasPermission('products.view')
             || $request->user()?->hasPermission('courses.view'),
             403,
@@ -57,6 +59,13 @@ class SeoKeywordController extends Controller
             ? [self::KINDS[$validated['kind']], $validated['id']]
             : null;
 
+        // A page's own translation (about and about-en) is the same page in the
+        // other language, served at its /en address with hreflang - not a
+        // second page competing for the phrase.
+        $translation = $self !== null && $validated['kind'] === 'page'
+            ? $this->translationOf((int) $validated['id'])
+            : null;
+
         $rows = SeoMeta::query()
             ->whereRaw('LOWER(focus_keyword) = ?', [mb_strtolower($keyword)])
             ->when(
@@ -65,6 +74,14 @@ class SeoKeywordController extends Controller
                     fn ($inner) => $inner
                         ->where('seoable_type', $self[0])
                         ->where('seoable_id', $self[1]),
+                ),
+            )
+            ->when(
+                $translation !== null,
+                fn ($query) => $query->whereNot(
+                    fn ($inner) => $inner
+                        ->where('seoable_type', Page::class)
+                        ->where('seoable_id', $translation),
                 ),
             )
             ->with('seoable')
@@ -85,5 +102,20 @@ class SeoKeywordController extends Controller
                     ->values(),
             ],
         ]);
+    }
+
+    /** The id of the other-language document of a page, if it has one. */
+    private function translationOf(int $pageId): ?int
+    {
+        $slug = Page::query()->whereKey($pageId)->value('slug');
+
+        if (! is_string($slug)) {
+            return null;
+        }
+
+        $pair = str_ends_with($slug, '-en') ? substr($slug, 0, -3) : $slug.'-en';
+        $id = Page::query()->where('slug', $pair)->value('id');
+
+        return $id === null ? null : (int) $id;
     }
 }

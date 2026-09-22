@@ -11,6 +11,8 @@ import { Callout } from '@/components/ui/callout';
 import { Card } from '@/components/ui/card';
 import { Checkbox, ErrorSummary, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { MarkdownTextarea } from '@/components/ui/markdown-editor';
+import { FeaturedImageCard, useFeaturedImage } from '@/features/dashboard/featured-image';
+import { SeoAnalysisPanel } from '@/features/dashboard/seo-analysis-panel';
 import { ApiError, api } from '@/lib/api/browser';
 import { date } from '@/lib/format';
 import { useLocale } from '@/lib/i18n/locale-provider';
@@ -33,6 +35,16 @@ const MOVES: Record<string, { to: string; label: 'backToDraft' | 'archive' }[]> 
     { to: 'archived', label: 'archive' },
   ],
   archived: [{ to: 'draft', label: 'backToDraft' }],
+};
+
+/** Where the SEO analysis finds each input; a constant so the panel reads it once. */
+const SEO_FIELDS = {
+  title: 'title',
+  slug: 'slug',
+  content: 'body_markdown',
+  metaTitle: 'meta_title',
+  metaDescription: 'meta_description',
+  focusKeyword: 'focus_keyword',
 };
 
 /** A super admin holds every permission without it being listed. */
@@ -77,6 +89,14 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
   const moves = sitePage && published ? [] : (MOVES[page.status] ?? []);
   const slugLocked = sitePage || english || counterpart !== null;
 
+  // The share image lives on the page's SEO row; a page has no cover of its own.
+  const image = useFeaturedImage({
+    initialCover: page.share_image
+      ? { id: page.share_image.id, url: page.share_image.url, alt: page.share_image.alt }
+      : null,
+    fallbackAlt: page.title,
+  });
+
   function submit(next: 'save' | 'publish') {
     intent.current = next;
     (document.getElementById('page-editor') as HTMLFormElement | null)?.requestSubmit();
@@ -108,6 +128,8 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
     const template = String(form.get('template') ?? page.template);
 
     try {
+      await image.persistAlt();
+
       await api<{ data: Page }>(`/admin/pages/${page.id}`, {
         method: 'PATCH',
         body: {
@@ -122,7 +144,12 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
             meta_title: form.get('meta_title') || null,
             meta_description: form.get('meta_description') || null,
             focus_keyword: form.get('focus_keyword') || null,
+            canonical_url: form.get('canonical_url') || null,
             noindex: form.get('noindex') === 'on',
+            nofollow: form.get('nofollow') === 'on',
+            // Sent only when the picture was changed, so saving the words can
+            // never lose it.
+            ...(image.changed ? { og_media_id: image.cover?.id ?? null } : {}),
           },
         },
       });
@@ -269,6 +296,7 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
           {(props) => (
             <Input
               {...props}
+              name="slug"
               value={slug}
               readOnly={slugLocked}
               className="font-latin"
@@ -309,6 +337,16 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
           <legend className="font-bold text-navy">SEO</legend>
 
           <Field
+            label={words.focusKeyword}
+            hint={words.focusHint}
+            error={errors['seo.focus_keyword']?.[0]}
+          >
+            {(props) => (
+              <Input name="focus_keyword" defaultValue={page.seo?.focus_keyword ?? ''} {...props} />
+            )}
+          </Field>
+
+          <Field
             label={words.metaTitle}
             hint={words.metaTitleHint}
             error={errors['seo.meta_title']?.[0]}
@@ -332,9 +370,26 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
             )}
           </Field>
 
-          <Field label={words.focusKeyword}>
+          <FeaturedImageCard
+            image={image}
+            hint={words.shareImageHint}
+            error={errors['seo.og_media_id']?.[0]}
+          />
+
+          <Field
+            label={words.canonical}
+            hint={words.canonicalHint}
+            error={errors['seo.canonical_url']?.[0]}
+          >
             {(props) => (
-              <Input name="focus_keyword" defaultValue={page.seo?.focus_keyword ?? ''} {...props} />
+              <Input
+                name="canonical_url"
+                type="url"
+                inputMode="url"
+                defaultValue={page.seo?.canonical_url ?? ''}
+                className="font-latin"
+                {...props}
+              />
             )}
           </Field>
 
@@ -342,6 +397,11 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
             name="noindex"
             defaultChecked={page.seo?.noindex ?? false}
             label={words.noindex}
+          />
+          <Checkbox
+            name="nofollow"
+            defaultChecked={page.seo?.nofollow ?? false}
+            label={words.nofollow}
           />
         </fieldset>
 
@@ -425,6 +485,14 @@ export function PageEditor({ page, counterpart }: { page: Page; counterpart: Pag
           ) : null}
           {sitePage ? <p className="mt-3 text-xs text-muted">{words.sitePageNote}</p> : null}
         </Card>
+
+        <SeoAnalysisPanel
+          formId="page-editor"
+          kind="page"
+          recordId={page.id}
+          featuredImage={image.analysisInput}
+          fields={SEO_FIELDS}
+        />
 
         <Card className="p-5">
           <p className="font-bold text-navy">{words.language}</p>

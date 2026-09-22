@@ -351,6 +351,19 @@ components:
         published_at: { type: [string, 'null'], format: date-time }
         updated_at: { type: [string, 'null'], format: date-time }
         seo: { $ref: '#/components/schemas/Seo' }
+        share_image:
+          description: >-
+            The picture share cards and search results show for the page, set
+            as seo.og_media_id. Only returned to someone who may view pages in
+            the admin; null when none is set.
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [id, url, alt]
+              properties:
+                id: { type: integer }
+                url: { type: [string, 'null'] }
+                alt: { type: [string, 'null'] }
 
     ProductVariant:
       type: object
