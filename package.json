@@ -31,6 +31,6 @@
     "serve": "bash infra/scripts/serve.sh"
   },
   "devDependencies": {
-    "prettier": "^3.4.2"
+    "prettier": "^3.9.8"
   }
 }
