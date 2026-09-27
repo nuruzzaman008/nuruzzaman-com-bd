@@ -146,4 +146,5 @@ Route::prefix('v1')->group(function () {
     Route::get('lesson-video/{lesson:id}', [LessonVideoController::class, 'stream'])->name('lesson.video.stream');
     require __DIR__.'/api_licensing.php';
     require __DIR__.'/api_admin.php';
+    require __DIR__.'/api_growth.php';
 });

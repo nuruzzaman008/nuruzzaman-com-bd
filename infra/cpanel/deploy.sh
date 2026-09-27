@@ -2,6 +2,16 @@
 set -euo pipefail
 umask 077
 fail() { printf 'DEPLOY FAILED: %s\n' "$1" >&2; exit 1; }
+# Passenger shares the Unix account with other sites. Never retire their Node
+# processes: only accept a PID whose actual cwd is inside this app's releases.
+web_process_pids() {
+  local root="$1" proc="${2:-/proc}" pid cwd
+  while IFS= read -r pid; do
+    case "$pid" in ''|*[!0-9]*) continue ;; esac
+    cwd="$(readlink -f "$proc/$pid/cwd" 2>/dev/null || true)"
+    case "$cwd" in "$root/releases/"*) printf '%s\n' "$pid" ;; esac
+  done
+}
 SOURCE="$(cd "${NB_DEPLOY_SOURCE:-$PWD}" && pwd -P)"
 CONFIG="${NB_DEPLOY_CONFIG:-$HOME/.nb-deploy.conf}"
 [ -f "$CONFIG" ] || fail 'Create ~/.nb-deploy.conf from the example first.'
@@ -363,7 +373,7 @@ JSON
   # Noted before the restart is asked for, so what gets retired below is
   # exactly the set of app processes that predate this deploy - never the one
   # Passenger is about to start.
-  STALE_APP_PIDS="$(pgrep -u "$(id -un)" -f 'next-server' 2>/dev/null || true)"
+  STALE_APP_PIDS="$( (pgrep -u "$(id -un)" -f 'next-server' 2>/dev/null || true) | web_process_pids "$NB_WEB_ROOT")"
 
   touch "$NB_WEB_ROOT/tmp/restart.txt"
 
@@ -382,6 +392,7 @@ JSON
   # running site exactly as it was.
   if curl -fsS -o /dev/null --max-time 60 "$NB_PUBLIC_SITE_URL/" 2>/dev/null; then
     for stale_pid in $STALE_APP_PIDS; do
+      [ "$(printf '%s\n' "$stale_pid" | web_process_pids "$NB_WEB_ROOT")" = "$stale_pid" ] || continue
       if kill -TERM "$stale_pid" 2>/dev/null; then
         printf 'Retired the previous app process %s\n' "$stale_pid"
       fi

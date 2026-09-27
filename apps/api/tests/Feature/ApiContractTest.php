@@ -23,6 +23,18 @@ class ApiContractTest extends TestCase
      * @var array<string, string>
      */
     private const UNDOCUMENTED = [
+        'api/v1/admin/growth-hub/dashboard' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/preferences' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/reviews' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/providers' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/providers/{id}' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/providers/{id}/test' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/ai-history' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/conversations' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/conversations/{id}' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/conversations/{id}/messages' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/{kind}' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
+        'api/v1/admin/growth-hub/{kind}/{id}' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
         'api/v1/payments/sandbox/{reference}' => 'Local sandbox stand-in; never bound in production.',
         'api/v1/auth/verify-email/{id}/{hash}' => 'Signed link followed by the browser, not called by the client.',
         'api/v1/me/password' => 'Account security form, not used by the generated client.',
