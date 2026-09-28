@@ -12,6 +12,13 @@ import path from 'node:path';
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
+  // Webpack traces temporary build files through the shared cache handler.
+  // Next deletes the export report and renames proxy.js to middleware.js before
+  // copying standalone files. Exclude only those obsolete names; Next still
+  // explicitly packages the real middleware.js and its dependencies.
+  outputFileTracingExcludes: {
+    '*': ['**/.next/export-detail.json', '**/.next/server/proxy.js', '**/.next/server/proxy.js.nft.json'],
+  },
   // Passenger runs several Node processes, and a revalidated tag has to reach
   // all of them, not only the one the webhook landed in. See cache-handler.js.
   cacheHandler: path.join(__dirname, 'cache-handler.js'),

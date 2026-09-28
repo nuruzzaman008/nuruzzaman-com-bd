@@ -5,7 +5,7 @@ try {
   const origin = new URL(proxy);
   if (origin.protocol !== 'https:' || origin.origin !== proxy) throw new Error('NB_API_PROXY must be an HTTPS origin without a trailing slash.');
   const next = path.join(root, 'apps/web/.next');
-  for (const file of ['standalone/apps/web/server.js', 'BUILD_ID', 'routes-manifest.json', 'nb-commit']) {
+  for (const file of ['standalone/apps/web/server.js', 'standalone/apps/web/.next/server/middleware.js', 'BUILD_ID', 'routes-manifest.json', 'nb-commit']) {
     if (!fs.statSync(path.join(next, file)).isFile()) throw new Error(`Missing ${file}`);
   }
   for (const dir of ['static', 'standalone/node_modules']) {
