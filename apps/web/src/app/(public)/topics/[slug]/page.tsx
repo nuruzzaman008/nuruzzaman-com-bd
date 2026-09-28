@@ -30,9 +30,9 @@ async function loadCategory(slug: string): Promise<Category> {
 }
 
 export async function generateMetadata(
-  props: LocalizedPageProps & { params: Promise<{ slug: string }> },
+  props: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
-  const { locale, t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary((props as typeof props & LocalizedPageProps).locale);
   const { slug } = await props.params;
   const category = await loadCategory(slug);
 
@@ -44,12 +44,12 @@ export async function generateMetadata(
 }
 
 export default async function TopicPage(
-  props: LocalizedPageProps & {
+  props: {
     params: Promise<{ slug: string }>;
     searchParams: Promise<{ page?: string }>;
   },
 ) {
-  const { locale, t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary((props as typeof props & LocalizedPageProps).locale);
   const [{ slug }, searchParams] = await Promise.all([props.params, props.searchParams]);
 
   const [category, posts] = await Promise.all([

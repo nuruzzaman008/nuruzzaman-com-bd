@@ -19,11 +19,11 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function ProductsPage(
-  props: LocalizedPageProps & {
+  props: {
     searchParams: Promise<{ page?: string; type?: string }>;
   },
 ) {
-  const { locale, t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary((props as typeof props & LocalizedPageProps).locale);
   const searchParams = await props.searchParams;
 
   const products = await publicApi<{

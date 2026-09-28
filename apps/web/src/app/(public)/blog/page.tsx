@@ -23,9 +23,9 @@ export const metadata: Metadata = buildMetadata({
 type Search = { page?: string; category?: string; sort?: string };
 
 export default async function BlogIndexPage(
-  props: LocalizedPageProps & { searchParams: Promise<Search> },
+  props: { searchParams: Promise<Search> },
 ) {
-  const { locale, t } = pageDictionary(props.locale);
+  const { locale, t } = pageDictionary((props as typeof props & LocalizedPageProps).locale);
   const searchParams = await props.searchParams;
 
   const [posts, categories] = await Promise.all([
