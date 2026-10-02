@@ -63,7 +63,7 @@ jobs:
         run: php vendor/bin/phpunit --log-junit phpunit-report.xml
       - name: Keep the report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: phpunit-report
           path: apps/api/phpunit-report.xml
