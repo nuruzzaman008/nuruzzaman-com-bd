@@ -4,6 +4,7 @@ import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
 import { base, box, input, Field, Records, type Row } from './records';
 import { AISettings, Chat } from './ai';
+import { GmailConnection } from './gmail';
 
 type Dashboard = {
   name: string;
@@ -176,8 +177,7 @@ export function GrowthHub() {
               {enabled.includes('gmail') && (
                 <article className={box}>
                   <h3 className="font-bold">Email Intelligence</h3>
-                  <p className="mt-2 text-muted">Gmail is not connected.</p>
-                  <p className="text-sm">Read-only OAuth integration is planned for Phase 6.</p>
+                  <GmailConnection />
                 </article>
               )}
             </div>

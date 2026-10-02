@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GrowthRecordRequest;
 use App\Services\Growth\AIRouter;
+use App\Services\Growth\GmailConnection;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
@@ -144,7 +145,7 @@ class GrowthHubController extends Controller
         $pref = $this->owned($r, 'preferences')->first();
         $today = now($pref->timezone ?? 'Asia/Dhaka')->toDateString();
 
-        return response()->json(['data' => ['name' => $pref->display_name ?? $r->user()->name, 'date' => $today, 'hour' => now($pref->timezone ?? 'Asia/Dhaka')->hour, 'preferences' => $pref, 'focus' => $this->owned($r, 'tasks')->where('focus_date', $today)->orderBy('focus_rank')->get(), 'overdue' => $this->owned($r, 'tasks')->whereNotIn('status', ['completed', 'skipped', 'archived'])->where('due_at', '<', now())->orderBy('due_at')->limit(10)->get(), 'goals' => $this->owned($r, 'goals')->whereNotIn('status', ['completed', 'archived'])->orderBy('target_date')->limit(8)->get(), 'ideas' => $this->owned($r, 'ideas')->orderByDesc('id')->limit(5)->get(), 'counts' => ['tasks' => $this->owned($r, 'tasks')->count(), 'completed' => $this->owned($r, 'tasks')->where('status', 'completed')->count(), 'goals' => $this->owned($r, 'goals')->count(), 'ideas' => $this->owned($r, 'ideas')->count()], 'gmail' => 'disconnected', 'ai_configured' => $this->owned($r, 'ai_providers')->where('enabled', true)->whereNotNull('secret')->exists()]]);
+        return response()->json(['data' => ['name' => $pref->display_name ?? $r->user()->name, 'date' => $today, 'hour' => now($pref->timezone ?? 'Asia/Dhaka')->hour, 'preferences' => $pref, 'focus' => $this->owned($r, 'tasks')->where('focus_date', $today)->orderBy('focus_rank')->get(), 'overdue' => $this->owned($r, 'tasks')->whereNotIn('status', ['completed', 'skipped', 'archived'])->where('due_at', '<', now())->orderBy('due_at')->limit(10)->get(), 'goals' => $this->owned($r, 'goals')->whereNotIn('status', ['completed', 'archived'])->orderBy('target_date')->limit(8)->get(), 'ideas' => $this->owned($r, 'ideas')->orderByDesc('id')->limit(5)->get(), 'counts' => ['tasks' => $this->owned($r, 'tasks')->count(), 'completed' => $this->owned($r, 'tasks')->where('status', 'completed')->count(), 'goals' => $this->owned($r, 'goals')->count(), 'ideas' => $this->owned($r, 'ideas')->count()], 'gmail' => app(GmailConnection::class)->status((int) $r->user()->id)['status'], 'ai_configured' => $this->owned($r, 'ai_providers')->where('enabled', true)->whereNotNull('secret')->exists()]]);
     }
 
     private function publicProvider(object $p): array

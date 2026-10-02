@@ -23,6 +23,10 @@ class ApiContractTest extends TestCase
      * @var array<string, string>
      */
     private const UNDOCUMENTED = [
+        'api/v1/admin/growth-hub/gmail' => 'Private owner-scoped Gmail connection status and disconnect.',
+        'api/v1/admin/growth-hub/gmail/connect' => 'Private CSRF-protected OAuth start.',
+        'api/v1/admin/growth-hub/gmail/check' => 'Private Gmail connection verification.',
+        'api/v1/admin/growth-hub/gmail/callback' => 'Browser OAuth callback with single-use session state and existing MFA.',
         'api/v1/admin/growth-hub/dashboard' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
         'api/v1/admin/growth-hub/preferences' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',
         'api/v1/admin/growth-hub/reviews' => 'Private super-admin API documented in docs/GROWTH_HUB_PHASE1.md; uses handwritten client.',

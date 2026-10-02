@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\GrowthGmailController;
 use App\Http\Controllers\Api\V1\Admin\GrowthHubController as Hub;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin/growth-hub')->middleware(['auth:sanctum', 'active', 'verified', 'role:super_admin', 'throttle:60,1,growth-hub:'])->group(function () {
+    Route::get('gmail', [GrowthGmailController::class, 'status']);
+    Route::post('gmail/connect', [GrowthGmailController::class, 'start']);
+    Route::post('gmail/check', [GrowthGmailController::class, 'check'])->middleware('throttle:5,1,growth-gmail:');
+    Route::delete('gmail', [GrowthGmailController::class, 'disconnect']);
     Route::get('dashboard', [Hub::class, 'dashboard']);
     Route::get('preferences', [Hub::class, 'preferences']);
     Route::put('preferences', [Hub::class, 'savePreferences']);
