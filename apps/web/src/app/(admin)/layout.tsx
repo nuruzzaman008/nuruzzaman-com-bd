@@ -153,7 +153,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </WhenSidebarOpen>
 
         <nav aria-label={t.admin.navLabel} className="px-3 pb-6">
-          {user.roles.includes('super_admin') && <Link href="/dashboard/growth-hub" className="mb-4 block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10">My Growth Hub</Link>}
+          {user.roles.includes('super_admin') && (
+            <div className="mb-4">
+              <AdminNavLink href="/dashboard/growth-hub" icon="growthHub" label="My Growth Hub" />
+            </div>
+          )}
           {dashboardNav.map((group) => (
             <AdminNavGroup key={group.headingKey} heading={t.admin.group[group.headingKey]}>
               {group.items.map((item) => (

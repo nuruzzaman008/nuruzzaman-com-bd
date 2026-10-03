@@ -25,6 +25,7 @@ import {
   ShoppingCart,
   Signpost,
   TicketPercent,
+  TrendingUp,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -35,6 +36,7 @@ import { useSidebarCollapsed } from './admin-sidebar';
 
 /** One icon per menu entry, keyed like the dictionary's admin.nav labels. */
 const ICONS: Record<string, LucideIcon> = {
+  growthHub: TrendingUp,
   dashboard: LayoutDashboard,
   notifications: Bell,
   messages: MessagesSquare,
