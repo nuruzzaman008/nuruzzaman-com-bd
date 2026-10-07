@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\SoftwareLicense;
 use App\Services\Licensing\OnlineLicensingService;
+use App\Services\Licensing\OnlineWalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -49,6 +50,7 @@ class OnlineLicenseController extends Controller
             return response()->json(['data' => ['connected' => false, 'issues' => []]]);
         }
         $service->usable(SoftwareLicense::findOrFail($device->software_license_id));
+        abort_if(app(OnlineWalletService::class)->managed($device->software_license_id), 409, 'Install the online wallet runtime. Offline token delivery is disabled for this license.');
         abort_unless(DB::table('machine_bindings')->where('software_license_id', $device->software_license_id)->where('machine_id_fingerprint', $device->machine_hash)->whereNull('released_at')->exists(), 403);
         $issues = DB::table('nb_token_issues')->where('nb_device_id', $device->id)->whereNotNull('token_encrypted')->whereNull('applied_at')->orderBy('id')->get()->filter(fn ($issue) => Order::find($issue->order_id)?->status->grantsEntitlements())->map(fn ($issue) => ['id' => $issue->id, 'token' => Crypt::decryptString($issue->token_encrypted)])->values();
 
@@ -77,6 +79,9 @@ class OnlineLicenseController extends Controller
         $jobs = [];
         foreach (DB::table('nb_token_issues')->whereNull('token_encrypted')->orderBy('id')->limit(20)->get() as $issue) {
             $license = SoftwareLicense::findOrFail($issue->software_license_id);
+            if (app(OnlineWalletService::class)->managed($license->id)) {
+                continue;
+            }
             if (! $license->status->isUsable() || $license->revoked_at || ($license->expires_at && $license->expires_at->isPast()) || ! $license->order->status->grantsEntitlements() || ! Order::findOrFail($issue->order_id)->status->grantsEntitlements()) {
                 continue;
             }
@@ -93,6 +98,7 @@ class OnlineLicenseController extends Controller
         DB::transaction(function () use ($input) {
             $issue = DB::table('nb_token_issues')->where('id', $input['id'])->lockForUpdate()->first();
             abort_unless($issue, 404);
+            abort_if(app(OnlineWalletService::class)->managed($issue->software_license_id), 409, 'Offline signing is disabled for this online wallet.');
             $expected = json_decode(Crypt::decryptString($issue->payload_encrypted), true, flags: JSON_THROW_ON_ERROR);
             $parts = explode('.', $input['token']);
             abort_unless(count($parts) === 3 && $parts[0] === ($expected['type'] === 'ACTIVATION' ? 'NB2A' : 'NB2T'), 422);

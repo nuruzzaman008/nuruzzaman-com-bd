@@ -1,0 +1,259 @@
+# Build on GitHub, deploy to cPanel.
+#
+# The server cannot build this site: its glibc is 2.28 and Next.js needs 2.29
+# for the native compiler, so it falls back to WebAssembly and exhausts the
+# account's process allowance mid-build. See docs/HOSTING_REQUEST_EN.md.
+#
+# So the build happens here, on a machine that can do it, and only the finished
+# artefact is shipped. That also makes the platform right by construction: this
+# runner is linux-x64, like the server, so the native modules that end up in the
+# standalone tree are the ones the server can load.
+name: Wallet Candidate Build
+
+on:
+  push:
+    branches: [codex/wallet-live-20261007]
+  workflow_dispatch:
+
+# One deployment at a time. The server takes a lock too, but queuing here means
+# a second push waits rather than failing on the lock.
+concurrency:
+  group: wallet-candidate-build
+  cancel-in-progress: false
+
+env:
+  NEXT_PUBLIC_SITE_URL: https://nuruzzaman.com.bd
+  NEXT_PUBLIC_API_BASE: /api/v1
+  NEXT_PUBLIC_SESSION_COOKIE: nuruzzaman_session
+  NEXT_PUBLIC_MEDIA_HOST: api.nuruzzaman.com.bd
+  INTERNAL_API_URL: https://api.nuruzzaman.com.bd/api/v1
+  NB_API_PROXY: https://api.nuruzzaman.com.bd
+  # Google sign-in, for customers. '1' draws the button on /login; the
+  # API needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in its own .env
+  # before it will answer, and 404s the route until it has them. Turn
+  # both on together, or the button leads nowhere.
+  NEXT_PUBLIC_GOOGLE_LOGIN: '1'
+
+jobs:
+  upload-api-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: devroot
+          MYSQL_DATABASE: nuruzzaman_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pdevroot"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, dom, fileinfo, gd
+          coverage: none
+          tools: composer:v2
+      - name: Install API test dependencies
+        working-directory: apps/api
+        run: |
+          composer install --no-interaction --prefer-dist --no-scripts
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+      # LessonDeletionTest: deleting a lesson or section also removes the files
+      # it kept on the hosting, and nobody without edit rights can delete.
+      # AdminListSearchTest / ProductListingTest: the admin lists' title and
+      # slug search, and the products page leaving courses out.
+      # EngineeringToolsPriceTest / CreditPricingTest: the licence and NB Credit
+      # prices the catalogue commands publish. RetirePostTest: archiving a post
+      # from the command line through the publishing workflow.
+      - name: Verify upload permissions, attachment behavior and lesson deletion
+        working-directory: apps/api
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: nuruzzaman_test
+          DB_USERNAME: root
+          DB_PASSWORD: devroot
+        run: php vendor/bin/phpunit --exclude-group wallet-concurrency
+
+  deploy:
+    needs: upload-api-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm test
+
+      # The deployment script's own tests. They need rsync, which the runner
+      # has and the target host only recently gained - which is exactly why
+      # they exist: sync_tree's two branches are both live now, and they have
+      # to agree about which files an exclude protects.
+      - name: Wallet Candidate Buildment script tests
+        run: |
+          for test in infra/cpanel/tests/*.test.sh; do
+            echo "--- $test"
+            bash "$test"
+          done
+
+      - name: Authorise SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          # A missing secret otherwise surfaces as an unreadable scp error, so
+          # each one is named here. The result also goes to the run summary,
+          # which is readable from the run page without opening the log.
+          # Values are never printed - only whether they are set.
+          missing=0
+          {
+            echo '### Deployment secrets'
+            echo
+            echo '| Secret | Status |'
+            echo '|---|---|'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for name in DEPLOY_SSH_KEY DEPLOY_HOST DEPLOY_PORT DEPLOY_USER; do
+            eval "value=\${$name}"
+            if [ -z "$value" ]; then
+              echo "MISSING secret: $name"
+              echo "| \`$name\` | **MISSING** |" >> "$GITHUB_STEP_SUMMARY"
+              missing=1
+            else
+              echo "present: $name"
+              echo "| \`$name\` | set |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          if [ "$missing" != 0 ]; then
+            {
+              echo
+              echo 'Add the missing ones under **Settings -> Secrets and variables -> Actions**,'
+              echo 'on the **Secrets** tab. The Variables tab sits beside it and looks the same,'
+              echo 'but a value stored there is not readable as a secret.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          # Carriage returns are stripped. A key copied from a file on Windows
+          # carries CRLF line endings; ssh-keygen then rejects it as unreadable
+          # while the secret looks perfectly correct in the GitHub UI.
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Pinned host key rather than StrictHostKeyChecking=no, so a swapped
+          # server is an error instead of a silent success. The keys are public
+          # and live in the repository; the secret only exists to override them
+          # without a commit, should the host ever change its keys.
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+            echo 'host keys: from the DEPLOY_KNOWN_HOSTS secret'
+          else
+            tr -d '\r' < infra/cpanel/known_hosts > ~/.ssh/known_hosts
+            echo 'host keys: from infra/cpanel/known_hosts'
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+          echo "key lines: $(wc -l < ~/.ssh/id_deploy), known_hosts lines: $(wc -l < ~/.ssh/known_hosts)"
+          head -1 ~/.ssh/id_deploy
+          ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null \
+            || { echo 'The private key is not readable. Copy the whole file including the BEGIN and END lines, and make sure it is the private key (nb_github_deploy) rather than the .pub one.'; exit 1; }
+
+      - name: Check the server accepts the key
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          # Separated from the upload so an authentication problem is not
+          # reported as a file-transfer problem.
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o BatchMode=yes -o ConnectTimeout=25 \
+            -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" 'echo connected as $(whoami)' \
+            || { echo; echo 'SSH refused. Check that the public key is AUTHORIZED in cPanel (Import and Authorize are two separate steps), and that DEPLOY_KNOWN_HOSTS matches this host and port.'; exit 1; }
+
+      # The build pre-renders the site through the public API, whose limiter
+      # allows 120 requests a minute per address - a build makes about two
+      # hundred, and the refused ones used to leave the sitemap and the feed
+      # built from nothing. This token, generated on the server and readable
+      # only by the deploy user, raises the limit for the build alone. It is
+      # never in this repository and never in a GitHub secret.
+      - name: Fetch the build token from the server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          token=$(ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o BatchMode=yes -o ConnectTimeout=25 -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" 'cat ~/nuruzzaman-web/.build-token 2>/dev/null' | tr -d '[:space:]') || true
+
+          if [ -n "$token" ]; then
+            echo "::add-mask::$token"
+            echo "NB_BUILD_TOKEN=$token" >> "$GITHUB_ENV"
+            echo 'build token: found'
+          else
+            # Not fatal: without it the build is rate limited, as it was before.
+            echo 'build token: not on the server yet; the build will be rate limited'
+          fi
+
+      - name: Build
+        run: npm run build
+
+      # The deployment refuses an artefact that cannot be traced to the commit
+      # being deployed, so the build stamps itself.
+      - name: Stamp the build with this commit
+        run: echo "${{ github.sha }}" > apps/web/.next/nb-commit
+
+      - name: Package the build
+        run: |
+          cd apps/web
+          tar -czf "$RUNNER_TEMP/web-build.tar.gz" \
+            .next/standalone .next/static .next/BUILD_ID \
+            .next/routes-manifest.json .next/nb-commit public
+          ls -lh "$RUNNER_TEMP/web-build.tar.gz"
+
+      # The host cannot run Composer (proc_open is disabled), so the API's
+      # production dependencies are built here, on the server's PHP version,
+      # for exactly this composer.lock, and shipped beside the site. deploy.sh
+      # uses them only when the lock differs from the live one, and refuses
+      # them if the lock packed inside is not the one being deployed.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # What the production packages declare they need (mPDF: gd, mbstring).
+          extensions: gd, mbstring
+          coverage: none
+          tools: composer:v2
+
+      - name: Build the API's production dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/api-vendor"
+          cp apps/api/composer.json apps/api/composer.lock "$RUNNER_TEMP/api-vendor/"
+          composer install --working-dir="$RUNNER_TEMP/api-vendor" \
+            --no-dev --no-interaction --prefer-dist --no-scripts --no-autoloader
+          tar -czf "$RUNNER_TEMP/api-vendor.tar.gz" -C "$RUNNER_TEMP/api-vendor" composer.lock vendor
+          ls -lh "$RUNNER_TEMP/api-vendor.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wallet-candidate-build
+          path: |
+            ${{ runner.temp }}/web-build.tar.gz
+            ${{ runner.temp }}/api-vendor.tar.gz
+          retention-days: 7

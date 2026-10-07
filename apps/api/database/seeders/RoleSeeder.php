@@ -25,6 +25,8 @@ class RoleSeeder extends Seeder
             'comments.moderate' => 'Approve, reject or mark reader comments as spam',
         ],
         'commerce' => [
+            'wallets.view' => 'View wallet balances, transactions and device sync status',
+            'wallets.manage' => 'Adjust tokens and change wallet status with an audit trail',
             'products.view' => 'See the catalogue',
             'products.manage' => 'Create products, variants and prices',
             'coupons.manage' => 'Manage discount codes',

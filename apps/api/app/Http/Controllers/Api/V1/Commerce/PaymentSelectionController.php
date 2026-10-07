@@ -6,11 +6,10 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
-use App\Jobs\FulfillOrder;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
-use App\Services\Commerce\OrderStateMachine;
+use App\Services\Payments\ManualPaymentReview;
 use App\Services\Payments\PaymentProcessor;
 use App\Support\Audit;
 use App\Support\Reference;
@@ -122,9 +121,11 @@ class PaymentSelectionController extends Controller
     {
         $this->authorizeReviewer($request);
         $status = $request->validate(['status' => ['sometimes', Rule::in(['pending', 'approved', 'rejected'])]])['status'] ?? 'pending';
-        $rows = DB::table('manual_payment_submissions as s')->join('orders as o', 'o.id', '=', 's.order_id')->where('s.status', $status)->orderByDesc('s.id')->select(['s.*', 'o.number', 'o.total_minor', 'o.currency', 'o.billing_name', 'o.billing_email'])->paginate(25);
+        $rows = DB::table('manual_payment_submissions as s')->join('orders as o', 'o.id', '=', 's.order_id')->join('payments as p', 'p.id', '=', 's.payment_id')->where('s.status', $status)->orderByDesc('s.id')->select(['s.*', 'o.number', 'o.total_minor', 'o.currency', 'o.billing_name', 'o.billing_email', 'p.wallet_credit_result'])->paginate(25);
 
         $rows->through(function ($row) {
+            $row->wallet_credit = $row->wallet_credit_result ? json_decode($row->wallet_credit_result, true, flags: JSON_THROW_ON_ERROR) : null;
+            unset($row->wallet_credit_result);
             $row->has_proof = filled($row->proof_path);
             unset($row->proof_path);
 
@@ -147,34 +148,12 @@ class PaymentSelectionController extends Controller
         ]);
     }
 
-    public function review(Request $request, int $id, OrderStateMachine $states): JsonResponse
+    public function review(Request $request, int $id, ManualPaymentReview $reviews): JsonResponse
     {
         $this->authorizeReviewer($request);
-        $data = $request->validate(['decision' => ['required', Rule::in(['approved', 'rejected'])], 'note' => ['required', 'string', 'min:3', 'max:500'], 'confirmed_amount_minor' => ['required_if:decision,approved', 'integer', 'min:1']]);
-        $entry = DB::table('manual_payment_submissions')->where('id', $id)->first();
-        abort_unless($entry, 404);
-        DB::transaction(function () use ($entry, $data, $request, $states) {
-            $order = Order::whereKey($entry->order_id)->lockForUpdate()->firstOrFail();
-            $row = DB::table('manual_payment_submissions')->where('id', $entry->id)->lockForUpdate()->first();
-            if ($row->status === $data['decision']) {
-                return;
-            }
-            abort_unless($row->status === 'pending', 409, 'This submission has already been reviewed.');
-            abort_unless($order->status === OrderStatus::PendingPayment, 409, 'Order is no longer awaiting payment.');
-            $payment = Payment::whereKey($row->payment_id)->lockForUpdate()->firstOrFail();
-            if ($data['decision'] === 'approved') {
-                abort_unless($data['confirmed_amount_minor'] === $order->total_minor && $payment->amount_minor === $order->total_minor && $payment->currency === $order->currency, 422, 'The received amount must equal the order total.');
-                $payment->update(['status' => PaymentStatus::Validated, 'settled_amount_minor' => $order->total_minor, 'validated_at' => now(), 'bank_transaction_id' => $row->transaction_id]);
-                $states->transition($order, OrderStatus::Paid, 'Manual payment verified; submission #'.$row->id, $request->user());
-                FulfillOrder::dispatch($order->id)->afterCommit();
-            } else {
-                $payment->update(['status' => PaymentStatus::Failed, 'failed_at' => now()]);
-            }
-            DB::table('manual_payment_submissions')->where('id', $row->id)->update(['status' => $data['decision'], 'reviewer_id' => $request->user()->id, 'review_note' => $data['note'], 'reviewed_at' => now(), 'updated_at' => now()]);
-            Audit::record('payment.manual_'.$data['decision'], $payment, ['submission_id' => $row->id, 'note' => $data['note']], $request->user()->id);
-        });
+        $result = $reviews->review($request->user(), $id, $request->only(['decision', 'note', 'confirmed_amount_minor']));
 
-        return response()->json(['message' => 'Payment review saved.']);
+        return response()->json(['message' => 'Payment review saved.', 'data' => $result]);
     }
 
     public function settings(Request $request): JsonResponse

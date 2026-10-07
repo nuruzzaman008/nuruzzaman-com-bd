@@ -158,6 +158,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <AdminNavLink href="/dashboard/growth-hub" icon="growthHub" label="My Growth Hub" />
             </div>
           )}
+          {(user.roles.includes('super_admin') || user.permissions?.includes('wallets.view')) && <Link href="/dashboard/wallets" className="mb-4 block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10">{locale === 'bn' ? 'ওয়ালেট ম্যানেজমেন্ট' : 'Wallet Management'}</Link>}
           {dashboardNav.map((group) => (
             <AdminNavGroup key={group.headingKey} heading={t.admin.group[group.headingKey]}>
               {group.items.map((item) => (

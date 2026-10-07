@@ -23,6 +23,12 @@ class ApiContractTest extends TestCase
      * @var array<string, string>
      */
     private const UNDOCUMENTED = [
+        'api/v1/licensing/wallet' => 'Legacy AutoCAD wallet protocol; separate from the generated website client and offline wallet OpenAPI.',
+        'api/v1/licensing/wallet/operation' => 'Legacy AutoCAD command protocol; not called by the generated website client.',
+        'api/v1/account/licenses/{code}/wallet' => 'Owner-only wallet view consumed by the handwritten CustomerWallets component; documented in ONLINE_WALLET_BN.md.',
+        'api/v1/admin/wallets' => 'Permission-protected internal wallet dashboard, not part of the generated public client; documented in WALLET_PHASE3_ADMIN_BN.md.',
+        'api/v1/admin/wallets/{license}' => 'Internal ledger/device/sync audit view; same private admin contract.',
+        'api/v1/admin/wallets/{license}/actions' => 'Audited internal admin actions; same private admin contract.',
         'api/v1/admin/growth-hub/gmail' => 'Private owner-scoped Gmail connection status and disconnect.',
         'api/v1/admin/growth-hub/gmail/connect' => 'Private CSRF-protected OAuth start.',
         'api/v1/admin/growth-hub/gmail/check' => 'Private Gmail connection verification.',

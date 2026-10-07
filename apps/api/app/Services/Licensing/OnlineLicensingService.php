@@ -2,10 +2,13 @@
 
 namespace App\Services\Licensing;
 
+use App\Enums\LicenseStatus;
 use App\Models\Order;
 use App\Models\SoftwareLicense;
 use App\Models\User;
+use App\Support\Audit;
 use App\Support\MachineIdentifier;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,19 +42,31 @@ class OnlineLicensingService
         DB::transaction(function () use ($user, $code, $licenseCode) {
             $license = SoftwareLicense::where('license_code', $licenseCode)->where('user_id', $user->id)->lockForUpdate()->firstOrFail();
             $this->usable($license);
+            app(OnlineWalletService::class)->provisionNew($license);
             $device = DB::table('nb_devices')->where('pair_hash', hash('sha256', $code))->lockForUpdate()->first();
             abort_unless($device && ! $device->confirmed_at && $device->expires_at > now(), 422, 'Pairing expired or already used.');
             $binding = $license->machineBindings()->where('machine_id_fingerprint', $device->machine_hash)->whereNull('released_at')->first();
             if (! $binding) {
+                abort_if(app(OnlineWalletService::class)->managed($license->id) && $license->machineBindings()->whereNull('released_at')->exists(), 409, 'This license is already activated on another computer. Ask an administrator to reset the device.');
                 abort_if($license->machineBindings()->whereNull('released_at')->count() >= $license->device_limit, 409, 'Device limit reached.');
-                $binding = $license->machineBindings()->make(['bound_at' => now(), 'label' => 'AutoCAD online connector']);
+                // The legacy unique machine/license key is retained. Its release history is audited.
+                $binding = $license->machineBindings()->where('machine_id_fingerprint', $device->machine_hash)->first()
+                    ?? $license->machineBindings()->make();
+                $binding->fill(['bound_at' => now(), 'released_at' => null, 'label' => 'AutoCAD online connector']);
                 $binding->setMachineId(Crypt::decryptString($device->machine_encrypted));
                 $binding->save();
             }
+            if (app(OnlineWalletService::class)->managed($license->id) && $license->status === LicenseStatus::Issued) {
+                $license->update(['status' => LicenseStatus::Active]);
+                Audit::record('license.activated', $license, ['device_id' => $device->id, 'user_id' => $user->id], $user->id);
+            }
             DB::table('nb_devices')->where('id', $device->id)->update(['software_license_id' => $license->id, 'confirmed_at' => now(), 'updated_at' => now()]);
+            Audit::record('device.paired', $license, ['device_id' => $device->id, 'binding_id' => $binding->id, 'license_id' => $license->id], $user->id);
             // Reconnecting the same machine must never mint another activation grant.
             $device->software_license_id = $license->id;
-            $this->issue($license, $device, $license->order, 'activation:'.$license->id.':'.$device->machine_hash, 'ACTIVATION', 50);
+            if (! app(OnlineWalletService::class)->managed($license->id)) {
+                $this->issue($license, $device, $license->order, 'activation:'.$license->id.':'.$device->machine_hash, 'ACTIVATION', 50);
+            }
             DB::table('nb_token_issues')->where('software_license_id', $license->id)->whereIn('nb_device_id', DB::table('nb_devices')->where('software_license_id', $license->id)->where('machine_hash', $device->machine_hash)->select('id'))->update(['nb_device_id' => $device->id]);
         });
         foreach (Order::where('user_id', $user->id)->whereIn('id', DB::table('refill_orders')->where('user_id', $user->id)->where('status', 'requested')->select('order_id'))->get() as $order) {
@@ -63,8 +78,14 @@ class OnlineLicensingService
     {
         abort_unless($order->user_id === $license->user_id && $order->status->grantsEntitlements(), 403);
         $this->usable($license);
+        if (app(OnlineWalletService::class)->managed($license->id)) {
+            app(OnlineWalletService::class)->credit($order, $license);
+
+            return;
+        }
         DB::transaction(function () use ($order, $license) {
             Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            abort_if(DB::table('nb_wallet_entries')->where('order_id', $order->id)->exists(), 409, 'This order was already credited to a wallet.');
             abort_if(DB::table('refill_orders')->where('order_id', $order->id)->where('status', 'issued')->exists() && ! DB::table('nb_token_issues')->where('order_id', $order->id)->exists(), 409, 'This refill was already issued offline.');
             $devices = DB::table('nb_devices')->where('software_license_id', $license->id)->whereNotNull('confirmed_at')->orderByDesc('id')->get()->unique('machine_hash');
             abort_unless($devices->count() === 1, 409, 'Connect exactly one machine before purchasing automatic refills.');
@@ -93,7 +114,10 @@ class OnlineLicensingService
             if ($license->revoked_at || ($license->expires_at && $license->expires_at->isPast()) || ! $license->order->status->grantsEntitlements()) {
                 return;
             }
-            if (DB::table('nb_devices')->where('software_license_id', $license->id)->whereNotNull('confirmed_at')->distinct()->count('machine_hash') !== 1) {
+            if (! app(OnlineWalletService::class)->managed($license->id) && DB::table('nb_devices')->where('software_license_id', $license->id)->whereNotNull('confirmed_at')->distinct()->count('machine_hash') !== 1) {
+                return;
+            }
+            if (app(OnlineWalletService::class)->managed($license->id) && $order->created_at->lessThan(Carbon::parse(DB::table('nb_online_wallets')->where('software_license_id', $license->id)->value('created_at')))) {
                 return;
             }
             $this->refill($order, $license);

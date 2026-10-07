@@ -26,6 +26,7 @@ class Payment extends Model
             'settled_amount_minor' => 'integer',
             'validated_at' => 'datetime',
             'failed_at' => 'datetime',
+            'wallet_credit_result' => 'array',
         ];
     }
 

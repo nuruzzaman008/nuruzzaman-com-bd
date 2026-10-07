@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\V1\OnlineLicenseController;
+use App\Http\Controllers\Api\V1\OnlineWalletController;
 use App\Http\Middleware\EnsureCustomerAccount;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('licensing')->middleware('throttle:60,1')->group(function () {
+    Route::get('wallet', [OnlineWalletController::class, 'balance']);
+    Route::post('wallet/operation', [OnlineWalletController::class, 'operation']);
     Route::post('pair', [OnlineLicenseController::class, 'pair']);
     Route::get('delivery', [OnlineLicenseController::class, 'delivery']);
     Route::post('acknowledge', [OnlineLicenseController::class, 'acknowledge']);

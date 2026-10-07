@@ -22,15 +22,16 @@ export default function ConnectDevicePage() {
       if (!code) throw new Error('Run NBONLINECONNECT in AutoCAD to open a new connection link.');
       await api('/account/connect-device', { method: 'POST', body: { code, license_code: form.get('license_code') } });
       window.history.replaceState(null, '', window.location.pathname);
-      setMessage('Computer connected. Keep AutoCAD open: activation and paid token refills will synchronize when the signing service is online.');
+      setMessage('Computer connected. Keep AutoCAD open and run NBONLINESYNC. Online-wallet balances update after payment approval; legacy offline tokens also require the signing service.');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Connection failed.'); }
     finally { setBusy(false); }
   }
   return <section className="mx-auto max-w-xl space-y-6 py-10">
     <h1 className="text-3xl font-bold">Connect AutoCAD · অটোক্যাড সংযোগ</h1>
     <p>AutoCAD-এ NBONLINECONNECT চালিয়ে আপনার কেনা license নির্বাচন করুন। Payment যাচাই হওয়ার পরে token পাঠানো হবে।</p>
+    <p className="text-sm">Online-wallet edition: use the online NB Engineering Tools runtime supplied for your license. It requires internet for paid work; do not install the legacy connector below alongside it.</p>
     <ol className="list-decimal space-y-2 pl-6 text-sm">
-      <li><a className="underline" href="/downloads/nb-online-connector-autocad2024.zip" download>Download the AutoCAD 2024 connector</a>.</li>
+      <li><a className="underline" href="/downloads/nb-online-connector-autocad2024.zip" download>Legacy offline-token connector (AutoCAD 2024)</a>.</li>
       <li>Close AutoCAD. Extract NBOnlineConnector.bundle into your Windows user folder: AppData/Roaming/Autodesk/ApplicationPlugins.</li>
       <li>Open AutoCAD with NB Engineering Tools installed, run NBONLINECONNECT, then confirm your purchased license here.</li>
     </ol>

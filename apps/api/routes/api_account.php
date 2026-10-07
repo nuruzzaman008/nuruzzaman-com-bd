@@ -65,6 +65,7 @@ Route::middleware(['auth:sanctum', 'active', EnsureCustomerAccount::class])->gro
     Route::get('account/courses', [Account\EnrollmentController::class, 'index']);
     Route::get('account/certificates', [Account\EnrollmentController::class, 'certificates']);
     Route::get('account/licenses', [Account\LicenseController::class, 'index']);
+    Route::get('account/licenses/{code}/wallet', [Account\LicenseController::class, 'wallet']);
 
     Route::get('account/activation-requests', [Account\ActivationRequestController::class, 'index']);
     Route::post('account/activation-requests', [Account\ActivationRequestController::class, 'store'])

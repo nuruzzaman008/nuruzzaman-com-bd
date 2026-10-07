@@ -7,6 +7,7 @@ use App\Exceptions\DomainException;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Affiliates\AffiliateLedger;
+use App\Services\Payments\ManualWalletCredit;
 use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,14 @@ class OrderStateMachine
                 throw DomainException::conflict(
                     "Order {$locked->number} cannot move from {$from->value} to {$to->value}."
                 );
+            }
+
+            if ($to === OrderStatus::Paid) {
+                $manual = $locked->payments()->where('gateway', 'manual')->where('status', 'validated')->lockForUpdate()->first();
+                if ($manual) {
+                    abort_unless($manual->wallet_credit_result !== null, 409, 'Manual payment must pass the atomic review operation.');
+                    app(ManualWalletCredit::class)->receipt($manual);
+                }
             }
 
             $locked->status = $to;

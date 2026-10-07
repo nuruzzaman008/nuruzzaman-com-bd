@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Licensing\OfflineWalletLedger;
+use App\Services\Licensing\SqlOfflineWalletLedger;
 use App\Services\Payments\FakeGateway;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\SslCommerzGateway;
@@ -10,6 +12,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -19,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(OfflineWalletLedger::class, SqlOfflineWalletLedger::class);
         // The real gateway is only bound once credentials exist, so a developer
         // or CI run without secrets still exercises the entire payment path.
         $this->app->bind(PaymentGateway::class, function () {
@@ -37,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
 
         Model::shouldBeStrict(! $this->app->isProduction());
         Model::unguard(false);
-        Date::use(\Illuminate\Support\Carbon::class);
+        Date::use(Carbon::class);
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
@@ -170,7 +174,7 @@ class AppServiceProvider extends ServiceProvider
 
         if ($driver !== null && ! in_array($driver, self::SUPPORTED_DRIVERS, true)) {
             throw new \RuntimeException(
-                "This application supports MySQL and MariaDB only; DB_CONNECTION is "
+                'This application supports MySQL and MariaDB only; DB_CONNECTION is '
                 ."'{$connection}' (driver '{$driver}'). Set DB_CONNECTION=mysql."
             );
         }

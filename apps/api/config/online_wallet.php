@@ -1,0 +1,37 @@
+<?php
+
+return [
+    'enabled' => (bool) env('NB_ONLINE_WALLET', false),
+    'cutover_at' => env('NB_ONLINE_WALLET_CUTOVER_AT'),
+    'opening_offer' => (int) env('NB_ONLINE_WALLET_OPENING_OFFER', 50),
+    'timezone' => 'Asia/Dhaka',
+    // Per-unit rates from v6.0.19. NBFOOTING sends two units per design.
+    'commands' => [
+        'NBONLINEFREE' => ['cost' => 0, 'daily' => false],
+        'PCM' => ['cost' => 1, 'daily' => false],
+        'NBCOLUMNLAYOUT' => ['cost' => 1, 'daily' => false],
+        'NBFOOTINGDETAILSTOEXCEL' => ['cost' => 0, 'daily' => false],
+        'NBSLABDRAWING' => ['cost' => 2, 'daily' => false],
+        'NBFOOTINGCOLUMNNAMETEXT' => ['cost' => 0, 'daily' => false],
+        'NBPILECAPPLANSECTION' => ['cost' => 2, 'daily' => false],
+        'NBLOADFOOTINGAREA' => ['cost' => 3, 'daily' => false],
+        'NBLOADPILEUI' => ['cost' => 5, 'daily' => false],
+        'NBLOADUI' => ['cost' => 5, 'daily' => false],
+        'NBQB' => ['cost' => 0, 'daily' => false],
+        'NBGBDRAW' => ['cost' => 1, 'daily' => false],
+        'NBFOOTING' => ['cost' => 1, 'daily' => false],
+        'NBCOMBINEDFOOTING' => ['cost' => 3, 'daily' => false],
+        'RM' => ['cost' => 1, 'daily' => true],
+        'DFM' => ['cost' => 1, 'daily' => true],
+        'DITM' => ['cost' => 1, 'daily' => true],
+        'NBGRIDUI' => ['cost' => 1, 'daily' => false],
+        'NBBEAM' => ['cost' => 1, 'daily' => false],
+        'NBDL' => ['cost' => 0, 'daily' => false],
+        'NBSOILCAPACITY' => ['cost' => 1, 'daily' => false],
+        'NBBNBCGEOTECH' => ['cost' => 1, 'daily' => false],
+        'NBSTRD' => ['cost' => 2, 'daily' => false],
+        'NBCS56' => ['cost' => 2, 'daily' => false],
+        'NBBEAMSPAN' => ['cost' => 0, 'daily' => false],
+        'NBMOUZA' => ['cost' => 1, 'daily' => false],
+    ],
+];
