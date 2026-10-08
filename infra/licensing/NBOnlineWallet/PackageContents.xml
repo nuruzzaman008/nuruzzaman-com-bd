@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0" AppVersion="0.6.3" ProductCode="{13526059-A19C-4C40-BCC3-3E8596A131E1}" Name="NBOnlineWallet" Description="Separate offline-first wallet addon" Author="NB Engineering Tools">
+  <CompanyDetails Name="NB Engineering Tools" Url="https://nuruzzaman.com.bd" />
+  <Components>
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R24.3" SeriesMax="R24.3" />
+    <ComponentEntry AppName="NBOnlineWallet" ModuleName="./Contents/Win64/NBOnlineWallet.dll" LoadOnAutoCADStartup="True" />
+  </Components>
+</ApplicationPackage>

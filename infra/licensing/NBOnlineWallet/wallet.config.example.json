@@ -1,0 +1,8 @@
+{
+  "api_origin": "https://localhost:13443/",
+  "website_origin": "https://localhost:13443/",
+  "offline_allowance": 100,
+  "allow_pilot_usage": false,
+  "signing_key_id": "",
+  "public_key_xml": ""
+}
