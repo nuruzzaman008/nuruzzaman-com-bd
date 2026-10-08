@@ -29,6 +29,7 @@ class ApiContractTest extends TestCase
         'api/v1/admin/wallets' => 'Permission-protected internal wallet dashboard, not part of the generated public client; documented in WALLET_PHASE3_ADMIN_BN.md.',
         'api/v1/admin/wallets/{license}' => 'Internal ledger/device/sync audit view; same private admin contract.',
         'api/v1/admin/wallets/{license}/actions' => 'Audited internal admin actions; same private admin contract.',
+        'api/v1/admin/licenses/bind-existing' => 'Private wallets.manage/CSRF-protected LicenseBinding form: email, license_code, reason, reference and ownership_verified; returns license_id, license_code, email and already_bound. Not part of the generated public client.',
         'api/v1/admin/growth-hub/gmail' => 'Private owner-scoped Gmail connection status and disconnect.',
         'api/v1/admin/growth-hub/gmail/connect' => 'Private CSRF-protected OAuth start.',
         'api/v1/admin/growth-hub/gmail/check' => 'Private Gmail connection verification.',
