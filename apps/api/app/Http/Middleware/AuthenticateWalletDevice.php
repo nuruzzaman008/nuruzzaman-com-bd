@@ -18,7 +18,7 @@ class AuthenticateWalletDevice
         $device = DB::table('nb_devices')->where('secret_hash', hash('sha256', $secret))->first();
         abort_unless($device && $device->confirmed_at, 401);
         $candidate = SoftwareLicense::find($device->software_license_id);
-        abort_unless($candidate && $candidate->user && $candidate->order, 403);
+        abort_unless($candidate && $candidate->user, 403);
         $license = app(OnlineWalletService::class)->license($secret);
         abort_unless($device->software_license_id === $license->id, 403);
         $request->attributes->set('wallet_device', (int) $device->id);

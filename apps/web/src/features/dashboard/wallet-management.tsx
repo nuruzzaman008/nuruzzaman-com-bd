@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api } from '@/lib/api/browser';
+import { LicenseBinding } from './license-binding';
 
 type Wallet = { id: number; name: string | null; email: string | null; license_code: string; balance: number; available_balance: number; reserved_balance: number; status: string; license_status: string; version: number; last_sync: string | null };
 type Entry = { id: number; transaction_id: string | null; action_type: string | null; source: string | null; delta: number; balance: number; reason: string | null; reference_note: string | null; created_by: number | null; payment_id: number | null; order_id: number | null; status_before: string | null; status_after: string | null; created_at: string };
 type Device = { id: number; revoked_at: string | null; revocation_reason: string | null; last_seen_at: string | null; confirmed_at: string | null; last_sync_status: string | null; last_sync: string | null; sync_due_at: string | null; expires_at: string | null };
-type List = { data: Wallet[]; meta: { page: number; last_page: number; total: number } };
+type List = { data: Wallet[]; meta: { page: number; last_page: number; total: number; can_manage?: boolean } };
 type Sync = { id: string; request_id: string; device_id: number; status: string; accepted_count: number; error_code: string | null; created_at: string; completed_at: string | null };
 type Detail = { data: { wallet: Wallet; entries: Entry[]; devices: Device[]; syncs?: Sync[]; can_manage: boolean }; meta: { page: number; last_page: number; device_page: number; device_last_page: number; sync_page?: number; sync_last_page?: number } };
 type Action = 'add' | 'deduct' | 'status' | 'license_status' | 'reset_device';
@@ -81,6 +82,7 @@ export function WalletManagement() {
   const wallet = detail?.data.wallet;
   return <div className="space-y-6 text-navy">
     <header><h1 className="text-3xl font-bold">Wallet Management</h1><p className="mt-2 text-muted">Search users or licenses, review sync activity and record audited token adjustments.</p></header>
+    {list?.meta.can_manage && <LicenseBinding />}
     <form role="search" onSubmit={e => { e.preventDefault(); void search(); }} className="flex max-w-2xl gap-2">
       <label className="sr-only" htmlFor="wallet-search">User name, email or license</label>
       <input id="wallet-search" className={inputClass} value={query} onChange={e => setQuery(e.target.value)} placeholder="User name, email or license" maxLength={150} />

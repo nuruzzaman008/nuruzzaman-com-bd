@@ -30,7 +30,7 @@ class WalletController extends Controller
         }
         $page = $query->orderByDesc('w.software_license_id')->paginate(20);
 
-        return response()->json(['data' => $page->items(), 'meta' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()]]);
+        return response()->json(['data' => $page->items(), 'meta' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'can_manage' => $request->user()->hasPermission('wallets.manage')]]);
     }
 
     public function show(Request $request, int $license): JsonResponse

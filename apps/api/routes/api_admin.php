@@ -20,6 +20,7 @@ Route::middleware([
 ])->prefix('admin')->group(function () {
     Route::get('dashboard', Admin\DashboardController::class);
     Route::get('wallets', [Admin\WalletController::class, 'index'])->middleware('permission:wallets.view');
+    Route::post('licenses/bind-existing', Admin\LegacyLicenseBindingController::class)->middleware(['permission:wallets.manage', 'throttle:10,1']);
     Route::get('wallets/{license}', [Admin\WalletController::class, 'show'])->whereNumber('license')->middleware('permission:wallets.view');
     Route::post('wallets/{license}/actions', [Admin\WalletController::class, 'action'])->whereNumber('license')->middleware(['permission:wallets.manage', 'throttle:30,1']);
     Route::get('audit-logs', Admin\AuditLogController::class);

@@ -18,7 +18,7 @@ class SqlOfflineWalletLedger implements OfflineWalletLedger
         $device = DB::table('nb_devices')->where('id', $id)->first();
         abort_unless($device && $device->confirmed_at && $device->software_license_id, 403);
         $license = SoftwareLicense::whereKey($device->software_license_id)->lockForUpdate()->first();
-        abort_unless($license && $license->order, 403);
+        abort_unless($license, 403);
         app(OnlineLicensingService::class)->usable($license);
         abort_unless($license->user && $license->user->isActive() && $license->user->hasVerifiedEmail(), 403);
         $device = DB::table('nb_devices')->where('id', $id)->lockForUpdate()->first();

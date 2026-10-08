@@ -32,8 +32,18 @@ class OnlineLicensingService
 
     public function usable(SoftwareLicense $license): void
     {
-        abort_unless(DB::table('order_items')->where('id', $license->order_item_id)->whereIn('sku', config('online_licensing.license_skus'))->exists(), 403, 'This product is not enabled for NB online licensing.');
-        abort_unless($license->status->isUsable() && ! $license->revoked_at && (! $license->expires_at || $license->expires_at->isFuture()) && $license->order->status->grantsEntitlements(), 403, 'License is not eligible.');
+        abort_unless($this->hasEntitlement($license), 403, 'License has no eligible purchase or verified legacy import.');
+        abort_unless($license->status->isUsable() && ! $license->revoked_at && (! $license->expires_at || $license->expires_at->isFuture()), 403, 'License is not eligible.');
+    }
+
+    public function hasEntitlement(SoftwareLicense $license): bool
+    {
+        if ($license->order_id === null && $license->order_item_id === null) {
+            return DB::table('nb_legacy_license_imports')->where('software_license_id', $license->id)->where('user_id', $license->user_id)->exists();
+        }
+
+        return (bool) $license->order?->status->grantsEntitlements()
+            && DB::table('order_items')->where('id', $license->order_item_id)->where('order_id', $license->order_id)->whereIn('sku', config('online_licensing.license_skus'))->exists();
     }
 
     public function confirm(User $user, string $code, string $licenseCode): void
@@ -111,7 +121,7 @@ class OnlineLicensingService
         $licenses = SoftwareLicense::where('user_id', $order->user_id)->whereIn('id', DB::table('nb_devices')->whereNotNull('confirmed_at')->select('software_license_id'))->whereIn('status', ['issued', 'active'])->get();
         if ($licenses->count() === 1) {
             $license = $licenses->first();
-            if ($license->revoked_at || ($license->expires_at && $license->expires_at->isPast()) || ! $license->order->status->grantsEntitlements()) {
+            if ($license->revoked_at || ($license->expires_at && $license->expires_at->isPast()) || ! $this->hasEntitlement($license)) {
                 return;
             }
             if (! app(OnlineWalletService::class)->managed($license->id) && DB::table('nb_devices')->where('software_license_id', $license->id)->whereNotNull('confirmed_at')->distinct()->count('machine_hash') !== 1) {

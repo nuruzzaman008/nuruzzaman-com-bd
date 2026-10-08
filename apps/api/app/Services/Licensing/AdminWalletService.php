@@ -56,7 +56,7 @@ class AdminWalletService
                     };
                     abort_if($license->status === $next, 409, 'License already has this status.');
                     if ($next === LicenseStatus::Active) {
-                        abort_unless($license->order?->status->grantsEntitlements() && (! $license->expires_at || $license->expires_at->isFuture()), 409, 'A paid, unexpired license is required.');
+                        abort_unless(app(OnlineLicensingService::class)->hasEntitlement($license) && (! $license->expires_at || $license->expires_at->isFuture()), 409, 'An eligible, unexpired license is required.');
                     }
                     $license->update(['status' => $next, 'revoked_at' => $next === LicenseStatus::Revoked ? now() : null, 'revoked_reason' => $next === LicenseStatus::Revoked ? mb_substr($input['reason'], 0, 255) : null]);
                     $type = 'admin_license_status';
