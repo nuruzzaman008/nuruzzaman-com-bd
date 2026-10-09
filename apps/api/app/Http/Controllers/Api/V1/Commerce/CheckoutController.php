@@ -31,6 +31,7 @@ class CheckoutController extends Controller
             $request->acceptedTerms(),
             $request->ip(),
             $request->validated('ref'),
+            $request->validated('wallet_license_code'),
         );
 
         return response()->json([

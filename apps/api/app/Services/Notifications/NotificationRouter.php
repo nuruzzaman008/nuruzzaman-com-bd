@@ -20,6 +20,7 @@ use App\Notifications\NotificationPresenter;
 use App\Notifications\NotificationType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Turns things that happen on the site into notifications.
@@ -59,6 +60,13 @@ class NotificationRouter
             'customer' => $order->billing_name ?: $order->user?->name,
         ];
 
+        $credit = DB::table('nb_wallet_entries')->join('software_licenses', 'software_licenses.id', '=', 'nb_wallet_entries.software_license_id')
+            ->where('nb_wallet_entries.order_id', $order->id)->where('action_type', 'payment_credit')->first(['delta', 'license_code', 'transaction_id']);
+        if ($credit) {
+            $data['wallet_tokens'] = (int) $credit->delta;
+            $data['wallet_license'] = $credit->license_code;
+            $data['wallet_transaction'] = $credit->transaction_id;
+        }
         $this->notifier->toStaff(NotificationType::OrderPaid, $data);
         $this->notifier->toUser($order->user, NotificationType::OrderConfirmed, $data);
     }

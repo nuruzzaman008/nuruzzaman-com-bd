@@ -118,7 +118,11 @@ class OnlineLicensingService
         if (! config('online_licensing.enabled') || ! $order->status->grantsEntitlements() || ! $order->items->contains('product_type', 'credit_refill')) {
             return;
         }
-        $licenses = SoftwareLicense::where('user_id', $order->user_id)->whereIn('id', DB::table('nb_devices')->whereNotNull('confirmed_at')->select('software_license_id'))->whereIn('status', ['issued', 'active'])->get();
+        $assigned = DB::table('refill_orders')->where('order_id', $order->id)->whereNotNull('software_license_id')->distinct()->pluck('software_license_id');
+        $query = SoftwareLicense::where('user_id', $order->user_id)->whereIn('status', ['issued', 'active']);
+        $licenses = $assigned->isNotEmpty()
+            ? $query->whereIn('id', $assigned)->get()
+            : $query->whereIn('id', DB::table('nb_devices')->whereNotNull('confirmed_at')->whereNull('revoked_at')->select('software_license_id'))->get();
         if ($licenses->count() === 1) {
             $license = $licenses->first();
             if ($license->revoked_at || ($license->expires_at && $license->expires_at->isPast()) || ! $this->hasEntitlement($license)) {

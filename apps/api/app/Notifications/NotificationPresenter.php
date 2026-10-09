@@ -154,9 +154,9 @@ final class NotificationPresenter
             ],
             NotificationType::OrderConfirmed => [
                 self::join([$t['order.confirmed'], $s('number')]),
-                self::money($data) ?? '',
-                null,
-                self::path('/account/orders', $s('number')),
+                self::join([self::money($data), isset($data['wallet_tokens']) ? $s('wallet_tokens').' tokens · '.$s('wallet_license') : null]),
+                isset($data['wallet_tokens']) ? ($locale === 'bn' ? 'ওয়ালেটে টোকেন যোগ হয়েছে। AutoCAD-এ Sync Now চাপুন।' : 'Wallet credited. Choose Sync Now in AutoCAD.') : null,
+                isset($data['wallet_tokens']) ? '/account/wallets' : self::path('/account/orders', $s('number')),
             ],
             NotificationType::ActivationUpdated => [
                 $t['activation.updated'],

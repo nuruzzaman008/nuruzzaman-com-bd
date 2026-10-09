@@ -26,6 +26,8 @@ import { readReferralCode } from '@/lib/referral';
 export function CheckoutForm() {
   const { locale, t } = useLocale();
   const router = useRouter();
+  const [licenses, setLicenses] = useState<{ license_code: string; product_name: string; status: string }[]>([]);
+  const [walletLicense, setWalletLicense] = useState('');
   const [cart, setCart] = useState<Cart | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,12 @@ export function CheckoutForm() {
           api<{ data: User }>('/me'),
         ]);
 
+        if (cartResponse.data.lines.some(line => line.product_type === 'credit_refill')) {
+          const result = await api<{ data: { license_code: string; product_name: string; status: string }[] }>('/account/licenses');
+          setLicenses(result.data);
+          const requested = new URLSearchParams(window.location.search).get('wallet_license');
+          if (requested && result.data.some(l => l.license_code === requested)) setWalletLicense(requested);
+        }
         setCart(cartResponse.data);
         setUser(meResponse.data);
       } catch (caught) {
@@ -71,6 +79,7 @@ export function CheckoutForm() {
         method: 'POST',
         idempotencyKey,
         body: {
+          wallet_license_code: walletLicense || null,
           name: form.get('name'),
           email: form.get('email'),
           phone: form.get('phone') || null,
@@ -128,6 +137,16 @@ export function CheckoutForm() {
           </Callout>
         ) : null}
 
+        {cart.lines.some(line => line.product_type === 'credit_refill') && <div className="rounded-lg border border-line bg-white p-4 space-y-2">
+          <label htmlFor="wallet-license" className="font-semibold">{locale === 'en' ? 'License receiving tokens' : 'যে লাইসেন্সে টোকেন যোগ হবে'}</label>
+          <select id="wallet-license" className="block w-full rounded-lg border border-line p-3" value={walletLicense} onChange={e => setWalletLicense(e.target.value)}>
+            <option value="">{locale === 'en' ? 'Choose your license' : 'আপনার লাইসেন্স বেছে নিন'}</option>
+            {licenses.map(l => <option key={l.license_code} value={l.license_code} disabled={!['issued', 'active'].includes(l.status)}>{l.license_code} — {l.product_name} ({l.status})</option>)}
+          </select>
+          {errors.wallet_license_code && <p role="alert">{errors.wallet_license_code[0]}</p>}
+          <p className="text-sm">{locale === 'en' ? 'Tokens are added only after payment approval. All token packs in this order go to the selected license.' : 'Payment approve হলে এই order-এর সব token pack নির্বাচিত license-এ যোগ হবে।'}</p>
+          <Link href="/account/wallets" className="text-blue underline">Licenses &amp; Wallets</Link>
+        </div>}
         <fieldset className="space-y-5">
           <legend className="text-lg font-bold text-navy">{t.checkout.billing}</legend>
           <p className="text-sm text-muted">{t.checkout.digitalOnly}</p>

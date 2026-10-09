@@ -3,14 +3,21 @@
 namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
+use App\Enums\ProductType;
 use App\Enums\Role;
 use App\Jobs\FulfillOrder;
+use App\Jobs\SendOrderReceipt;
+use App\Mail\OrderReceiptMail;
 use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Permission;
+use App\Models\Price;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\SoftwareLicense;
 use App\Services\Commerce\OrderStateMachine;
+use App\Services\Fulfillment\FulfillmentService;
 use App\Services\Licensing\OnlineLicensingService;
 use App\Services\Licensing\OnlineWalletService;
 use App\Services\Payments\ManualWalletCredit;
@@ -44,6 +51,58 @@ class ManualWalletPaymentTest extends TestCase
         $this->actingAs($admin);
 
         return [$order, $payment, $submission, $license, $admin];
+    }
+
+    public function test_checkout_targets_selected_wallet_and_approval_notifies_and_credits_exactly_once(): void
+    {
+        [, , , $first, $admin] = $this->scenario();
+        [, , , $second] = $this->scenario();
+        $second->update(['user_id' => $first->user_id]);
+        $second->order->update(['user_id' => $first->user_id]);
+        $this->actingAs($first->user);
+        $variant = ProductVariant::factory()->create([
+            'product_id' => Product::factory()->ofType(ProductType::CreditRefill), 'credit_amount' => 500,
+        ]);
+        Price::factory()->for($variant, 'variant')->amount(10000)->create();
+        $this->postJson('/api/v1/cart/items', ['variant_id' => $variant->id, 'quantity' => 1])->assertCreated();
+        $payload = ['name' => 'Test Customer', 'email' => $first->user->email, 'accepts_terms' => true, 'accepts_privacy' => true, 'accepts_refund_policy' => true];
+        $this->postJson('/api/v1/checkout', $payload)->assertUnprocessable()->assertJsonValidationErrors('wallet_license_code', 'error.fields');
+        $this->postJson('/api/v1/checkout', [...$payload, 'wallet_license_code' => 'NB-NOT-MINE'])->assertUnprocessable();
+        $response = $this->withHeader('Idempotency-Key', 'selected-wallet-checkout')->postJson('/api/v1/checkout', [...$payload, 'wallet_license_code' => $second->license_code])->assertCreated();
+        $order = Order::where('number', $response->json('data.order.number'))->firstOrFail();
+        $this->assertDatabaseHas('refill_orders', ['order_id' => $order->id, 'software_license_id' => $second->id, 'credit_amount' => 500]);
+        $this->assertSame(10000, $order->total_minor);
+        $this->assertSame($second->license_code, $order->items->first()->fulfillment_meta['wallet_license_code']);
+        $payment = Payment::create(['order_id' => $order->id, 'gateway' => 'manual', 'reference' => 'PAY-'.Str::uuid(), 'status' => 'pending', 'currency' => $order->currency, 'amount_minor' => $order->total_minor]);
+        $id = DB::table('manual_payment_submissions')->insertGetId(['order_id' => $order->id, 'payment_id' => $payment->id, 'method' => 'bkash', 'transaction_id' => 'TX-'.Str::uuid(), 'sender' => 'TEST', 'recipient' => 'TEST', 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        $this->actingAs($admin)->withoutHeader('Idempotency-Key');
+        $this->approve($order, $id)->assertOk()->assertJsonPath('data.wallet_credit.amount', 500);
+        $this->approve($order, $id)->assertOk()->assertJsonPath('data.wallet_credit.already_credited', true);
+        $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $first->id, 'balance' => 100]);
+        $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $second->id, 'balance' => 600, 'reserved_balance' => 20]);
+        (new FulfillOrder($order->id))->handle(app(FulfillmentService::class));
+        Bus::assertDispatched(SendOrderReceipt::class, fn ($job) => $job->orderId === $order->id);
+        $this->assertSame(1, DB::table('nb_wallet_entries')->where('order_id', $order->id)->count());
+        $notification = $first->user->notifications()->where('type', 'order.confirmed')->firstOrFail();
+        $this->assertSame(500, $notification->data['wallet_tokens']);
+        $this->assertSame($second->license_code, $notification->data['wallet_license']);
+        $html = (new OrderReceiptMail($order->fresh(['items', 'invoice'])))->render();
+        $this->assertStringContainsString('Wallet credited: 500 tokens', $html);
+        $this->assertStringContainsString($second->license_code, $html);
+        $this->actingAs($first->user)->getJson('/api/v1/account/licenses/'.$second->license_code.'/wallet')->assertOk()->assertJsonPath('data.wallet.balance', 600);
+    }
+
+    public function test_checkout_rejects_suspended_wallet_before_creating_order(): void
+    {
+        [, , , $license] = $this->scenario();
+        $this->actingAs($license->user);
+        $variant = ProductVariant::factory()->create(['product_id' => Product::factory()->ofType(ProductType::CreditRefill), 'credit_amount' => 100]);
+        Price::factory()->for($variant, 'variant')->amount(10000)->create();
+        $this->postJson('/api/v1/cart/items', ['variant_id' => $variant->id])->assertCreated();
+        DB::table('nb_online_wallets')->where('software_license_id', $license->id)->update(['status' => 'suspended']);
+        $before = Order::count();
+        $this->postJson('/api/v1/checkout', ['name' => 'Test Customer', 'email' => $license->user->email, 'wallet_license_code' => $license->license_code, 'accepts_terms' => true, 'accepts_privacy' => true, 'accepts_refund_policy' => true])->assertConflict();
+        $this->assertSame($before, Order::count());
     }
 
     private function approve(Order $order, int $id): TestResponse

@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 
 class OrderReceiptMail extends Mailable
 {
@@ -45,6 +46,9 @@ class OrderReceiptMail extends Mailable
         return new Content(markdown: 'mail.order-receipt', with: [
             'order' => $this->order,
             'site' => config('nb.site'),
+            'walletCredits' => DB::table('nb_wallet_entries')->join('software_licenses', 'software_licenses.id', '=', 'nb_wallet_entries.software_license_id')
+                ->where('nb_wallet_entries.order_id', $this->order->id)->where('action_type', 'payment_credit')
+                ->get(['license_code', 'delta', 'transaction_id']),
         ]);
     }
 }

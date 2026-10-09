@@ -19,11 +19,12 @@ import { useSession } from '@/lib/session/session-provider';
  * The button only submits a variant id; every price, discount and total is
  * recalculated by the API, so nothing here can influence what is charged.
  */
-export function AddToCart({ variants, buttonLabel, hidePrice = false, openCart = false }: {
+export function AddToCart({ variants, buttonLabel, hidePrice = false, openCart = false, checkoutLicense }: {
   variants: ProductVariant[];
   buttonLabel?: string;
   hidePrice?: boolean;
   openCart?: boolean;
+  checkoutLicense?: string;
 }) {
   const { t } = useLocale();
   const { refresh } = useSession();
@@ -55,7 +56,9 @@ export function AddToCart({ variants, buttonLabel, hidePrice = false, openCart =
 
       setAdded(true);
       void refresh();
-      if (openCart) {
+      if (checkoutLicense) {
+        router.push(`/checkout?wallet_license=${encodeURIComponent(checkoutLicense)}`);
+      } else if (openCart) {
         router.push('/cart');
       }
       startTransition(() => router.refresh());

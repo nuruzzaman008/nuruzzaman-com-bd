@@ -25,6 +25,7 @@ class CheckoutRequest extends FormRequest
             // The referral code the browser remembered. An unknown or expired
             // code is ignored rather than refused: it must never block a sale.
             'ref' => ['nullable', 'string', 'max:64'],
+            'wallet_license_code' => ['nullable', 'string', 'max:64'],
         ];
     }
 

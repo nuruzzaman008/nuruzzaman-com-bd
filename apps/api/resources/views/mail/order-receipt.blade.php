@@ -5,6 +5,20 @@ Assalamu alaikum {{ $order->billing_name }},
 
 Your order has been confirmed. The details are below, and your money receipt is attached as a PDF.
 
+@foreach ($walletCredits as $credit)
+**Wallet credited: {{ $credit->delta }} tokens**
+
+License: {{ $credit->license_code }}
+
+Transaction: {{ $credit->transaction_id }}
+
+Your website wallet has been updated. Open NB ONLINE in AutoCAD and choose Sync Now (or wait for automatic sync while connected). Legacy offline tokens remain separate.
+
+<x-mail::button :url="rtrim($site['url'], '/') . '/account/wallets'">
+View wallet / ওয়ালেট দেখুন
+</x-mail::button>
+@endforeach
+
 <x-mail::table>
 | Item | Qty | Amount (BDT) |
 |:-----|:---:|-------------:|

@@ -23,6 +23,13 @@ class ManualWalletCredit
         $items = $order->items()->where('product_type', 'credit_refill')->get();
         $result = ['eligible' => false, 'already_credited' => false, 'amount' => 0, 'transaction_id' => null];
         if ($items->isNotEmpty()) {
+            $targets = $items->map(fn ($item) => $item->fulfillment_meta['wallet_license_code'] ?? null)->filter()->unique();
+            abort_if($targets->count() > 1, 409, 'Order has conflicting wallet targets.');
+            if ($targets->isNotEmpty()) {
+                $target = SoftwareLicense::where('user_id', $order->user_id)->where('license_code', $targets->first())->first();
+                abort_unless($target && DB::table('nb_online_wallets')->where('software_license_id', $target->id)->exists()
+                    && DB::table('refill_orders')->where('order_id', $order->id)->where('software_license_id', $target->id)->exists(), 409, 'The selected wallet is unavailable; reconcile before approval.');
+            }
             $assigned = DB::table('refill_orders')->where('order_id', $order->id)->whereNotNull('software_license_id')->distinct()->pluck('software_license_id');
             abort_if($assigned->count() > 1, 409, 'Refill has multiple target licenses; reconcile before approval.');
             $walletLicenses = DB::table('nb_online_wallets')->join('software_licenses', 'software_licenses.id', '=', 'nb_online_wallets.software_license_id')->where('software_licenses.user_id', $order->user_id)->pluck('software_licenses.id');

@@ -34,4 +34,12 @@ describe('course enrolment cart action', () => {
     expect(mocks.push).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Enrol' })).toBeEnabled();
   });
+  it('preserves the selected wallet license when buying a token pack', async () => {
+    mocks.api.mockResolvedValue({ data: {} });
+    render(<AddToCart variants={variants} checkoutLicense="NB-TARGET-002" buttonLabel="Buy tokens" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Buy tokens' }));
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/checkout?wallet_license=NB-TARGET-002'));
+    expect(mocks.api).toHaveBeenCalledWith('/cart/items', { method: 'POST', body: { variant_id: 7, quantity: 1 } });
+  });
+
 });
