@@ -43,29 +43,30 @@ export function CustomerWallets() {
   }
   const data = view?.data;
   const selectedCode = data?.license_code;
+  const selectedPage = view?.meta.page ?? 1;
   useEffect(() => {
     if (!selectedCode) return;
     let active = true;
     async function refreshBalance() {
       try {
-        const result = await api<View>(`/account/licenses/${encodeURIComponent(selectedCode!)}/wallet`);
+        const result = await api<View>(`/account/licenses/${encodeURIComponent(selectedCode!)}/wallet`, { query: { page: selectedPage } });
         if (active) setView(result);
       } catch { /* Keep the last confirmed balance during a temporary outage. */ }
     }
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refreshBalance(); }, 30000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [selectedCode]);
+  }, [selectedCode, selectedPage]);
   return <section className="space-y-5 text-navy">
     <h1 className="text-3xl font-bold">Licenses &amp; Wallets</h1>
     <p>Each license has its own wallet and device connection. These balances belong to NB Online Wallet.</p>
     <Link href="/connect-autocad" className="text-blue underline">Connect AutoCAD</Link>
     <label className="block">Select license<select className="mt-2 block w-full rounded-lg border border-line p-3" defaultValue="" onChange={e => { if (e.target.value) void open(e.target.value); }}>
       <option value="" disabled>Choose a license</option>
-      {licenses.map(l => <option key={l.license_code} value={l.license_code}>{l.license_code} â€” {l.product_name} ({l.status})</option>)}
+      {licenses.map(l => <option key={l.license_code} value={l.license_code}>{l.license_code} — {l.product_name} ({l.status})</option>)}
     </select></label>
-    {error && <p role="alert">{error}</p>}{busy && <p role="status">Loading walletâ€¦</p>}
+    {error && <p role="alert">{error}</p>}{busy && <p role="status">Loading wallet…</p>}
     {data && <>
-      <h2 className="text-xl font-bold">{data.license_code} Â· {data.license_status}</h2>
+      <h2 className="text-xl font-bold">{data.license_code} · {data.license_status}</h2>
       {data.wallet ? <dl className="grid gap-3 sm:grid-cols-3">{Object.entries({ Available: data.wallet.available_balance, Reserved: data.wallet.reserved_balance, Total: data.wallet.balance, 'Wallet status': data.wallet.status, 'Last sync (UTC)': data.last_sync ?? 'Never' }).map(([name, value]) => <div className="rounded-lg border border-line bg-white p-4" key={name}><dt>{name}</dt><dd className="font-semibold">{value}</dd></div>)}</dl> : <p>This license does not have an online wallet. Legacy tokens are not automatically transferred.</p>}
       <section id="buy-tokens" className="rounded-xl border border-line bg-white p-5 space-y-4">
         <h3 className="text-xl font-bold">Buy Tokens / টোকেন কিনুন</h3>
@@ -81,7 +82,7 @@ export function CustomerWallets() {
         <div className="flex flex-wrap gap-4"><Link href="/account/orders" className="text-blue underline">Payment status / Orders</Link><button type="button" className="text-blue underline" onClick={() => void open(data.license_code)}>Refresh balance</button></div>
       </section>
       <h3 className="font-bold">Devices</h3>
-      {data.devices.map(d => <p key={d.id}>Device #{d.id} â€” {d.revoked_at ? 'Revoked' : d.confirmed_at ? 'Paired' : 'Awaiting confirmation'} Â· Last seen (UTC): {d.last_seen_at ?? 'Never'}</p>)}
+      {data.devices.map(d => <p key={d.id}>Device #{d.id} — {d.revoked_at ? 'Revoked' : d.confirmed_at ? 'Paired' : 'Awaiting confirmation'} · Last seen (UTC): {d.last_seen_at ?? 'Never'}</p>)}
       <h3 className="font-bold">Transaction history</h3>
       <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>{['Date (UTC)', 'Type', 'Change', 'Balance', 'Transaction'].map(h => <th className="p-2" key={h}>{h}</th>)}</tr></thead><tbody>{data.entries.map((e, i) => <tr key={e.transaction_id ?? i} className="border-t border-line"><td className="p-2">{e.created_at}</td><td className="p-2">{e.action_type ?? e.source}</td><td className="p-2">{e.delta}</td><td className="p-2">{e.balance}</td><td className="p-2">{e.transaction_id ?? 'Opening balance'}</td></tr>)}</tbody></table></div>
       {view && <div className="flex gap-3"><button className={button} disabled={busy || view.meta.page <= 1} onClick={() => void open(data.license_code, view.meta.page - 1)}>Previous</button><button className={button} disabled={busy || view.meta.page >= view.meta.last_page} onClick={() => void open(data.license_code, view.meta.page + 1)}>Next</button></div>}
