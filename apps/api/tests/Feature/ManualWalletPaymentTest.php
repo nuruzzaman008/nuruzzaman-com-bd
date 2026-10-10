@@ -55,6 +55,7 @@ class ManualWalletPaymentTest extends TestCase
 
     public function test_checkout_targets_selected_wallet_and_approval_notifies_and_credits_exactly_once(): void
     {
+        config(['online_licensing.enabled' => true]);
         [, , , $first, $admin] = $this->scenario();
         [, , , $second] = $this->scenario();
         $second->update(['user_id' => $first->user_id]);
@@ -83,6 +84,7 @@ class ManualWalletPaymentTest extends TestCase
         (new FulfillOrder($order->id))->handle(app(FulfillmentService::class));
         Bus::assertDispatched(SendOrderReceipt::class, fn ($job) => $job->orderId === $order->id);
         $this->assertSame(1, DB::table('nb_wallet_entries')->where('order_id', $order->id)->count());
+        $this->assertDatabaseHas('refill_orders', ['order_id' => $order->id, 'software_license_id' => $second->id, 'status' => 'approved']);
         $notification = $first->user->notifications()->where('type', 'order.confirmed')->firstOrFail();
         $this->assertSame(500, $notification->data['wallet_tokens']);
         $this->assertSame($second->license_code, $notification->data['wallet_license']);
