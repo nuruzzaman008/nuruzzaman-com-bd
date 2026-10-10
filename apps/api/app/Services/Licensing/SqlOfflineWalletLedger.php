@@ -209,6 +209,46 @@ class SqlOfflineWalletLedger implements OfflineWalletLedger
         return $result;
     }
 
+    /** Online command charges use only unreserved funds; offline leases remain independent claims on this same wallet. */
+    public function command(int $deviceId, string $command, int $units, ?string $transactionId): array
+    {
+        return DB::transaction(function () use ($deviceId, $command, $units, $transactionId) {
+            $device = $this->device($deviceId);
+            $wallet = $this->wallet($device->software_license_id, true);
+            $policy = config('online_wallet.commands.'.$command);
+            abort_unless(is_array($policy) && $units >= 1 && $units <= 10000, 422, 'Unsupported command or units.');
+            $existing = $transactionId ? DB::table('nb_wallet_entries')->where('transaction_id', $transactionId)->first() : null;
+            if ($existing) {
+                abort_unless($existing->software_license_id === $device->software_license_id && $existing->device_id === $deviceId && $existing->source === 'online_command' && $existing->command === $command && $existing->units === $units, 409, 'Transaction ID reused with different input.');
+
+                return ['wallet' => $this->view($wallet), 'required' => (int) $existing->amount, 'transaction_id' => $transactionId, 'replayed' => true];
+            }
+            $cost = (int) $policy['cost'] * ($policy['daily'] ? 1 : $units);
+            if ($policy['daily']) {
+                $start = now()->setTimezone(config('online_wallet.timezone'))->startOfDay()->utc();
+                if (DB::table('nb_wallet_entries')->where('software_license_id', $device->software_license_id)->where('command', $command)->where('delta', '<', 0)->where('created_at', '>=', $start)->exists()) {
+                    $cost = 0;
+                }
+            }
+            abort_unless($cost >= 0 && $wallet->balance - $wallet->reserved_balance >= $cost, 409, 'Insufficient available tokens. Reserved tokens cannot be spent here.');
+            if ($transactionId) {
+                $wallet->balance -= $cost;
+                $wallet->version++;
+                DB::table('nb_wallet_entries')->insert([
+                    'software_license_id' => $device->software_license_id, 'transaction_id' => $transactionId,
+                    'reference' => 'command:'.$device->software_license_id.':'.$transactionId, 'device_id' => $deviceId,
+                    'user_id' => SoftwareLicense::findOrFail($device->software_license_id)->user_id,
+                    'command' => $command, 'units' => $units, 'delta' => -$cost, 'balance' => $wallet->balance,
+                    'source' => 'online_command', 'action_type' => 'command_usage',
+                    'wallet_version' => $wallet->version, 'reason' => 'Engineering command completed', 'created_at' => now(),
+                ]);
+                DB::table('nb_online_wallets')->where('software_license_id', $device->software_license_id)->update(['balance' => $wallet->balance, 'version' => $wallet->version, 'updated_at' => now()]);
+            }
+
+            return ['wallet' => $this->view($wallet), 'required' => $cost, 'transaction_id' => $transactionId, 'replayed' => false];
+        }, 5);
+    }
+
     public function history(int $authorizedLicenseId, ?string $cursor, int $limit): array
     {
         $this->wallet($authorizedLicenseId);

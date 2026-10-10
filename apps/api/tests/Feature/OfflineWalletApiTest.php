@@ -63,6 +63,33 @@ class OfflineWalletApiTest extends TestCase
         return $this->postJson('/api/wallet/connect', ['request_id' => (string) Str::uuid(), 'expected_version' => 0, 'requested_allowance' => $allowance])->assertOk()->json();
     }
 
+    public function test_online_command_uses_same_wallet_preserves_reserve_and_replays_once(): void
+    {
+        [$license] = $this->connected();
+        $this->connect(20);
+        $input = ['command' => 'NBFOOTING', 'units' => 2];
+        $this->postJson('/api/wallet/command', $input)->assertOk()->assertJsonPath('data.required', 2)->assertJsonPath('data.wallet.available_balance', 80);
+        $input['transaction_id'] = (string) Str::uuid();
+        $this->postJson('/api/wallet/command', $input)->assertOk()->assertJsonPath('data.wallet.available_balance', 78)->assertJsonPath('data.wallet.reserved_balance', 20);
+        $this->postJson('/api/wallet/command', $input)->assertOk()->assertJsonPath('data.wallet.available_balance', 78)->assertJsonPath('data.replayed', true);
+        $this->postJson('/api/wallet/command', [...$input, 'units' => 3])->assertConflict();
+        $this->assertSame(1, DB::table('nb_wallet_entries')->where('transaction_id', $input['transaction_id'])->count());
+        $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $license->id, 'balance' => 98, 'reserved_balance' => 20]);
+        $this->postJson('/api/wallet/command', ['command' => 'NBFOOTING', 'units' => 79, 'transaction_id' => (string) Str::uuid()])->assertConflict();
+        $this->getJson('/api/wallet/history')->assertOk()->assertJsonPath('data.0.source', 'online_command')->assertJsonPath('data.0.amount', 2);
+    }
+
+    public function test_online_command_rejects_unknown_commands_and_blocked_or_unpaired_devices(): void
+    {
+        [$license] = $this->connected();
+        $input = ['command' => 'NBFOOTING', 'units' => 2, 'transaction_id' => (string) Str::uuid()];
+        $this->postJson('/api/wallet/command', [...$input, 'command' => 'FORGED'])->assertUnprocessable();
+        DB::table('nb_online_wallets')->where('software_license_id', $license->id)->update(['status' => 'blocked']);
+        $this->postJson('/api/wallet/command', $input)->assertForbidden();
+        $this->withToken('invalid-device')->postJson('/api/wallet/command', $input)->assertUnauthorized();
+        $this->assertSame(100, (int) DB::table('nb_online_wallets')->where('software_license_id', $license->id)->value('balance'));
+    }
+
     public function test_balance_identity_is_the_confirmed_device_owner_and_selected_license(): void
     {
         [$license, $pair, $user] = $this->connected();

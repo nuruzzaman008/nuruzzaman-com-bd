@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\Permission;
 use App\Models\SoftwareLicense;
+use App\Services\Licensing\LegacyWalletMigrationService;
 use App\Services\Licensing\OfflineWalletLedger;
 use App\Services\Licensing\OnlineWalletService;
 use Database\Seeders\WalletPermissionSeeder;
@@ -30,6 +31,97 @@ class AdminWalletTest extends TestCase
         DB::table('nb_online_wallets')->insert(['software_license_id' => $license->id, 'balance' => 100, 'reserved_balance' => 20, 'created_at' => now(), 'updated_at' => now()]);
 
         return $license->id;
+    }
+
+    private function migrationEvidence(int $id): array
+    {
+        $license = SoftwareLicense::findOrFail($id);
+
+        return ['transaction_id' => (string) Str::uuid(), 'expected_version' => 0, 'email' => $license->user->email, 'license_code' => $license->license_code, 'amount' => 2169, 'wallet_sha256' => str_repeat('a', 64), 'wallet_sequence' => 234, 'retired_runtime_sha256' => str_repeat('b', 64), 'cutover_reference' => 'isolated-cutover-test', 'legacy_runtime_retired' => true, 'reason' => 'Audited legacy wallet migration'];
+    }
+
+    public function test_legacy_migration_is_once_per_license_audited_and_preserves_reserved_tokens(): void
+    {
+        $id = $this->wallet();
+        $admin = $this->userWithRole(Role::Admin);
+        $input = $this->migrationEvidence($id);
+        $service = app(LegacyWalletMigrationService::class);
+        $first = $service->migrate($admin, $id, $input);
+        $this->assertSame($first, $service->migrate($admin, $id, $input));
+        $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $id, 'balance' => 2269, 'reserved_balance' => 20]);
+        $this->assertDatabaseCount('nb_wallet_entries', 1);
+        $this->assertDatabaseHas('nb_wallet_entries', ['source' => 'legacy_migration', 'amount' => 2169, 'created_by' => $admin->id, 'reference' => 'legacy-migration:'.$id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'wallet.legacy_migrated', 'user_id' => $admin->id]);
+        try {
+            $service->migrate($admin, $id, [...$input, 'transaction_id' => (string) Str::uuid(), 'wallet_sha256' => str_repeat('c', 64)]);
+            $this->fail('Second migration must be rejected even with a different wallet file and request ID.');
+        } catch (HttpExceptionInterface $e) {
+            $this->assertSame(409, $e->getStatusCode());
+        }
+        $this->assertDatabaseCount('nb_wallet_entries', 1);
+    }
+
+    public function test_migration_command_defaults_to_dry_run_and_apply_is_idempotent(): void
+    {
+        $id = $this->wallet();
+        $admin = $this->userWithRole(Role::Admin);
+        $path = tempnam(sys_get_temp_dir(), 'wallet-migration-test-');
+        file_put_contents($path, json_encode($this->migrationEvidence($id), JSON_THROW_ON_ERROR));
+        try {
+            $this->artisan('wallet:migrate-legacy', ['manifest' => $path, '--admin-email' => $admin->email])->assertSuccessful();
+            $this->assertDatabaseCount('nb_wallet_entries', 0);
+            $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $id, 'balance' => 100]);
+            foreach ([1, 2] as $attempt) {
+                $this->artisan('wallet:migrate-legacy', ['manifest' => $path, '--admin-email' => $admin->email, '--apply' => true])->assertSuccessful();
+            }
+            $this->assertDatabaseCount('nb_wallet_entries', 1);
+            $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $id, 'balance' => 2269, 'reserved_balance' => 20]);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_failed_migration_audit_rolls_back_credit_and_allows_exact_retry(): void
+    {
+        $id = $this->wallet();
+        $admin = $this->userWithRole(Role::Admin);
+        $input = $this->migrationEvidence($id);
+        $fail = true;
+        AuditLog::creating(function (AuditLog $log) use (&$fail): void {
+            if ($fail && $log->action === 'wallet.legacy_migrated') {
+                throw new \RuntimeException('Simulated audit storage failure');
+            }
+        });
+        $service = app(LegacyWalletMigrationService::class);
+        try {
+            $service->migrate($admin, $id, $input);
+            $this->fail('Failed audit must not commit credit.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Simulated audit storage failure', $e->getMessage());
+        } finally {
+            $fail = false;
+        }
+        $this->assertDatabaseCount('nb_wallet_entries', 0);
+        $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $id, 'balance' => 100, 'reserved_balance' => 20]);
+        $service->migrate($admin, $id, $input);
+        $this->assertDatabaseCount('nb_wallet_entries', 1);
+    }
+
+    public function test_legacy_migration_rejects_wrong_owner_and_unauthorized_actor(): void
+    {
+        $id = $this->wallet();
+        $input = $this->migrationEvidence($id);
+        $service = app(LegacyWalletMigrationService::class);
+        foreach ([[$this->customer(), $input, 403], [$this->userWithRole(Role::Admin), [...$input, 'email' => 'wrong@example.test'], 409]] as [$actor, $evidence, $status]) {
+            try {
+                $service->migrate($actor, $id, $evidence);
+                $this->fail('Invalid migration accepted.');
+            } catch (HttpExceptionInterface $e) {
+                $this->assertSame($status, $e->getStatusCode());
+            }
+        }
+        $this->assertDatabaseCount('nb_wallet_entries', 0);
+        $this->assertDatabaseHas('nb_online_wallets', ['software_license_id' => $id, 'balance' => 100, 'reserved_balance' => 20]);
     }
 
     private function action(array $override = []): array

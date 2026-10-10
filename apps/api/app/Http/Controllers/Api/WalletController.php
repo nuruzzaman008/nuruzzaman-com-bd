@@ -9,6 +9,7 @@ use App\Http\Requests\WalletSyncRequest;
 use App\Models\SoftwareLicense;
 use App\Services\Licensing\OfflineWalletLedger;
 use App\Services\Licensing\OfflineWalletPolicy;
+use App\Services\Licensing\SqlOfflineWalletLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -16,6 +17,13 @@ use Illuminate\Support\Facades\DB;
 
 class WalletController extends Controller
 {
+    public function command(Request $request, SqlOfflineWalletLedger $ledger): JsonResponse
+    {
+        $v = $request->validate(['command' => ['required', 'string', 'max:80'], 'units' => ['required', 'integer', 'between:1,10000'], 'transaction_id' => ['sometimes', 'required', 'uuid']]);
+
+        return response()->json(['data' => $ledger->command($request->attributes->get('wallet_device'), strtoupper($v['command']), $v['units'], $v['transaction_id'] ?? null)]);
+    }
+
     public function connect(WalletConnectRequest $request, OfflineWalletLedger $ledger): JsonResponse
     {
         $v = $request->validated();

@@ -9,4 +9,5 @@ Route::prefix('wallet')->middleware([AuthenticateWalletDevice::class, 'throttle:
     Route::get('balance', [WalletController::class, 'balance']);
     Route::post('sync', [WalletController::class, 'sync']);
     Route::get('history', [WalletController::class, 'history']);
+    Route::post('command', [WalletController::class, 'command']);
 });
