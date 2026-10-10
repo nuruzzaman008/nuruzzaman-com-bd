@@ -13,6 +13,9 @@ it('submits mobile payment evidence and waits for approval without granting acce
   render(<PaymentSelection number="ORDER-TEST" />);
   fireEvent.click(await screen.findByRole('button', { name: 'bKash' }));
   expect(screen.getByText('TEST-MERCHANT')).toBeVisible();
+  expect(screen.queryByRole('button', { name: /Choose from Media/ })).not.toBeInTheDocument();
+  expect(screen.getByLabelText(/Payment screenshot/)).toHaveAttribute('type', 'file');
+  expect(request).not.toHaveBeenCalledWith(expect.stringContaining('/media'), expect.anything());
   fireEvent.change(screen.getByLabelText('Sender mobile / account number'), { target: { value: 'TEST-SENDER' } });
   fireEvent.change(screen.getByLabelText('Transaction ID'), { target: { value: 'TEST1234' } });
   fireEvent.change(screen.getByLabelText(/Payment screenshot/), { target: { files: [new File(['proof'], 'receipt.png', { type: 'image/png' })] } });
