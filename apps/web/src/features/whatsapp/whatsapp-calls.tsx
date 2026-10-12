@@ -55,7 +55,8 @@ export function WhatsAppCalls({
     [active, setActive] = useState<number | null>(null),
     [audioState, setAudioState] = useState(''),
     [ringtoneEnabled, setRingtoneEnabled] = useState(false),
-    [expanded, setExpanded] = useState(false);
+    [expanded, setExpanded] = useState(false),
+    [dismissedRequest, setDismissedRequest] = useState(0);
   const key = useRef(''),
     peer = useRef<RTCPeerConnection | null>(null),
     stream = useRef<MediaStream | null>(null),
@@ -65,9 +66,6 @@ export function WhatsAppCalls({
     alive = useRef(true),
     permissionKey = useRef<{ contact: number; key: string } | null>(null),
     ringtoneContext = useRef<AudioContext | null>(null);
-  useEffect(() => {
-    if (openRequest > 0) setExpanded(true);
-  }, [openRequest]);
   const ringingIds = calls
     .filter((call) => call.claimable && !terminal(call))
     .map((call) => call.id)
@@ -358,7 +356,13 @@ export function WhatsAppCalls({
     (permission?.actions?.some((a) => a.action_name === name && a.can_perform_action) ?? false);
   const incoming = calls.filter((c) => c.claimable && !terminal(c));
   const mine = calls.filter((c) => (c.owned || c.mine) && !terminal(c));
-  if (floating && !expanded && !incoming.length && !mine.length) {
+  if (
+    floating &&
+    !expanded &&
+    openRequest <= dismissedRequest &&
+    !incoming.length &&
+    !mine.length
+  ) {
     return (
       <aside className="fixed bottom-4 right-4 z-50">
         <Button variant="secondary" onClick={() => setExpanded(true)}>
@@ -387,7 +391,13 @@ export function WhatsAppCalls({
           Call history
         </Button>
         {floating && !incoming.length && !mine.length && (
-          <Button variant="secondary" onClick={() => setExpanded(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setExpanded(false);
+              setDismissedRequest(openRequest);
+            }}
+          >
             Close popup
           </Button>
         )}
