@@ -154,9 +154,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         <nav aria-label={t.admin.navLabel} className="px-3 pb-6">
           {user.roles.some((role) => ['admin', 'super_admin'].includes(role)) && (
-            <Link href="/dashboard/whatsapp" className="mb-4 block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10">
+            // A new document is required to apply the calling page's microphone policy.
+            <a href="/dashboard/whatsapp" className="mb-4 block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10">
               {locale === 'bn' ? 'WhatsApp মেসেজ ও ইনবক্স' : 'WhatsApp Inbox'}
-            </Link>
+            </a>
           )}
           {user.roles.includes('super_admin') && (
             <div className="mb-4">
