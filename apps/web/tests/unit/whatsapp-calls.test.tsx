@@ -3,7 +3,9 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { WhatsAppCalls } from '@/features/whatsapp/whatsapp-calls';
 import nextConfig from '../../next.config';
 const request = vi.hoisted(() => vi.fn());
+const tones = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn() }));
 vi.mock('@/lib/api/browser', () => ({ api: request }));
+vi.mock('@/features/whatsapp/call-audio', () => ({ startRingtone: tones.start }));
 const contact = {
   id: 1,
   phone: '8801711945113',
@@ -34,6 +36,17 @@ beforeEach(() => {
   request.mockReset();
   stop.mockReset();
   microphone.mockReset();
+  tones.start.mockReset();
+  tones.stop.mockReset();
+  tones.start.mockReturnValue(tones.stop);
+  vi.stubGlobal(
+    'AudioContext',
+    class {
+      state = 'running';
+      resume = vi.fn(async () => undefined);
+      close = vi.fn(async () => undefined);
+    },
+  );
   microphone.mockResolvedValue({ getTracks: () => [track], getAudioTracks: () => [track] });
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
@@ -43,6 +56,34 @@ beforeEach(() => {
   request.mockImplementation(() => Promise.resolve({ data: [] }));
 });
 afterEach(() => vi.unstubAllGlobals());
+it('requires one sound activation, rings an incoming call and stops the ringtone on leaving', async () => {
+  request.mockResolvedValue({
+    data: [
+      {
+        id: 12,
+        phone: contact.phone,
+        name: 'Caller',
+        direction: 'inbound',
+        status: 'ringing',
+        ended_at: null,
+        mine: false,
+        claimable: true,
+      },
+    ],
+  });
+  const view = render(<WhatsAppCalls contact={null} enabled />);
+  await screen.findByRole('button', { name: 'Answer call' });
+  expect(tones.start).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Enable ringtone' }));
+  await waitFor(() => expect(tones.start).toHaveBeenCalled());
+  expect(microphone).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Ringtone on · Turn off' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  view.unmount();
+  expect(tones.stop).toHaveBeenCalled();
+});
 it('allows microphone only on the WhatsApp dashboard while keeping other device access blocked', async () => {
   const rules = await nextConfig.headers?.();
   const microphoneRules = rules?.filter((rule) =>

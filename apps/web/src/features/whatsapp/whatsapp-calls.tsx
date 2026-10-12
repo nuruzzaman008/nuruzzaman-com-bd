@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Phone, PhoneOff, Mic, MicOff } from 'lucide-react';
 import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
+import { startRingtone } from './call-audio';
 
 type Call = {
   id: number;
@@ -48,7 +49,8 @@ export function WhatsAppCalls({
     [history, setHistory] = useState(false),
     [permission, setPermission] = useState<Permission | null>(null),
     [active, setActive] = useState<number | null>(null),
-    [audioState, setAudioState] = useState('');
+    [audioState, setAudioState] = useState(''),
+    [ringtoneEnabled, setRingtoneEnabled] = useState(false);
   const key = useRef(''),
     peer = useRef<RTCPeerConnection | null>(null),
     stream = useRef<MediaStream | null>(null),
@@ -56,7 +58,23 @@ export function WhatsAppCalls({
     activeRef = useRef<number | null>(null),
     sending = useRef(false),
     alive = useRef(true),
-    permissionKey = useRef<{ contact: number; key: string } | null>(null);
+    permissionKey = useRef<{ contact: number; key: string } | null>(null),
+    ringtoneContext = useRef<AudioContext | null>(null);
+  const ringingIds = calls
+    .filter((call) => call.claimable && !terminal(call))
+    .map((call) => call.id)
+    .join(',');
+  useEffect(() => {
+    if (!ringtoneEnabled || !ringingIds || active !== null || busy || !ringtoneContext.current)
+      return;
+    return startRingtone(ringtoneContext.current);
+  }, [ringtoneEnabled, ringingIds, active, busy]);
+  useEffect(
+    () => () => {
+      void ringtoneContext.current?.close();
+    },
+    [],
+  );
   const closeAudio = useCallback(() => {
     peer.current?.close();
     peer.current = null;
@@ -200,6 +218,21 @@ export function WhatsAppCalls({
     };
     return pc;
   }
+  async function enableRingtone() {
+    await run(async () => {
+      if (!window.AudioContext) throw new Error('Ringtone-এর জন্য Chrome/Edge ব্যবহার করুন।');
+      ringtoneContext.current ??= new AudioContext();
+      await ringtoneContext.current.resume();
+      if (ringtoneContext.current.state !== 'running')
+        throw new Error('Browser sound চালু হয়নি। Tab mute বন্ধ করে আবার চেষ্টা করুন।');
+      setRingtoneEnabled(true);
+      if (!ringingIds) {
+        const stop = startRingtone(ringtoneContext.current);
+        setTimeout(stop, 1800);
+      }
+      setNotice('Ringtone চালু হয়েছে। Incoming call এলে সুরেলা chime বাজবে।');
+    });
+  }
   async function localSdp(pc: RTCPeerConnection, description: RTCSessionDescriptionInit) {
     await pc.setLocalDescription(description);
     if (pc.iceGatheringState !== 'complete') {
@@ -335,6 +368,19 @@ export function WhatsAppCalls({
         কল receive করতে এই dashboard খোলা রাখুন। Outgoing call-এর আগে contact-এর WhatsApp permission
         লাগবে। Voice call-এ Meta charge প্রযোজ্য হতে পারে।
       </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="secondary"
+          aria-pressed={ringtoneEnabled}
+          disabled={busy}
+          onClick={() => (ringtoneEnabled ? setRingtoneEnabled(false) : void enableRingtone())}
+        >
+          {ringtoneEnabled ? 'Ringtone on · Turn off' : 'Enable ringtone'}
+        </Button>
+        <span className="text-sm text-muted">
+          প্রথমে Enable ringtone চাপুন। Browser/tab-এর sound চালু রাখুন।
+        </span>
+      </div>
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}

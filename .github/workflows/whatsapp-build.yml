@@ -47,7 +47,7 @@ jobs:
           php artisan key:generate --no-interaction
           php vendor/bin/phpunit tests/Feature/WhatsAppMessagingTest.php tests/Feature/WhatsAppCallingTest.php
       - run: npm ci --no-audit --no-fund
-      - run: npm run test --workspace @nuruzzaman/web -- --run tests/unit/whatsapp.test.tsx tests/unit/whatsapp-calls.test.tsx
+      - run: npm run test --workspace @nuruzzaman/web -- --run tests/unit/whatsapp.test.tsx tests/unit/whatsapp-calls.test.tsx tests/unit/whatsapp-ringtone.test.ts
       - name: Read existing build token
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
