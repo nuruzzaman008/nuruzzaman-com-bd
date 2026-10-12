@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_Bengali } from 'next/font/google';
+import localFont from 'next/font/local';
 
 import { cookies, headers } from 'next/headers';
 
@@ -19,16 +19,16 @@ import './globals.css';
  * Fonts are self-hosted by next/font, so there is no blocking request to a
  * third-party font host and no layout shift while a face loads.
  */
-const bengali = Noto_Sans_Bengali({
-  subsets: ['bengali', 'latin'],
-  weight: ['400', '500', '600', '700'],
+const bengali = localFont({
+  src: './fonts/NotoSansBengali.ttf',
+  weight: '100 900',
   variable: '--font-noto-bengali',
   display: 'swap',
 });
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+const inter = localFont({
+  src: './fonts/Inter.ttf',
+  weight: '100 900',
   variable: '--font-inter',
   display: 'swap',
 });
