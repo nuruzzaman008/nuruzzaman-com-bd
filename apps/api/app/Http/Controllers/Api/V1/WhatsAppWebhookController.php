@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\WhatsApp\WhatsAppCalling;
 use App\Services\WhatsApp\WhatsAppMessaging;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -30,6 +31,7 @@ class WhatsAppWebhookController extends Controller
         $body = json_decode($r->getContent(), true);
         abort_unless(is_array($body) && ($body['object'] ?? '') === 'whatsapp_business_account', 422);
         $wa->ingest($body);
+        app(WhatsAppCalling::class)->ingest($body);
 
         return response()->json(['received' => true]);
     }

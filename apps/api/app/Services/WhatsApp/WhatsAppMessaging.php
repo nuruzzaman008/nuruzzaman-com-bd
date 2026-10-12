@@ -120,6 +120,9 @@ class WhatsAppMessaging
         $payload = ['messaging_product' => 'whatsapp', 'to' => $contact->phone, 'type' => $message->kind];
         if ($message->kind === 'template') {
             $payload['template'] = ['name' => self::TEMPLATE, 'language' => ['code' => 'bn']];
+        } elseif ($message->kind === 'call_permission') {
+            $payload['type'] = 'interactive';
+            $payload['interactive'] = ['type' => 'call_permission_request', 'action' => ['name' => 'call_permission_request'], 'body' => ['text' => $message->body]];
         } elseif ($message->kind === 'text') {
             $payload['text'] = ['body' => $message->body, 'preview_url' => false];
         } else {

@@ -76,5 +76,6 @@ it('parses quoted CSV and never assumes opt-in from a blank consent column', () 
 it('surfaces inbox failures without fabricating contact history', async () => {
   request.mockRejectedValue(new Error('Connection unavailable'));
   render(<WhatsAppInbox superAdmin={false} />);
-  expect(await screen.findByRole('alert')).toHaveTextContent('Connection unavailable');
+  const alerts = await screen.findAllByRole('alert');
+  alerts.forEach((alert) => expect(alert).toHaveTextContent('Connection unavailable'));
 });

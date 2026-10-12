@@ -5,6 +5,7 @@ import { MessageSquare, Send, Paperclip, RefreshCw, CheckCheck } from 'lucide-re
 import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
 import { parseContactsCsv } from './csv';
+import { WhatsAppCalls } from './whatsapp-calls';
 
 const base = '/admin/whatsapp';
 const field = 'w-full rounded-lg border border-line bg-white px-3 py-2 text-navy';
@@ -308,6 +309,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           ))}
         </div>
       )}
+      <WhatsAppCalls contact={thread?.contact ?? null} enabled={overview?.enabled ?? false} />
       <nav className="flex flex-wrap gap-2" aria-label="WhatsApp sections">
         {[
           ['inbox', 'ইনবক্স'],
