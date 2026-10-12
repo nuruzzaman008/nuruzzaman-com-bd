@@ -29,8 +29,25 @@ export function parseContactsCsv(text: string) {
     s
       .replace(/^\uFEFF/, '')
       .trim()
-      .toLowerCase(),
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_')
+      .replace(/_+/g, '_'),
   );
+  const aliases: Record<string, string> = {
+    mobile: 'phone',
+    phone_number: 'phone',
+    mobile_number: 'phone',
+    phone_1_value: 'phone',
+    whatsapp: 'phone',
+    number: 'phone',
+    মোবাইল: 'phone',
+    contact_name: 'name',
+    full_name: 'name',
+    নাম: 'name',
+  };
+  headers.forEach((header, index) => {
+    headers[index] = aliases[header] ?? header;
+  });
   if (!headers.includes('phone')) throw new Error('CSV needs a Phone column.');
   return rows
     .filter((r) => r.some((v) => v.trim()))

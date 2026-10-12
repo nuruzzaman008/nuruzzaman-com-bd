@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\WhatsApp\WhatsAppMessaging;
+use App\Services\WhatsApp\WhatsAppOrderConfirmation;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -31,6 +33,9 @@ class WhatsAppController extends Controller
             'unread' => (int) DB::table('wa_contacts')->sum('unread'),
             'contacts' => DB::table('wa_contacts')->count(),
             'queued' => DB::table('wa_messages')->where('status', 'queued')->count(),
+            'confirmation_template' => WhatsAppOrderConfirmation::TEMPLATE,
+            'confirmation_approved' => (bool) Cache::get('wa-order-template-approved', false),
+            'confirmation_pending' => DB::table('wa_order_confirmations')->where('status', 'pending')->count(),
             'recent_statuses' => DB::table('wa_messages')->select('status', DB::raw('COUNT(*) as total'))->where('direction', 'outbound')->where('occurred_at', '>=', now()->subDay())->groupBy('status')->get(),
         ]]);
     }
@@ -176,7 +181,7 @@ class WhatsAppController extends Controller
     {
         $v = $r->validate([
             'client_key' => ['required', 'uuid'], 'kind' => ['required', Rule::in(['template', 'text', 'image', 'document', 'audio', 'video'])],
-            'test' => ['sometimes', 'boolean'], 'body' => ['required_if:kind,text', 'nullable', 'string', 'max:4096'],
+            'test' => ['sometimes', 'boolean'], 'manual' => ['sometimes', 'boolean'], 'body' => ['required_if:kind,text', 'nullable', 'string', 'max:4096'],
             'media_id' => ['required_if:kind,image,document,audio,video', 'nullable', 'string', 'regex:/^\d+$/'],
             'filename' => ['nullable', 'string', 'max:255'], 'template' => ['sometimes', Rule::in([WhatsAppMessaging::TEMPLATE])],
         ]);

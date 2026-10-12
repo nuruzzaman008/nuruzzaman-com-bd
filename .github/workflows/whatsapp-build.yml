@@ -45,9 +45,9 @@ jobs:
           composer install --no-interaction --prefer-dist --no-scripts
           cp .env.example .env
           php artisan key:generate --no-interaction
-          php vendor/bin/phpunit tests/Feature/WhatsAppMessagingTest.php tests/Feature/WhatsAppCallingTest.php
+          php vendor/bin/phpunit tests/Feature/WhatsAppMessagingTest.php tests/Feature/WhatsAppCallingTest.php tests/Feature/WhatsAppOperationsTest.php tests/Feature/CheckoutTest.php tests/Feature/NotificationEventsTest.php
       - run: npm ci --no-audit --no-fund
-      - run: npm run test --workspace @nuruzzaman/web -- --run tests/unit/whatsapp.test.tsx tests/unit/whatsapp-calls.test.tsx tests/unit/whatsapp-ringtone.test.ts
+      - run: npm run test --workspace @nuruzzaman/web -- --run tests/unit/whatsapp.test.tsx tests/unit/whatsapp-calls.test.tsx tests/unit/whatsapp-ringtone.test.ts tests/unit/whatsapp-runtime.test.tsx
       - name: Read existing build token
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}

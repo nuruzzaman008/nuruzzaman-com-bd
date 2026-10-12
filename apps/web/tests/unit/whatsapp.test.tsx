@@ -37,6 +37,8 @@ it('shows real empty inbox and hides super admin settings from admin', async () 
   render(<WhatsAppInbox superAdmin={false} />);
   expect(await screen.findByText(/এখনো conversation নেই/)).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Connection & settings' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Contacts' }));
+  expect(await screen.findByText(/Import Contacts CSV/)).toBeInTheDocument();
   expect(request.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
 });
 it('keeps saved Meta secrets out of inputs and clears new secrets after save', async () => {
@@ -78,4 +80,8 @@ it('surfaces inbox failures without fabricating contact history', async () => {
   render(<WhatsAppInbox superAdmin={false} />);
   const alerts = await screen.findAllByRole('alert');
   alerts.forEach((alert) => expect(alert).toHaveTextContent('Connection unavailable'));
+});
+it('accepts Google Contacts and mobile headers without inventing consent', () => {
+  expect(parseContactsCsv('Name,Phone 1 - Value\nCustomer,01711945113')[0]).toMatchObject({name: 'Customer', phone: '01711945113', opt_in: false});
+  expect(parseContactsCsv('Full Name,Mobile,Opt In,Consent Source\nCustomer,01711945113,YES,Written permission')[0]).toMatchObject({name: 'Customer', phone: '01711945113', opt_in: true, consent_source: 'Written permission'});
 });

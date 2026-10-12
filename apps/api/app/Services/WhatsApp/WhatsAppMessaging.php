@@ -2,6 +2,10 @@
 
 namespace App\Services\WhatsApp;
 
+use App\Models\User;
+use App\Notifications\NotificationPresenter;
+use App\Notifications\NotificationType;
+use App\Services\Notifications\Notifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +41,7 @@ class WhatsAppMessaging
 
     public function quota(object $settings): int
     {
-        return max(0, min(50, $settings->daily_limit) - DB::table('wa_messages')->where('mode', 'campaign')->where(function ($q) {
+        return max(0, min(50, $settings->daily_limit) - DB::table('wa_messages')->whereIn('mode', ['campaign', 'manual', 'confirmation'])->where(function ($q) {
             $q->whereNull('completed_at')->orWhere('completed_at', '>=', now()->subDay());
         })->count());
     }
@@ -65,7 +69,10 @@ class WhatsAppMessaging
             if ($contact->opt_out || $contact->suppressed) {
                 throw ValidationException::withMessages(['contact' => 'This contact is opted out or suppressed.']);
             }
-            $mode = $data['kind'] === 'template' ? (($data['test'] ?? false) ? 'test' : 'campaign') : 'reply';
+            $mode = $data['kind'] === 'template' ? (($data['test'] ?? false) ? 'test' : (($data['manual'] ?? false) ? 'manual' : 'campaign')) : 'reply';
+            if ($mode === 'manual' && $this->quota($settings) < 1) {
+                throw ValidationException::withMessages(['quota' => 'The 50-contact rolling 24-hour allowance is exhausted.']);
+            }
             if ($mode === 'test' && $contact->phone !== '8801711945113') {
                 throw ValidationException::withMessages(['contact' => 'Test mode sends only to 01711945113.']);
             }
@@ -102,8 +109,12 @@ class WhatsAppMessaging
                 return null;
             }
             $contact = DB::table('wa_contacts')->where('id', $message->contact_id)->lockForUpdate()->firstOrFail();
+            if ($message->mode === 'confirmation' && ! app(WhatsAppOrderConfirmation::class)->approved()) {
+                return null;
+            }
             $windowClosed = $message->mode === 'reply' && (! $contact->last_inbound_at || Carbon::parse($contact->last_inbound_at)->lte(now()->subDay()));
-            if ($contact->opt_out || $contact->suppressed || ($message->kind === 'template' && ! $contact->opt_in) || $windowClosed) {
+            $confirmationInvalid = $message->mode === 'confirmation' && ! app(WhatsAppOrderConfirmation::class)->eligibleMessage($message, $contact);
+            if ($contact->opt_out || $contact->suppressed || ($message->kind === 'template' && $message->mode !== 'confirmation' && ! $contact->opt_in) || $windowClosed || $confirmationInvalid) {
                 DB::table('wa_messages')->where('id', $id)->update(['status' => 'cancelled', 'completed_at' => now(), 'error_details' => 'Consent or reply window changed before dispatch.', 'updated_at' => now()]);
 
                 return null;
@@ -120,6 +131,9 @@ class WhatsAppMessaging
         $payload = ['messaging_product' => 'whatsapp', 'to' => $contact->phone, 'type' => $message->kind];
         if ($message->kind === 'template') {
             $payload['template'] = ['name' => self::TEMPLATE, 'language' => ['code' => 'bn']];
+            if ($message->mode === 'confirmation') {
+                $payload['template'] = ['name' => WhatsAppOrderConfirmation::TEMPLATE, 'language' => ['code' => 'bn'], 'components' => [['type' => 'body', 'parameters' => array_map(fn ($value) => ['type' => 'text', 'text' => (string) $value], json_decode($message->template_params ?? '[]', true) ?: [])]]];
+            }
         } elseif ($message->kind === 'call_permission') {
             $payload['type'] = 'interactive';
             $payload['interactive'] = ['type' => 'call_permission_request', 'action' => ['name' => 'call_permission_request'], 'body' => ['text' => $message->body]];
@@ -248,6 +262,12 @@ class WhatsAppMessaging
                 $update['opt_out'] = true;
             }
             DB::table('wa_contacts')->where('id', $contact->id)->update($update);
+            $admins = User::query()->whereHas('roles', fn ($roles) => $roles->whereIn('name', ['admin', 'super_admin']))->get();
+            app(Notifier::class)->toUsers($admins, NotificationType::WhatsAppMessage, [
+                'wa_contact_id' => $contact->id, 'wa_message_id' => $message['id'],
+                'customer' => $name ?: $contact->phone,
+                'excerpt' => NotificationPresenter::excerpt($text ?: ($kind.' attachment')),
+            ]);
         });
     }
 

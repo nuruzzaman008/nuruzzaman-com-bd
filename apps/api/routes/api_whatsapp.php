@@ -16,7 +16,7 @@ Route::prefix('admin/whatsapp')->middleware(['auth:sanctum', 'active', 'verified
     Route::post('calls/{id}/action', [Calls::class, 'action'])->whereNumber('id')->middleware('throttle:30,1,wa-call-action:');
     Route::get('contacts', [Inbox::class, 'contacts']);
     Route::post('contacts', [Inbox::class, 'saveContact']);
-    Route::post('contacts/import', [Inbox::class, 'import'])->middleware('role:super_admin');
+    Route::post('contacts/import', [Inbox::class, 'import']);
     Route::patch('contacts/{id}', [Inbox::class, 'saveContact'])->whereNumber('id');
     Route::get('contacts/{id}/messages', [Inbox::class, 'messages'])->whereNumber('id');
     Route::post('contacts/{id}/read', [Inbox::class, 'read'])->whereNumber('id');

@@ -31,6 +31,7 @@ const terminal = (call: Call) => !!call.ended_at;
 export function WhatsAppCalls({
   contact,
   enabled,
+  floating = false,
 }: {
   contact: {
     id: number;
@@ -40,6 +41,7 @@ export function WhatsAppCalls({
     suppressed: boolean;
   } | null;
   enabled: boolean;
+  floating?: boolean;
 }) {
   const [calls, setCalls] = useState<Call[]>([]),
     [busy, setBusy] = useState(false),
@@ -50,7 +52,8 @@ export function WhatsAppCalls({
     [permission, setPermission] = useState<Permission | null>(null),
     [active, setActive] = useState<number | null>(null),
     [audioState, setAudioState] = useState(''),
-    [ringtoneEnabled, setRingtoneEnabled] = useState(false);
+    [ringtoneEnabled, setRingtoneEnabled] = useState(false),
+    [expanded, setExpanded] = useState(false);
   const key = useRef(''),
     peer = useRef<RTCPeerConnection | null>(null),
     stream = useRef<MediaStream | null>(null),
@@ -350,9 +353,24 @@ export function WhatsAppCalls({
     (permission?.actions?.some((a) => a.action_name === name && a.can_perform_action) ?? false);
   const incoming = calls.filter((c) => c.claimable && !terminal(c));
   const mine = calls.filter((c) => (c.owned || c.mine) && !terminal(c));
+  if (floating && !expanded && !incoming.length && !mine.length) {
+    return (
+      <aside className="fixed bottom-4 right-4 z-50">
+        <Button variant="secondary" onClick={() => setExpanded(true)}>
+          WhatsApp {ringtoneEnabled ? '· 🔔' : '· Calls'}
+        </Button>
+      </aside>
+    );
+  }
   return (
     <section
-      className="space-y-3 rounded-xl border border-line bg-white p-4"
+      className={
+        'space-y-2 rounded-xl border border-line bg-white p-3 ' +
+        (floating
+          ? 'fixed bottom-4 right-4 z-50 max-h-[80dvh] w-[440px] max-w-[calc(100vw-2rem)] overflow-auto shadow-2xl'
+          : '')
+      }
+      role={floating ? 'dialog' : undefined}
       aria-label="WhatsApp calls"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -363,6 +381,11 @@ export function WhatsAppCalls({
         <Button variant="secondary" onClick={() => setHistory(!history)}>
           Call history
         </Button>
+        {floating && !incoming.length && !mine.length && (
+          <Button variant="secondary" onClick={() => setExpanded(false)}>
+            Close popup
+          </Button>
+        )}
       </div>
       <p className="text-sm text-muted">
         কল receive করতে এই dashboard খোলা রাখুন। Outgoing call-এর আগে contact-এর WhatsApp permission

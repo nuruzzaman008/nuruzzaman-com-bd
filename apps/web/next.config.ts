@@ -199,7 +199,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/dashboard/whatsapp',
+        source: '/dashboard/:path*',
         headers: [
           {
             key: 'Permissions-Policy',

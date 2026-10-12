@@ -6,6 +6,7 @@ import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
 import { parseContactsCsv } from './csv';
 import { WhatsAppCalls } from './whatsapp-calls';
+import { useWhatsAppRuntime } from './whatsapp-runtime';
 
 const base = '/admin/whatsapp';
 const field = 'w-full rounded-lg border border-line bg-white px-3 py-2 text-navy';
@@ -40,6 +41,9 @@ type Message = {
   actor_id: number | null;
 };
 type Overview = {
+  confirmation_template?: string;
+  confirmation_approved?: boolean;
+  confirmation_pending?: number;
   configured: boolean;
   enabled: boolean;
   campaign_enabled: boolean;
@@ -101,6 +105,7 @@ function time(value: string | null) {
 }
 
 export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
+  const runtime = useWhatsAppRuntime();
   const [tab, setTab] = useState('inbox'),
     [overview, setOverview] = useState<Overview | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]),
@@ -125,6 +130,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
   const sendKey = useRef<string | null>(null);
   const [revision, setRevision] = useState(0);
   const refresh = useCallback(() => setRevision((r) => r + 1), []);
+  useEffect(() => {
+    runtime?.setContact(thread?.contact ?? null);
+    return () => runtime?.setContact(null);
+  }, [runtime, thread?.contact]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -139,6 +148,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           }),
         ]);
         if (!live) return;
+        if (selected === null) {
+          const target = Number(new URLSearchParams(window.location.search).get('contact'));
+          if (Number.isSafeInteger(target) && target > 0) setSelected(target);
+        }
         setOverview(o.data);
         setContacts(list.data);
         setLastPage(list.meta.last_page);
@@ -218,7 +231,9 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           body: body || null,
           ...(attachment ?? {}),
           kind,
-          ...(kind === 'template' ? { template: 'nbconsultant_intro_v1', body: null } : {}),
+          ...(kind === 'template'
+            ? { template: 'nbconsultant_intro_v1', body: null, manual: true }
+            : {}),
         },
       });
       if (['uncertain', 'sending'].includes(r.data.status)) {
@@ -278,7 +293,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
     });
   }
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="mx-auto max-w-7xl space-y-3 [&_button]:min-h-8 [&_button]:px-3 [&_input]:py-1.5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
@@ -295,21 +310,23 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
         </Button>
       </header>
       {overview && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {[
             ['Unread replies', overview.unread],
             ['Contacts', overview.contacts],
-            ['Campaign allowance / 24h', overview.remaining],
+            ['Template allowance / 24h', overview.remaining],
             ['Queued messages', overview.queued],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-line bg-white p-4">
+            <div key={label} className="rounded-lg border border-line bg-white px-3 py-2">
               <p className="text-xs text-muted">{label}</p>
               <p className="mt-1 text-2xl font-bold">{value}</p>
             </div>
           ))}
         </div>
       )}
-      <WhatsAppCalls contact={thread?.contact ?? null} enabled={overview?.enabled ?? false} />
+      {!runtime && (
+        <WhatsAppCalls contact={thread?.contact ?? null} enabled={overview?.enabled ?? false} />
+      )}
       <nav className="flex flex-wrap gap-2" aria-label="WhatsApp sections">
         {[
           ['inbox', 'ইনবক্স'],
@@ -466,7 +483,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
         </form>
       )}
       {tab === 'inbox' && (
-        <div className="grid min-h-[560px] overflow-hidden rounded-xl border border-line bg-white lg:grid-cols-[320px_1fr]">
+        <div className="grid min-h-[420px] overflow-hidden rounded-xl border border-line bg-white lg:grid-cols-[260px_1fr]">
           <aside
             className="max-h-[620px] overflow-y-auto border-b border-line lg:border-b-0 lg:border-r"
             aria-label="Conversations"
@@ -527,7 +544,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                   </Button>
                 </div>
                 <div
-                  className="flex max-h-[460px] flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 p-4"
+                  className="flex max-h-[340px] flex-1 flex-col gap-2 overflow-y-auto bg-slate-50 p-3"
                   aria-label="Messages"
                   aria-live="polite"
                 >
@@ -668,7 +685,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                           disabled={busy || !overview?.enabled || !thread.contact.opt_in}
                           onClick={() => send('template', thread.contact.phone === '8801711945113')}
                         >
-                          Send approved template
+                          প্রথম message · Send template
                         </Button>
                       </div>
                       <p className="text-[11px] text-muted">
@@ -783,9 +800,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
             </table>
             {!contacts.length && <p className="p-5 text-muted">No matching contacts.</p>}
           </div>
-          {superAdmin && tab === 'contacts' && (
+          {tab === 'contacts' && (
             <label className="block rounded-xl border border-line bg-white p-4 text-sm">
-              Import Google Sheet CSV (Phone, Name, Opt_In, Opt_In_Source, Opt_Out, Suppressed)
+              Import Contacts CSV (Phone/Mobile, Name, Opt_In, Opt_In_Source, Opt_Out, Suppressed)
+              <span className="mt-1 block text-xs text-muted">Google Contacts-এর Phone 1 - Value-ও গ্রহণ করে। সম্মতি থাকলে Opt_In=YES এবং Opt_In_Source লিখুন; শুধু নাম/নম্বর import করলে sending consent যোগ হবে না।</span>
               <input
                 className="mt-2 block"
                 type="file"
@@ -868,6 +886,11 @@ function Connection({
   return (
     <section className="space-y-4 rounded-xl border border-line bg-white p-5">
       <h2 className="text-xl font-bold">Super admin · WhatsApp connection</h2>
+      <p className="rounded-lg bg-slate-50 p-2 text-sm">
+        Payment confirmation: {settings.confirmation_template ?? 'nb_order_confirmation_v1'} ·{' '}
+        {settings.confirmation_approved ? 'Approved' : 'Awaiting Meta approval'} · Waiting:{' '}
+        {settings.confirmation_pending ?? 0}
+      </p>
       <p className="text-sm text-muted">
         API secrets server-এ encrypted থাকে; admin inbox-এ প্রকাশ হয় না। Blank field saved secret
         রাখে।

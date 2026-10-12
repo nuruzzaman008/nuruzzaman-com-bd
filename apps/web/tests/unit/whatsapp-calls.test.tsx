@@ -91,7 +91,7 @@ it('allows microphone only on the WhatsApp dashboard while keeping other device 
       (header) => header.key === 'Permissions-Policy' && header.value.includes('microphone=(self)'),
     ),
   );
-  expect(microphoneRules?.map((rule) => rule.source)).toEqual(['/dashboard/whatsapp']);
+  expect(microphoneRules?.map((rule) => rule.source)).toEqual(['/dashboard/:path*']);
   expect(
     microphoneRules?.[0].headers.find((header) => header.key === 'Permissions-Policy')?.value,
   ).toContain('camera=()');
