@@ -168,6 +168,10 @@ export function WhatsAppCalls({
       video: false,
     });
     stream.current = media;
+    media.getAudioTracks().forEach((track) => {
+      track.enabled = false;
+    });
+    if (audio.current) audio.current.muted = true;
     const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     peer.current = pc;
     media.getTracks().forEach((t) => pc.addTrack(t, media));
@@ -232,6 +236,10 @@ export function WhatsAppCalls({
         id = response.data.id;
         activeRef.current = id;
         setActive(id);
+        stream.current?.getAudioTracks().forEach((track) => {
+          track.enabled = true;
+        });
+        if (audio.current) audio.current.muted = false;
         setAudioState('কল যাচ্ছে…');
       } catch (e) {
         if (id) await action(id, 'terminate').catch(() => undefined);
@@ -252,6 +260,10 @@ export function WhatsAppCalls({
         const sdp = await localSdp(pc, await pc.createAnswer());
         await action(c.id, 'pre_accept', sdp);
         await action(c.id, 'accept', sdp);
+        stream.current?.getAudioTracks().forEach((track) => {
+          track.enabled = true;
+        });
+        if (audio.current) audio.current.muted = false;
         setAudioState('Audio সংযোগ হচ্ছে…');
       } catch (e) {
         if (activeRef.current === c.id) await action(c.id, 'terminate').catch(() => undefined);
