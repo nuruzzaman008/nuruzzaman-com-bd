@@ -302,10 +302,8 @@
   min-height: 0;
   overflow: auto;
   background-color: #0b141a;
-  background-image:
-    radial-gradient(circle at 4px 4px, #20302e 1px, transparent 1.5px),
-    radial-gradient(circle at 22px 22px, #192a29 1px, transparent 1.5px);
-  background-size: 38px 38px;
+  background-image: url('/whatsapp-chat-pattern.svg');
+  background-size: 220px 220px;
 }
 .inbound,
 .outbound {
