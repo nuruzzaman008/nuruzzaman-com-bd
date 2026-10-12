@@ -32,6 +32,7 @@ export function WhatsAppCalls({
   contact,
   enabled,
   floating = false,
+  openRequest = 0,
 }: {
   contact: {
     id: number;
@@ -42,6 +43,7 @@ export function WhatsAppCalls({
   } | null;
   enabled: boolean;
   floating?: boolean;
+  openRequest?: number;
 }) {
   const [calls, setCalls] = useState<Call[]>([]),
     [busy, setBusy] = useState(false),
@@ -63,6 +65,9 @@ export function WhatsAppCalls({
     alive = useRef(true),
     permissionKey = useRef<{ contact: number; key: string } | null>(null),
     ringtoneContext = useRef<AudioContext | null>(null);
+  useEffect(() => {
+    if (openRequest > 0) setExpanded(true);
+  }, [openRequest]);
   const ringingIds = calls
     .filter((call) => call.claimable && !terminal(call))
     .map((call) => call.id)

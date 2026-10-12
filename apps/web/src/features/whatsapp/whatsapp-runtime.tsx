@@ -8,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api/browser';
 import { WhatsAppCalls } from './whatsapp-calls';
 type Contact = {
@@ -18,13 +17,16 @@ type Contact = {
   opt_out: boolean;
   suppressed: boolean;
 };
-const Context = createContext<{ setContact: (contact: Contact | null) => void } | null>(null);
+const Context = createContext<{
+  setContact: (contact: Contact | null) => void;
+  openCalls: () => void;
+} | null>(null);
 export const useWhatsAppRuntime = () => useContext(Context);
 export function WhatsAppRuntime({ children }: { children: ReactNode }) {
   const [contact, setContact] = useState<Contact | null>(null),
     [enabled, setEnabled] = useState(false);
-  const pathname = usePathname();
-  const value = useMemo(() => ({ setContact }), []);
+  const [openRequest, setOpenRequest] = useState(0);
+  const value = useMemo(() => ({ setContact, openCalls: () => setOpenRequest((n) => n + 1) }), []);
   const lastUnread = useRef<number | null>(null);
   useEffect(() => {
     let disposed = false;
@@ -57,11 +59,7 @@ export function WhatsAppRuntime({ children }: { children: ReactNode }) {
   }, []);
   return (
     <Context.Provider value={value}>
-      <WhatsAppCalls
-        contact={contact}
-        enabled={enabled}
-        floating={pathname !== '/dashboard/whatsapp'}
-      />
+      <WhatsAppCalls contact={contact} enabled={enabled} floating openRequest={openRequest} />
       {children}
     </Context.Provider>
   );

@@ -82,6 +82,55 @@ it('surfaces inbox failures without fabricating contact history', async () => {
   alerts.forEach((alert) => expect(alert).toHaveTextContent('Connection unavailable'));
 });
 it('accepts Google Contacts and mobile headers without inventing consent', () => {
-  expect(parseContactsCsv('Name,Phone 1 - Value\nCustomer,01711945113')[0]).toMatchObject({name: 'Customer', phone: '01711945113', opt_in: false});
-  expect(parseContactsCsv('Full Name,Mobile,Opt In,Consent Source\nCustomer,01711945113,YES,Written permission')[0]).toMatchObject({name: 'Customer', phone: '01711945113', opt_in: true, consent_source: 'Written permission'});
+  expect(parseContactsCsv('Name,Phone 1 - Value\nCustomer,01711945113')[0]).toMatchObject({
+    name: 'Customer',
+    phone: '01711945113',
+    opt_in: false,
+  });
+  expect(
+    parseContactsCsv(
+      'Full Name,Mobile,Opt In,Consent Source\nCustomer,01711945113,YES,Written permission',
+    )[0],
+  ).toMatchObject({
+    name: 'Customer',
+    phone: '01711945113',
+    opt_in: true,
+    consent_source: 'Written permission',
+  });
+});
+it('shows chat filters and contact information while keeping a closed reply window disabled', async () => {
+  const contact = {
+    id: 7,
+    phone: '8801712345678',
+    name: 'Customer',
+    opt_in: true,
+    consent_source: 'Written permission',
+    opt_out: false,
+    suppressed: false,
+    stage: 'open',
+    tags: 'Course',
+    notes: 'Requested details',
+    assigned_to: null,
+    unread: 0,
+    last_inbound_at: null,
+  };
+  request.mockImplementation((path: string) =>
+    Promise.resolve(
+      path.endsWith('/overview')
+        ? { data: { ...overview, enabled: true } }
+        : path.endsWith('/messages')
+          ? { data: [], contact, reply_window_open: false, older_before: null }
+          : { data: [contact], meta: { last_page: 1 } },
+    ),
+  );
+  render(<WhatsAppInbox superAdmin={false} />);
+  expect(await screen.findByRole('textbox', { name: 'Search chats' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Unread' }));
+  expect(screen.getByRole('button', { name: 'Unread' })).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(await screen.findByRole('button', { name: /Customer/ }));
+  expect(await screen.findByRole('textbox', { name: 'Reply message' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'প্রথম message · Send template' })).toBeEnabled();
+  expect(screen.getByText('Written permission')).toBeInTheDocument();
+  expect(screen.getByText('Requested details')).toBeInTheDocument();
+  expect(request.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
 });

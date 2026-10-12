@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { WhatsAppRuntime } from '@/features/whatsapp/whatsapp-runtime';
+import { WhatsAppRuntime, useWhatsAppRuntime } from '@/features/whatsapp/whatsapp-runtime';
 const mocks = vi.hoisted(() => ({
   api: vi.fn(),
   path: '/dashboard/orders',
@@ -87,4 +87,19 @@ it('keeps call controls and sound enabled while moving between admin pages', asy
       .filter(([path]) => path === '/admin/whatsapp/calls')
       .every(([, options]) => options.query.session_key === firstKey),
   ).toBe(true);
+});
+it('opens call controls from the chat header without starting a call', async () => {
+  function HeaderAction() {
+    const runtime = useWhatsAppRuntime();
+    return <button onClick={runtime?.openCalls}>Open voice call controls</button>;
+  }
+  render(
+    <WhatsAppRuntime>
+      <HeaderAction />
+    </WhatsAppRuntime>,
+  );
+  await screen.findByRole('button', { name: 'WhatsApp · Calls' });
+  fireEvent.click(screen.getByRole('button', { name: 'Open voice call controls' }));
+  expect(await screen.findByRole('dialog', { name: 'WhatsApp calls' })).toBeInTheDocument();
+  expect(mocks.api.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
 });

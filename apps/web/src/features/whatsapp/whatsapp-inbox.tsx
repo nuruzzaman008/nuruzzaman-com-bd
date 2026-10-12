@@ -1,7 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { MessageSquare, Send, Paperclip, RefreshCw, CheckCheck } from 'lucide-react';
+import {
+  MessageSquare,
+  Send,
+  Paperclip,
+  RefreshCw,
+  CheckCheck,
+  Search,
+  Plus,
+  Phone,
+  Info,
+  ShieldCheck,
+} from 'lucide-react';
+import styles from './whatsapp-inbox.module.css';
 import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
 import { parseContactsCsv } from './csv';
@@ -24,6 +36,7 @@ type Contact = {
   assigned_to: number | null;
   unread: number;
   last_inbound_at: string | null;
+  last_message_at?: string | null;
 };
 type Message = {
   id: number;
@@ -293,37 +306,90 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
     });
   }
   return (
-    <div className="mx-auto max-w-7xl space-y-3 [&_button]:min-h-8 [&_button]:px-3 [&_input]:py-1.5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+    <div className={styles.workspace}>
+      <header className={styles.topbar}>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
-            NB · CUSTOMER CONVERSATIONS
-          </p>
-          <h1 className="mt-1 flex items-center gap-2 text-3xl font-bold">
+          <h1 className="flex items-center gap-2 text-xl font-bold">
             <MessageSquare className="text-emerald-600" />
             WhatsApp ইনবক্স
           </h1>
-          <p className="mt-2 text-sm text-muted">মেসেজ, replies এবং delivery — এক জায়গায়।</p>
+          <p className="mt-1 text-xs text-muted">NB Consultant · মেসেজ, replies ও কল</p>
         </div>
         <Button variant="secondary" onClick={refresh}>
           <RefreshCw size={16} /> Refresh
         </Button>
       </header>
       {overview && (
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className={styles.metrics} aria-label="WhatsApp overview">
           {[
             ['Unread replies', overview.unread],
             ['Contacts', overview.contacts],
             ['Template allowance / 24h', overview.remaining],
             ['Queued messages', overview.queued],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-lg border border-line bg-white px-3 py-2">
+            <div key={label}>
               <p className="text-xs text-muted">{label}</p>
-              <p className="mt-1 text-2xl font-bold">{value}</p>
+              <p className="font-bold">{value}</p>
             </div>
           ))}
         </div>
       )}
+      <details className={styles.guide}>
+        <summary>
+          <Info size={15} /> দরকারি তথ্য · Sending & account
+        </summary>
+        <div className={styles.infoGrid}>
+          <p>
+            <strong>Business WhatsApp</strong>
+            <span>
+              +8809638038318 · {overview?.enabled ? 'Sending enabled' : 'Sending disabled'}
+            </span>
+          </p>
+          <p>
+            <strong>প্রথম message</strong>
+            <span>সম্মতিপ্রাপ্ত contact-কে nbconsultant_intro_v1 · bn পাঠান।</span>
+          </p>
+          <p>
+            <strong>২৪ ঘণ্টার reply window</strong>
+            <span>Contact-এর সর্বশেষ message-এর পর ২৪ ঘণ্টা text ও attachment reply করা যায়।</span>
+          </p>
+          <p>
+            <strong>Campaign ও limit</strong>
+            <span>
+              সর্বোচ্চ ৫০ template attempt / rolling ২৪ ঘণ্টা। Campaign{' '}
+              {overview?.campaign_enabled ? 'চালু' : 'বন্ধ'}; test number 01711945113 আলাদা।
+            </span>
+          </p>
+          <p>
+            <strong>Payment confirmation</strong>
+            <span>
+              Payment সফল/অনুমোদিত হলে সম্মতি অনুযায়ী একবার পাঠায়। Utility template{' '}
+              {overview?.confirmation_approved ? 'approved' : 'approval যাচাইয়ের অপেক্ষায়'} ·
+              Waiting: {overview?.confirmation_pending ?? 0}।
+            </span>
+          </p>
+          <p>
+            <strong>কল ও notification</strong>
+            <span>
+              যেকোনো admin পেজে call popup পাবেন। Calls খুলে Enable ringtone ও microphone Allow
+              করুন। নতুন message notification bell-এ আসবে।
+            </span>
+          </p>
+          <p>
+            <strong>Delivery status</strong>
+            <span>
+              Meta গ্রহণ করেছে ≠ পৌঁছেছে। Delivered = পৌঁছেছে; Read = পড়েছে। অনিশ্চিত send নিজে থেকে
+              retry হয় না।
+            </span>
+          </p>
+          <p>
+            <strong>Chat history</strong>
+            <span>
+              Webhook connect হওয়ার পরের replies জমা হয়। Meta পুরোনো সব WhatsApp chat ফিরিয়ে দেয় না।
+            </span>
+          </p>
+        </div>
+      </details>
       {!runtime && (
         <WhatsAppCalls contact={thread?.contact ?? null} enabled={overview?.enabled ?? false} />
       )}
@@ -366,7 +432,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           Replies পেতে signed Meta webhook connect করুন।
         </p>
       )}
-      {tab !== 'settings' && (
+      {tab !== 'settings' && tab !== 'inbox' && (
         <div className="flex flex-wrap gap-3">
           <label className="grow text-sm">
             Search
@@ -483,47 +549,103 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
         </form>
       )}
       {tab === 'inbox' && (
-        <div className="grid min-h-[420px] overflow-hidden rounded-xl border border-line bg-white lg:grid-cols-[260px_1fr]">
-          <aside
-            className="max-h-[620px] overflow-y-auto border-b border-line lg:border-b-0 lg:border-r"
-            aria-label="Conversations"
-          >
-            {!contacts.length && (
-              <p className="p-5 text-sm text-muted">
-                এখনো conversation নেই। Contact যোগ করুন বা reply আসার অপেক্ষা করুন।
-              </p>
-            )}
-            {contacts.map((c) => (
-              <button
-                key={c.id}
-                className={
-                  'block w-full border-b border-line p-4 text-left hover:bg-emerald-50 ' +
-                  (selected === c.id ? 'bg-emerald-50' : '')
-                }
-                onClick={() => {
-                  setSelected(c.id);
-                  setThread(null);
-                  setBody('');
-                  setAttachment(null);
-                  sendKey.current = null;
-                }}
-              >
-                <div className="flex justify-between gap-2">
-                  <strong>{c.name || c.phone}</strong>
-                  {c.unread > 0 && (
-                    <span className="rounded-full bg-emerald-600 px-2 text-xs text-white">
-                      {c.unread}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-muted">{c.phone}</p>
-                <p className="mt-1 text-xs text-muted">
-                  {c.stage} {c.tags ? '· ' + c.tags : ''}
+        <div className={styles.chatShell}>
+          <aside className={styles.chatList} aria-label="Conversations">
+            <div className={styles.chatListHeader}>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-xl font-semibold">Chats</h2>
+                <button
+                  type="button"
+                  aria-label="New chat"
+                  title="Add contact"
+                  className={styles.newChat}
+                  onClick={() => setEditor({ ...blank })}
+                >
+                  <Plus size={19} />
+                </button>
+              </div>
+              <label className={styles.search}>
+                <Search size={17} />
+                <input
+                  aria-label="Search chats"
+                  value={search}
+                  placeholder="Search or start a new chat"
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </label>
+              <div className={styles.filters} aria-label="Chat filters">
+                {[
+                  ['all', 'All'],
+                  ['unread', 'Unread'],
+                  ['open', 'Open'],
+                  ['resolved', 'Resolved'],
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={filter === key}
+                    onClick={() => {
+                      setFilter(key);
+                      setPage(1);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={styles.contactRows}>
+              {!contacts.length && (
+                <p className="p-5 text-sm text-muted">
+                  এখনো conversation নেই। Contact যোগ করুন বা reply আসার অপেক্ষা করুন।
                 </p>
-              </button>
-            ))}
+              )}
+              {contacts.map((c) => (
+                <button
+                  key={c.id}
+                  className={styles.contactRow}
+                  aria-pressed={selected === c.id}
+                  onClick={() => {
+                    setSelected(c.id);
+                    setThread(null);
+                    setBody('');
+                    setAttachment(null);
+                    sendKey.current = null;
+                  }}
+                >
+                  <span className={styles.avatar} aria-hidden="true">
+                    {(c.name || c.phone).slice(0, 2).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex justify-between gap-2">
+                      <strong>{c.name || c.phone}</strong>
+                      {c.last_message_at && (
+                        <time className={styles.listTime}>{time(c.last_message_at)}</time>
+                      )}
+                      {c.unread > 0 && (
+                        <span className="rounded-full bg-emerald-600 px-2 text-xs text-white">
+                          {c.unread}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-muted">{c.phone}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {c.opt_out || c.suppressed
+                        ? 'Sending blocked'
+                        : c.opt_in
+                          ? '✓ Consent recorded'
+                          : 'No sending consent'}{' '}
+                      · {c.stage} {c.tags ? '· ' + c.tags : ''}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </aside>
-          <section className="flex min-w-0 flex-col">
+          <section className={styles.conversation}>
             {!thread ? (
               <div className="m-auto p-8 text-center text-muted">
                 <MessageSquare className="mx-auto mb-3" size={38} />
@@ -531,23 +653,65 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
               </div>
             ) : (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line p-4">
-                  <div>
+                <div className={styles.conversationHeader}>
+                  <span className={styles.avatar} aria-hidden="true">
+                    {(thread.contact.name || thread.contact.phone).slice(0, 2).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
                     <h2 className="font-bold">{thread.contact.name || thread.contact.phone}</h2>
                     <p className="text-xs text-muted">
                       {thread.contact.phone} ·{' '}
                       {thread.reply_window_open ? 'Reply window open' : 'Template required'}
                     </p>
                   </div>
+                  {runtime && (
+                    <button
+                      type="button"
+                      className={styles.callButton}
+                      aria-label="Open voice call controls"
+                      title="Voice call & permission"
+                      onClick={runtime.openCalls}
+                    >
+                      <Phone size={20} />
+                    </button>
+                  )}
                   <Button size="sm" variant="secondary" onClick={() => edit(thread.contact)}>
                     Contact details
                   </Button>
                 </div>
-                <div
-                  className="flex max-h-[340px] flex-1 flex-col gap-2 overflow-y-auto bg-slate-50 p-3"
-                  aria-label="Messages"
-                  aria-live="polite"
-                >
+                <details className={styles.contactInfo}>
+                  <summary>
+                    <ShieldCheck size={14} />{' '}
+                    {thread.contact.opt_out || thread.contact.suppressed
+                      ? 'Sending blocked'
+                      : thread.contact.opt_in
+                        ? 'Consent recorded'
+                        : 'No template consent'}{' '}
+                    · {thread.reply_window_open ? 'Reply window open' : 'Template required'} ·
+                    Contact information
+                  </summary>
+                  <div className={styles.infoGrid}>
+                    <p>
+                      <strong>Consent source</strong>
+                      <span>{thread.contact.consent_source || 'সম্মতি এখনো রেকর্ড করা হয়নি'}</span>
+                    </p>
+                    <p>
+                      <strong>Last incoming message</strong>
+                      <span>{time(thread.contact.last_inbound_at)}</span>
+                    </p>
+                    <p>
+                      <strong>Status / tags</strong>
+                      <span>
+                        {thread.contact.stage} · {thread.contact.tags || 'No tags'}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Private notes</strong>
+                      <span>{thread.contact.notes || 'No notes'}</span>
+                    </p>
+                  </div>
+                </details>
+                <div className={styles.messages} aria-label="Messages" aria-live="polite">
                   {thread.older_before && (
                     <Button variant="secondary" size="sm" disabled={busy} onClick={older}>
                       Load older messages
@@ -561,12 +725,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                   {thread.data.map((m) => (
                     <article
                       key={m.id}
-                      className={
-                        'max-w-[90%] rounded-xl p-3 shadow-sm ' +
-                        (m.direction === 'outbound'
-                          ? 'ml-auto bg-emerald-100'
-                          : 'mr-auto border border-line bg-white')
-                      }
+                      className={m.direction === 'outbound' ? styles.outbound : styles.inbound}
                     >
                       <p className="mb-1 text-xs font-semibold text-muted">
                         {m.direction === 'inbound' ? 'Contact' : 'Team'} · {m.kind}
@@ -592,7 +751,12 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                       <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted">
                         <time>{time(m.occurred_at)}</time>
                         <span className="flex items-center gap-1">
-                          {['read', 'delivered'].includes(m.status) && <CheckCheck size={13} />}
+                          {['read', 'delivered'].includes(m.status) && (
+                            <CheckCheck
+                              className={m.status === 'read' ? styles.read : ''}
+                              size={14}
+                            />
+                          )}
                           {statusName[m.status] || m.status}
                         </span>
                       </div>
@@ -604,7 +768,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                     </article>
                   ))}
                 </div>
-                <div className="space-y-3 border-t border-line p-4">
+                <div className={styles.composer}>
                   {thread.contact.opt_out || thread.contact.suppressed ? (
                     <p className="text-sm text-danger">
                       এই contact opted out অথবা suppressed; sending বন্ধ।
@@ -623,10 +787,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                       <textarea
                         id="wa-reply"
                         className={field}
-                        rows={3}
+                        rows={2}
                         value={body}
                         disabled={!thread.reply_window_open || busy}
-                        placeholder="Reply লিখুন…"
+                        placeholder="Type a message · Reply লিখুন…"
                         onChange={(e) => setBody(e.target.value)}
                       />
                       {attachment && (
@@ -803,7 +967,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           {tab === 'contacts' && (
             <label className="block rounded-xl border border-line bg-white p-4 text-sm">
               Import Contacts CSV (Phone/Mobile, Name, Opt_In, Opt_In_Source, Opt_Out, Suppressed)
-              <span className="mt-1 block text-xs text-muted">Google Contacts-এর Phone 1 - Value-ও গ্রহণ করে। সম্মতি থাকলে Opt_In=YES এবং Opt_In_Source লিখুন; শুধু নাম/নম্বর import করলে sending consent যোগ হবে না।</span>
+              <span className="mt-1 block text-xs text-muted">
+                Google Contacts-এর Phone 1 - Value-ও গ্রহণ করে। সম্মতি থাকলে Opt_In=YES এবং
+                Opt_In_Source লিখুন; শুধু নাম/নম্বর import করলে sending consent যোগ হবে না।
+              </span>
               <input
                 className="mt-2 block"
                 type="file"
