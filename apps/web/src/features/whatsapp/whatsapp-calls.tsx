@@ -389,7 +389,7 @@ export function WhatsAppCalls({
           >
             Check call permission
           </Button>
-          {permission && (
+          {permission?.contact_id === contact.id && (
             <span className="text-sm">{permission.permission?.status || 'No permission'}</span>
           )}
           {can('send_call_permission_request') && (

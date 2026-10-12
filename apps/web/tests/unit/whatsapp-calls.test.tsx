@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { WhatsAppCalls } from '@/features/whatsapp/whatsapp-calls';
+import nextConfig from '../../next.config';
 const request = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api/browser', () => ({ api: request }));
 const contact = {
@@ -42,6 +43,23 @@ beforeEach(() => {
   request.mockImplementation(() => Promise.resolve({ data: [] }));
 });
 afterEach(() => vi.unstubAllGlobals());
+it('allows microphone only on the WhatsApp dashboard while keeping other device access blocked', async () => {
+  const rules = await nextConfig.headers?.();
+  const microphoneRules = rules?.filter((rule) =>
+    rule.headers.some(
+      (header) => header.key === 'Permissions-Policy' && header.value.includes('microphone=(self)'),
+    ),
+  );
+  expect(microphoneRules?.map((rule) => rule.source)).toEqual(['/dashboard/whatsapp']);
+  expect(
+    microphoneRules?.[0].headers.find((header) => header.key === 'Permissions-Policy')?.value,
+  ).toContain('camera=()');
+  expect(
+    rules
+      ?.find((rule) => rule.source === '/:path*')
+      ?.headers.find((header) => header.key === 'Permissions-Policy')?.value,
+  ).toContain('microphone=()');
+});
 it('never calls a contact or requests microphone without explicit action and Meta permission', async () => {
   render(<WhatsAppCalls contact={contact} enabled />);
   expect(screen.getByRole('button', { name: 'Call contact' })).toBeDisabled();

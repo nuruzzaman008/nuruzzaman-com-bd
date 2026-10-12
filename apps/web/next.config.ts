@@ -198,6 +198,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/dashboard/whatsapp',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(self), geolocation=(), usb=(), payment=()',
+          },
+        ],
+      },
     ];
   },
 };
