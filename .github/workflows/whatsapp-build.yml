@@ -1,0 +1,77 @@
+name: WhatsApp inbox build
+on:
+  push:
+    branches: [codex/whatsapp-inbox-20261012]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: devroot
+          MYSQL_DATABASE: nuruzzaman_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pdevroot"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    env:
+      NEXT_PUBLIC_SITE_URL: https://nuruzzaman.com.bd
+      NEXT_PUBLIC_API_BASE: /api/v1
+      NEXT_PUBLIC_SESSION_COOKIE: nuruzzaman_session
+      NEXT_PUBLIC_MEDIA_HOST: api.nuruzzaman.com.bd
+      INTERNAL_API_URL: https://api.nuruzzaman.com.bd/api/v1
+      NB_API_PROXY: https://api.nuruzzaman.com.bd
+      NEXT_PUBLIC_GOOGLE_LOGIN: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, dom, fileinfo, gd
+          coverage: none
+          tools: composer:v2
+      - name: Backend feature tests
+        working-directory: apps/api
+        run: |
+          composer install --no-interaction --prefer-dist --no-scripts
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          php vendor/bin/phpunit tests/Feature/WhatsAppMessagingTest.php
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test --workspace @nuruzzaman/web -- --run tests/unit/whatsapp.test.tsx
+      - name: Read existing build token
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          cp infra/cpanel/known_hosts ~/.ssh/known_hosts
+          token=$(ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" -o IdentitiesOnly=yes -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'cat ~/nuruzzaman-web/.build-token 2>/dev/null' | tr -d '[:space:]')
+          if [ -n "$token" ]; then
+            echo "::add-mask::$token"
+            echo "NB_BUILD_TOKEN=$token" >> "$GITHUB_ENV"
+          fi
+      - run: npm run build
+      - name: Package Linux production artifact
+        run: |
+          echo "${{ github.sha }}" > apps/web/.next/nb-commit
+          cd apps/web
+          tar -czf "$RUNNER_TEMP/whatsapp-web.tar.gz" .next/standalone .next/static .next/BUILD_ID .next/routes-manifest.json .next/nb-commit public
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whatsapp-production-build
+          path: ${{ runner.temp }}/whatsapp-web.tar.gz
+          retention-days: 7

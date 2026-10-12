@@ -71,6 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Payment callbacks are signed server-to-server posts, not browser forms.
         $middleware->validateCsrfTokens(except: [
             'api/v1/payments/*/ipn',
+            'api/v1/whatsapp/webhook',
         ]);
 
         // The gateway's signature covers the fields exactly as it sent them.
