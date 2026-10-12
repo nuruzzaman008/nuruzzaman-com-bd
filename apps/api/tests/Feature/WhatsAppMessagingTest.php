@@ -84,8 +84,9 @@ class WhatsAppMessagingTest extends TestCase
         $this->connect();
         $id = $this->contact();
         DB::table('wa_messages')->insert(['contact_id' => $id, 'wa_id' => 'wamid.out', 'direction' => 'outbound', 'kind' => 'template', 'mode' => 'campaign', 'status' => 'accepted', 'occurred_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        $eventTimestamp = now()->timestamp;
         foreach (['read', 'delivered', 'sent', 'read'] as $status) {
-            $this->webhook($this->event([], [['id' => 'wamid.out', 'status' => $status, 'timestamp' => now()->timestamp, 'recipient_id' => '8801812345678']]))->assertOk();
+            $this->webhook($this->event([], [['id' => 'wamid.out', 'status' => $status, 'timestamp' => $eventTimestamp, 'recipient_id' => '8801812345678']]))->assertOk();
         }
         $this->assertDatabaseHas('wa_messages', ['wa_id' => 'wamid.out', 'status' => 'read']);
         $this->assertDatabaseCount('wa_messages', 1);
