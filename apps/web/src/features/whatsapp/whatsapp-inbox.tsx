@@ -7,6 +7,7 @@ import {
   Paperclip,
   RefreshCw,
   CheckCheck,
+  Check,
   Search,
   Plus,
   Phone,
@@ -115,6 +116,17 @@ function time(value: string | null) {
     dateStyle: 'short',
     timeStyle: 'short',
   });
+}
+function messageTime(value: string) {
+  const date = new Date(/(Z|[+-]\d\d:\d\d)$/.test(value) ? value : value.replace(' ', 'T') + 'Z');
+  return date
+    .toLocaleTimeString('en-US', {
+      timeZone: 'Asia/Dhaka',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+    .toLowerCase();
 }
 
 export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
@@ -746,16 +758,16 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                       key={m.id}
                       className={m.direction === 'outbound' ? styles.outbound : styles.inbound}
                     >
-                      <p className="mb-1 text-xs font-semibold text-muted">
-                        {m.direction === 'inbound' ? 'Contact' : 'Team'} · {m.kind}
-                        {m.mode === 'test' ? ' · TEST' : ''}
-                      </p>
-                      {m.template && (
-                        <p className="text-sm font-semibold">Template: {m.template} · bn</p>
-                      )}
-                      {m.body && (
-                        <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p>
-                      )}
+                      <span className={styles.messageText}>
+                        {m.body ||
+                          (m.template
+                            ? 'Template · ' + m.template
+                            : m.media_id
+                              ? ''
+                              : m.kind === 'interactive'
+                                ? 'Interactive response'
+                                : m.kind)}
+                      </span>
                       {m.media_id && (
                         <a
                           className="mt-2 flex items-center gap-1 text-sm font-semibold underline"
@@ -767,18 +779,39 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                           {m.filename || 'Download ' + m.kind}
                         </a>
                       )}
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted">
-                        <time>{time(m.occurred_at)}</time>
-                        <span className="flex items-center gap-1">
+                      <span
+                        className={styles.messageStamp}
+                        title={time(m.occurred_at) + ' · ' + (statusName[m.status] || m.status)}
+                      >
+                        <time dateTime={m.occurred_at}>{messageTime(m.occurred_at)}</time>
+                        <span
+                          className="inline-flex items-center"
+                          aria-label={statusName[m.status] || m.status}
+                        >
                           {['read', 'delivered'].includes(m.status) && (
                             <CheckCheck
                               className={m.status === 'read' ? styles.read : ''}
-                              size={14}
+                              size={12}
                             />
                           )}
-                          {statusName[m.status] || m.status}
+                          {m.direction === 'outbound' &&
+                            ['accepted', 'sent'].includes(m.status) && <Check size={12} />}
+                          {['failed', 'uncertain', 'cancelled'].includes(m.status) && (
+                            <span>!</span>
+                          )}
                         </span>
-                      </div>
+                      </span>
+                      <details className={styles.messageDetails}>
+                        <summary aria-label="Message details" title="Message details">
+                          ···
+                        </summary>
+                        <p>
+                          {m.direction === 'inbound' ? 'Contact' : 'Team'} · {m.kind}
+                          {m.mode === 'test' ? ' · TEST' : ''} · {time(m.occurred_at)} ·{' '}
+                          {statusName[m.status] || m.status}
+                          {m.template ? ' · ' + m.template + ' · bn' : ''}
+                        </p>
+                      </details>
                       {m.error_code && (
                         <p className="mt-2 text-xs text-danger">
                           Error {m.error_code}: {m.error_details}
@@ -806,7 +839,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                       <textarea
                         id="wa-reply"
                         className={field}
-                        rows={2}
+                        rows={1}
                         value={body}
                         disabled={!thread.reply_window_open || busy}
                         placeholder="Type a message · Reply লিখুন…"
@@ -871,9 +904,6 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                           প্রথম message · Send template
                         </Button>
                       </div>
-                      <p className="text-[11px] text-muted">
-                        nbconsultant_intro_v1 · bn · কোনো message parameter নেই
-                      </p>
                     </>
                   )}
                 </div>

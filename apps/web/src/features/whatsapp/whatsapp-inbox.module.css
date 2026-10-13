@@ -155,7 +155,7 @@
 .chatShell {
   display: grid;
   grid-template-columns: 310px minmax(0, 1fr);
-  height: clamp(420px, calc(100dvh - 320px), 800px);
+  height: clamp(610px, calc(100dvh - 220px), 960px);
   border: 1px solid #34424a;
   overflow: hidden;
   border-radius: 12px;
@@ -296,8 +296,8 @@
 .messages {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px clamp(12px, 3vw, 36px);
+  gap: 3px;
+  padding: 10px clamp(12px, 2vw, 24px);
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -308,10 +308,72 @@
 .inbound,
 .outbound {
   max-width: 85%;
-  padding: 10px 12px 7px;
-  border-radius: 10px;
+  width: fit-content;
+  flex-shrink: 0;
+  position: relative;
+  padding: 3px 9px;
+  border-radius: 7px;
+  line-height: 20px;
   box-shadow: 0 1px 2px #0003;
   overflow-wrap: anywhere;
+}
+.inbound::after,
+.outbound::after {
+  content: '';
+  display: table;
+  clear: both;
+}
+.messageText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.messageStamp {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding-top: 3px;
+  font-size: 10px;
+  line-height: 17px;
+  color: #b1c5c1;
+  white-space: nowrap;
+}
+.messageDetails {
+  position: absolute;
+  right: 2px;
+  top: -9px;
+  font-size: 11px;
+  line-height: 17px;
+}
+.messageDetails summary {
+  cursor: pointer;
+  opacity: 0;
+  list-style: none;
+  padding: 0 4px;
+  background: #26353d;
+  border-radius: 4px;
+}
+.inbound:hover .messageDetails summary,
+.outbound:hover .messageDetails summary,
+.messageDetails:focus-within summary {
+  opacity: 1;
+}
+.messageDetails[open] {
+  position: static;
+  clear: both;
+  padding-top: 4px;
+  max-width: 360px;
+  color: #b1c5c1;
+}
+.messageDetails[open] summary {
+  opacity: 1;
+  width: fit-content;
+}
+.messageDetails p {
+  border-top: 1px solid #ffffff20;
+  padding-top: 4px;
 }
 .inbound {
   margin-right: auto;
@@ -331,17 +393,19 @@
 }
 .composer {
   background: #202c33;
-  padding: 12px 16px;
+  padding: 8px 12px;
   flex-shrink: 0;
   border-top: 1px solid #34424a;
 }
 .composer > * + * {
-  margin-top: 8px;
+  margin-top: 5px;
 }
 .composer textarea {
   border-radius: 16px;
   resize: none;
   font-size: 14px;
+  line-height: 20px;
+  padding: 7px 12px;
 }
 @media (min-width: 1400px) {
   .chatShell {

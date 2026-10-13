@@ -171,6 +171,10 @@ it('follows latest messages unless the operator scrolls up to read history', asy
     render(<WhatsAppInbox superAdmin={false} />);
     fireEvent.click(await screen.findByRole('button', { name: /Reader/ }));
     await screen.findByText('First message');
+    const firstBubble = screen.getByText('First message').closest('article');
+    expect(firstBubble?.querySelector('time')).toHaveTextContent('4:00 pm');
+    expect(firstBubble?.querySelector('time')).toHaveAttribute('dateTime', '2026-10-12T10:00:00Z');
+    expect(firstBubble?.querySelector('details')).not.toHaveAttribute('open');
     const pane = screen.getByLabelText('Messages');
     expect(pane.scrollTop + pane.clientHeight).toBeGreaterThanOrEqual(pane.scrollHeight);
     pane.scrollTop = 100;
