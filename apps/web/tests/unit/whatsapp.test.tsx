@@ -201,7 +201,9 @@ it('follows latest messages unless the operator scrolls up to read history', asy
     messages = [...messages, { ...messages[0], id: 3, body: 'Third message' }];
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     await screen.findByText('Third message');
-    expect(pane.scrollTop + pane.clientHeight).toBeGreaterThanOrEqual(pane.scrollHeight);
+    await waitFor(() =>
+      expect(pane.scrollTop + pane.clientHeight).toBeGreaterThanOrEqual(pane.scrollHeight),
+    );
   } finally {
     scrollHeight.mockRestore();
     clientHeight.mockRestore();
