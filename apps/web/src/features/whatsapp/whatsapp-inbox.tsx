@@ -984,7 +984,9 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
         <>
           {tab === 'campaign' && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <h2 className="font-bold">Campaign · সর্বোচ্চ ৫০ / rolling 24 hours</h2>
+              <h2 className="font-bold">
+                Campaign · সর্বোচ্চ {overview?.daily_limit ?? '—'} / rolling 24 hours
+              </h2>
               <p className="mt-1 text-sm">
                 শুধু opt-in, unique, non-suppressed contacts; test phone campaign-এর বাইরে।
                 Queued/unknown sends-ও allowance ব্যবহার করে।
