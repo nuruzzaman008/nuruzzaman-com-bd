@@ -13,6 +13,8 @@ import {
   Phone,
   Info,
   ShieldCheck,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import styles from './whatsapp-inbox.module.css';
 import { api } from '@/lib/api/browser';
@@ -20,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { parseContactsCsv } from './csv';
 import { WhatsAppCalls } from './whatsapp-calls';
 import { useWhatsAppRuntime } from './whatsapp-runtime';
+import { useWhatsAppTheme } from './use-whatsapp-theme';
 
 const base = '/admin/whatsapp';
 const field = 'w-full rounded-lg border border-line bg-white px-3 py-2 text-navy';
@@ -160,6 +163,7 @@ function MessageMedia({ message }: { message: Message }) {
 }
 
 export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
+  const { theme, setTheme } = useWhatsAppTheme();
   const runtime = useWhatsAppRuntime();
   const [tab, setTab] = useState('inbox'),
     [overview, setOverview] = useState<Overview | null>(null);
@@ -356,7 +360,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
     });
   }
   return (
-    <div className={styles.workspace}>
+    <div
+      className={styles.workspace + (theme === 'light' ? ' ' + styles.light : '')}
+      data-theme={theme}
+    >
       <header className={styles.topbar}>
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold">
@@ -365,9 +372,26 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           </h1>
           <p className="mt-1 text-xs text-muted">NB Consultant · মেসেজ, replies ও কল</p>
         </div>
-        <Button variant="secondary" onClick={refresh}>
-          <RefreshCw size={16} /> Refresh
-        </Button>
+        <div className={styles.toolbar}>
+          <button
+            type="button"
+            className={styles.themeSwitch}
+            role="switch"
+            aria-label="Dark theme"
+            aria-checked={theme === 'dark'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            <Sun size={15} />
+            <span className={styles.switchTrack}>
+              <span />
+            </span>
+            <Moon size={15} />
+            <span>{theme === 'light' ? 'Light' : 'Dark'}</span>
+          </button>
+          <Button variant="secondary" onClick={refresh}>
+            <RefreshCw size={16} /> Refresh
+          </Button>
+        </div>
       </header>
       {overview && (
         <div className={styles.metrics} aria-label="WhatsApp overview">

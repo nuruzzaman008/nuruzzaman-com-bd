@@ -1,10 +1,54 @@
 .popup {
+  color-scheme: dark;
   color: #e9f2ef;
   background: linear-gradient(145deg, #14292b, #101c24 65%);
   border: 1px solid #31524b;
   border-radius: 22px;
   padding: 18px;
   box-shadow: 0 20px 70px #0005;
+}
+:global(html[data-whatsapp-theme='light']) .popup {
+  color-scheme: light;
+  color: #1d3730;
+  background: linear-gradient(145deg, #ffffff, #f1f8f4 65%);
+  border-color: #cfdfd6;
+  box-shadow: 0 20px 70px #163c2525;
+}
+:global(html[data-whatsapp-theme='light']) .popup .iconButton {
+  color: #365f4c;
+  background: #eef5f0;
+  border-color: #dce8df;
+}
+:global(html[data-whatsapp-theme='light']) .sound {
+  color: #168352;
+}
+:global(html[data-whatsapp-theme='light']) .sound small,
+:global(html[data-whatsapp-theme='light']) .identity span,
+:global(html[data-whatsapp-theme='light']) .callActions > span,
+:global(html[data-whatsapp-theme='light']) .footer {
+  color: #60786c;
+}
+:global(html[data-whatsapp-theme='light']) .identity small {
+  color: #198553;
+}
+:global(html[data-whatsapp-theme='light']) .contactActions {
+  border-color: #dce8df;
+}
+:global(html[data-whatsapp-theme='light']) .permission,
+:global(html[data-whatsapp-theme='light']) .contactActions > span,
+:global(html[data-whatsapp-theme='light']) .popup table {
+  color: #3b6950;
+}
+:global(html[data-whatsapp-theme='light']) .popup [role='alert'] {
+  color: #a52d3c;
+}
+:global(html[data-whatsapp-theme='light']) .popup [role='status'] {
+  color: #176742;
+}
+:global(html[data-whatsapp-theme='light']) .launcher {
+  background: #ffffff;
+  color: #176742;
+  border-color: #cfe1d7;
 }
 .floating {
   position: fixed;

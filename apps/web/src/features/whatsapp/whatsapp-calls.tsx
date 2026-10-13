@@ -5,6 +5,7 @@ import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
 import { startRingtone } from './call-audio';
 import styles from './whatsapp-calls.module.css';
+import { useWhatsAppTheme } from './use-whatsapp-theme';
 
 type Call = {
   id: number;
@@ -46,6 +47,7 @@ export function WhatsAppCalls({
   floating?: boolean;
   openRequest?: number;
 }) {
+  useWhatsAppTheme();
   const [calls, setCalls] = useState<Call[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),

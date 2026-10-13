@@ -26,12 +26,35 @@ const overview = {
   recent_statuses: [],
 };
 beforeEach(() => {
+  window.localStorage.clear();
   request.mockReset();
   request.mockImplementation((path: string) =>
     Promise.resolve(
       path.endsWith('/overview') ? { data: overview } : { data: [], meta: { last_page: 1 } },
     ),
   );
+});
+it('defaults to light, switches beside Refresh and remembers the chosen theme', async () => {
+  const view = render(<WhatsAppInbox superAdmin={false} />);
+  const toggle = screen.getByRole('switch', { name: 'Dark theme' });
+  expect(toggle).toHaveAttribute('aria-checked', 'false');
+  expect(toggle.closest('[data-theme]')).toHaveAttribute('data-theme', 'light');
+  expect(
+    toggle.compareDocumentPosition(screen.getByRole('button', { name: 'Refresh' })) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute('aria-checked', 'true');
+  expect(window.localStorage.getItem('nb.whatsapp.theme')).toBe('dark');
+  view.unmount();
+  render(<WhatsAppInbox superAdmin={false} />);
+  expect(screen.getByRole('switch', { name: 'Dark theme' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  fireEvent.click(screen.getByRole('switch', { name: 'Dark theme' }));
+  expect(window.localStorage.getItem('nb.whatsapp.theme')).toBe('light');
+  await screen.findByText(/এখনো conversation নেই/);
 });
 it('shows real empty inbox and hides super admin settings from admin', async () => {
   render(<WhatsAppInbox superAdmin={false} />);
