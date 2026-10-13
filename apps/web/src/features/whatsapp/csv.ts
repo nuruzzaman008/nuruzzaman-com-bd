@@ -30,7 +30,7 @@ export function parseContactsCsv(text: string) {
       .replace(/^\uFEFF/, '')
       .trim()
       .toLowerCase()
-      .replace(/[\s-]+/g, '_')
+      .replace(/[\s\u2013\u2014-]+/g, '_')
       .replace(/_+/g, '_'),
   );
   const aliases: Record<string, string> = {
@@ -58,7 +58,9 @@ export function parseContactsCsv(text: string) {
       if (optIn && !source) throw new Error('Opt_In=YES needs Opt_In_Source or consent_source.');
       return {
         phone: value('phone'),
-        name: value('name'),
+        name:
+          value('name') ||
+          [value('first_name'), value('middle_name'), value('last_name')].filter(Boolean).join(' '),
         opt_in: optIn,
         consent_source: source || null,
         opt_out: value('opt_out').toUpperCase() === 'YES',

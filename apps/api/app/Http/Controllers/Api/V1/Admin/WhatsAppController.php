@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class WhatsAppController extends Controller
@@ -134,13 +135,20 @@ class WhatsAppController extends Controller
     public function import(Request $r, WhatsAppMessaging $wa): JsonResponse
     {
         $v = $r->validate(['contacts' => ['required', 'array', 'min:1', 'max:1000'],
-            'contacts.*.phone' => ['required', 'string', 'max:30'], 'contacts.*.name' => ['nullable', 'string', 'max:255'],
+            'contacts.*.phone' => ['nullable', 'string', 'max:30'], 'contacts.*.name' => ['nullable', 'string', 'max:255'],
             'contacts.*.opt_in' => ['required', 'boolean'], 'contacts.*.consent_source' => ['nullable', 'string', 'max:255'],
             'contacts.*.opt_out' => ['required', 'boolean'], 'contacts.*.suppressed' => ['required', 'boolean']]);
-        $count = DB::transaction(function () use ($v, $wa) {
+        $invalidRows = [];
+        $count = DB::transaction(function () use ($v, $wa, &$invalidRows) {
             $count = 0;
-            foreach ($v['contacts'] as $contact) {
-                $contact['phone'] = $wa->phone($contact['phone']);
+            foreach ($v['contacts'] as $index => $contact) {
+                try {
+                    $contact['phone'] = $wa->phone($contact['phone'] ?? '');
+                } catch (ValidationException $e) {
+                    $invalidRows[] = $index + 2;
+
+                    continue;
+                }
                 abort_if($contact['opt_in'] && empty($contact['consent_source']), 422, 'Every opted-in row needs a consent source.');
                 if (DB::table('wa_contacts')->where('phone', $contact['phone'])->exists()) {
                     continue;
@@ -152,7 +160,7 @@ class WhatsAppController extends Controller
             return $count;
         });
 
-        return response()->json(['data' => ['imported' => $count, 'skipped' => count($v['contacts']) - $count]]);
+        return response()->json(['data' => ['imported' => $count, 'skipped' => count($v['contacts']) - $count - count($invalidRows), 'invalid' => count($invalidRows), 'invalid_rows' => $invalidRows]]);
     }
 
     public function messages(Request $r, int $id): JsonResponse

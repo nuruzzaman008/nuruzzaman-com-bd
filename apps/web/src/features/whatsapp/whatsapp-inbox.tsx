@@ -1032,15 +1032,25 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                   void action(async () => {
                     if (f.size > 2000000) throw new Error('CSV must be under 2 MB.');
                     const rows = parseContactsCsv(await f.text());
-                    const r = await api<{ data: { imported: number; skipped: number } }>(
-                      base + '/contacts/import',
-                      { method: 'POST', body: { contacts: rows } },
-                    );
+                    const r = await api<{
+                      data: {
+                        imported: number;
+                        skipped: number;
+                        invalid: number;
+                        invalid_rows: number[];
+                      };
+                    }>(base + '/contacts/import', { method: 'POST', body: { contacts: rows } });
                     setNotice(
                       r.data.imported +
                         ' imported; ' +
                         r.data.skipped +
-                        ' existing contacts preserved.',
+                        ' existing contacts preserved; ' +
+                        r.data.invalid +
+                        ' invalid phone rows skipped' +
+                        (r.data.invalid
+                          ? ' (CSV rows: ' + r.data.invalid_rows.join(', ') + ')'
+                          : '') +
+                        '.',
                     );
                   });
                 }}

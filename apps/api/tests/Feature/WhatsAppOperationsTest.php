@@ -32,6 +32,18 @@ class WhatsAppOperationsTest extends TestCase
         Http::fake(fn ($r) => $r->method() === 'GET' ? Http::response(['data' => [['name' => 'nb_order_confirmation_v1', 'language' => 'bn', 'category' => 'UTILITY', 'status' => $status]]]) : Http::response(['messages' => [['id' => 'wamid.'.Str::uuid()]]]));
     }
 
+    public function test_import_skips_invalid_numbers_preserves_existing_consent_and_sends_nothing(): void
+    {
+        $this->connected();
+        $this->actingAs($this->userWithRole(Role::Admin));
+        $contact = ['phone' => '01312345678', 'name' => 'CSV Customer', 'opt_in' => false, 'opt_out' => false, 'suppressed' => false];
+        $this->postJson('/api/v1/admin/whatsapp/contacts/import', ['contacts' => [$contact, array_replace($contact, ['phone' => '123']), array_replace($contact, ['phone' => '01512345678']), $contact]])
+            ->assertOk()->assertJsonPath('data.imported', 2)->assertJsonPath('data.skipped', 1)->assertJsonPath('data.invalid', 1)->assertJsonPath('data.invalid_rows', [3]);
+        $this->assertDatabaseHas('wa_contacts', ['phone' => '8801312345678', 'opt_in' => false]);
+        $this->assertDatabaseCount('wa_messages', 0);
+        Http::assertNothingSent();
+    }
+
     public function test_admin_can_import_contacts_and_start_a_single_template_without_enabling_bulk_campaign(): void
     {
         $this->connected();
@@ -113,6 +125,6 @@ class WhatsAppOperationsTest extends TestCase
         $this->assertDatabaseHas('wa_order_confirmations', ['order_id' => $order->id, 'status' => 'pending']);
         $failed = Order::factory()->create();
         $failed->statusEvents()->create(['from_status' => 'pending_payment', 'to_status' => 'failed']);
-        $this->assertDatabaseCount('wa_order_confirmations',1);
+        $this->assertDatabaseCount('wa_order_confirmations', 1);
     }
 }

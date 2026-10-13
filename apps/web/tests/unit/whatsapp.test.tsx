@@ -75,6 +75,17 @@ it('parses quoted CSV and never assumes opt-in from a blank consent column', () 
   });
   expect(() => parseContactsCsv('Phone,Opt_In\n01711945113,YES')).toThrow(/source/);
 });
+it('imports Google first names and Unicode phone headers without granting consent', () => {
+  expect(
+    parseContactsCsv(
+      'First name,Last name,Phone 1 – Value\n"Name, quoted",Family,8801312345678',
+    )[0],
+  ).toMatchObject({
+    name: 'Name, quoted Family',
+    phone: '8801312345678',
+    opt_in: false,
+  });
+});
 it('surfaces inbox failures without fabricating contact history', async () => {
   request.mockRejectedValue(new Error('Connection unavailable'));
   render(<WhatsAppInbox superAdmin={false} />);
