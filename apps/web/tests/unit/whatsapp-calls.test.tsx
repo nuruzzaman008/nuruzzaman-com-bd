@@ -199,6 +199,8 @@ it('automatically verifies granted consent and starts an outbound call only afte
     ),
   );
   expect(microphone).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button', { name: 'Hang up' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Call contact' })).not.toBeInTheDocument();
 });
 it('incoming answer uses the browser-generated SDP answer and stops microphone on claim conflict', async () => {
   const call = {

@@ -544,7 +544,15 @@ export function WhatsAppCalls({
         className={active ? 'w-full max-w-sm' : 'hidden'}
         aria-label="Call audio"
       />
-      {contact && (
+      {active !== null && !mine.length && (
+        <div className={styles.callActions}>
+          <span>{audioState || 'Audio সংযোগ হচ্ছে…'}</span>
+          <Button className={styles.decline} disabled={busy} onClick={() => void end(active)}>
+            <PhoneOff size={16} /> Hang up
+          </Button>
+        </div>
+      )}
+      {contact && !incoming.length && !mine.length && active === null && (
         <div className={styles.contactActions}>
           <p className={styles.permission}>
             <ShieldCheck size={14} /> Permission স্বয়ংক্রিয়ভাবে যাচাই হচ্ছে
