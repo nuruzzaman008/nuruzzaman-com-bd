@@ -21,6 +21,18 @@ class WhatsAppController extends Controller
     public function overview(WhatsAppMessaging $wa): JsonResponse
     {
         $s = $wa->settings();
+        $contacts = DB::table('wa_contacts')->count();
+        $confirmed = DB::table('wa_contacts')->whereExists(function ($query) {
+            $query->selectRaw('1')->from('wa_messages')
+                ->whereColumn('wa_messages.contact_id', 'wa_contacts.id')
+                ->whereNotNull('wa_id')
+                ->where(function ($evidence) {
+                    $evidence->where('direction', 'inbound')
+                        ->orWhere(function ($outbound) {
+                            $outbound->where('direction', 'outbound')->whereIn('status', ['delivered', 'read']);
+                        });
+                });
+        })->count();
 
         return response()->json(['data' => [
             'enabled' => (bool) $s->enabled, 'configured' => (bool) $s->access_token,
@@ -32,7 +44,9 @@ class WhatsAppController extends Controller
             'webhook_url' => rtrim(config('app.url'), '/').'/api/v1/whatsapp/webhook',
             'secret_configured' => (bool) $s->app_secret, 'verify_configured' => (bool) $s->verify_token,
             'unread' => (int) DB::table('wa_contacts')->sum('unread'),
-            'contacts' => DB::table('wa_contacts')->count(),
+            'contacts' => $contacts,
+            'whatsapp_confirmed' => $confirmed,
+            'whatsapp_unverified' => $contacts - $confirmed,
             'queued' => DB::table('wa_messages')->where('status', 'queued')->count(),
             'confirmation_template' => WhatsAppOrderConfirmation::TEMPLATE,
             'confirmation_approved' => (bool) Cache::get('wa-order-template-approved', false),

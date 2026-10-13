@@ -32,6 +32,25 @@ class WhatsAppOperationsTest extends TestCase
         Http::fake(fn ($r) => $r->method() === 'GET' ? Http::response(['data' => [['name' => 'nb_order_confirmation_v1', 'language' => 'bn', 'category' => 'UTILITY', 'status' => $status]]]) : Http::response(['messages' => [['id' => 'wamid.'.Str::uuid()]]]));
     }
 
+    public function test_overview_counts_unique_evidenced_contacts_without_sending_or_granting_consent(): void
+    {
+        $this->connected();
+        $this->actingAs($this->userWithRole(Role::Admin));
+        foreach (['inbound', 'delivered', 'read', 'sent', 'failed', 'none'] as $index => $status) {
+            $contact = DB::table('wa_contacts')->insertGetId(['phone' => '880171234560'.$index]);
+            if ($status !== 'none') {
+                DB::table('wa_messages')->insert(['contact_id' => $contact, 'wa_id' => 'wamid.metric.'.$index, 'direction' => $status === 'inbound' ? 'inbound' : 'outbound', 'kind' => 'text', 'status' => $status === 'inbound' ? 'received' : $status, 'occurred_at' => now()]);
+            }
+            if ($status === 'delivered') {
+                DB::table('wa_messages')->insert(['contact_id' => $contact, 'wa_id' => 'wamid.metric.duplicate', 'direction' => 'outbound', 'kind' => 'text', 'status' => 'read', 'occurred_at' => now()]);
+            }
+        }
+        $this->getJson('/api/v1/admin/whatsapp/overview')->assertOk()
+            ->assertJsonPath('data.contacts', 6)->assertJsonPath('data.whatsapp_confirmed', 3)->assertJsonPath('data.whatsapp_unverified', 3);
+        $this->assertSame(0, DB::table('wa_contacts')->where('opt_in', true)->count());
+        Http::assertNothingSent();
+    }
+
     public function test_import_skips_invalid_numbers_preserves_existing_consent_and_sends_nothing(): void
     {
         $this->connected();

@@ -22,6 +22,8 @@ const overview = {
   verify_configured: false,
   unread: 0,
   contacts: 0,
+  whatsapp_confirmed: 0,
+  whatsapp_unverified: 0,
   queued: 0,
   recent_statuses: [],
 };
@@ -33,6 +35,14 @@ beforeEach(() => {
       path.endsWith('/overview') ? { data: overview } : { data: [], meta: { last_page: 1 } },
     ),
   );
+});
+it('places evidenced WhatsApp count immediately after Contacts and explains unknown numbers', async () => {
+  render(<WhatsAppInbox superAdmin={false} />);
+  const metric = await screen.findByText('WhatsApp confirmed');
+  const contacts = screen.getByLabelText('WhatsApp overview').querySelectorAll('div');
+  expect(contacts[1]).toHaveTextContent('Contacts');
+  expect(contacts[2]).toContainElement(metric);
+  expect(screen.getByText(/যাচাই হয়নি মানে WhatsApp নেই নয়/)).toBeInTheDocument();
 });
 it('defaults to light, switches beside Refresh and remembers the chosen theme', async () => {
   const view = render(<WhatsAppInbox superAdmin={false} />);

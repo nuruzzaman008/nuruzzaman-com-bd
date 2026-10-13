@@ -79,6 +79,8 @@ type Overview = {
   verify_configured: boolean;
   unread: number;
   contacts: number;
+  whatsapp_confirmed?: number;
+  whatsapp_unverified?: number;
   queued: number;
   recent_statuses: { status: string; total: number }[];
 };
@@ -398,15 +400,29 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
           {[
             ['Unread replies', overview.unread],
             ['Contacts', overview.contacts],
+            ['WhatsApp confirmed', overview.whatsapp_confirmed ?? '—'],
             ['Template allowance / 24h', overview.remaining],
             ['Queued messages', overview.queued],
           ].map(([label, value]) => (
-            <div key={label}>
+            <div
+              key={label}
+              title={
+                label === 'WhatsApp confirmed'
+                  ? `Received messages or delivered/read messages confirm these contacts. Unverified: ${overview.whatsapp_unverified ?? '—'}. Unverified does not mean no WhatsApp.`
+                  : undefined
+              }
+            >
               <p className="text-xs text-muted">{label}</p>
               <p className="font-bold">{value}</p>
             </div>
           ))}
         </div>
+      )}
+      {overview && (
+        <p className="text-xs text-muted">
+          WhatsApp যাচাই হয়নি: {overview.whatsapp_unverified ?? '—'} · শুধু message পাওয়া বা
+          delivered/read হওয়া নম্বর নিশ্চিত হিসেবে গণনা হয়। যাচাই হয়নি মানে WhatsApp নেই নয়।
+        </p>
       )}
       <details className={styles.guide}>
         <summary>
