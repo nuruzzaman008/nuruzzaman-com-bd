@@ -14,6 +14,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
+  MessageCircle,
   MessageCircleQuestionMark,
   MessageSquare,
   MessagesSquare,
@@ -27,6 +28,7 @@ import {
   TicketPercent,
   TrendingUp,
   Users,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -36,6 +38,8 @@ import { useSidebarCollapsed } from './admin-sidebar';
 
 /** One icon per menu entry, keyed like the dictionary's admin.nav labels. */
 const ICONS: Record<string, LucideIcon> = {
+  whatsapp: MessageCircle,
+  wallets: Wallet,
   growthHub: TrendingUp,
   dashboard: LayoutDashboard,
   notifications: Bell,
