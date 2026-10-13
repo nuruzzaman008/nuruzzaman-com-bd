@@ -12,7 +12,7 @@
   right: 18px;
   z-index: 60;
   width: 380px;
-  max-width: calc(100vw - 24px);
+  max-width: calc(100% - 36px);
   max-height: 85dvh;
   overflow: auto;
 }
