@@ -8,9 +8,11 @@ use App\Notifications\NotificationPresenter;
 use App\Notifications\NotificationType;
 use App\Services\Notifications\AvatarUrls;
 use App\Services\Notifications\ConversationService;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -21,7 +23,7 @@ use Illuminate\Validation\Rule;
  * and under /me/notifications for customers. Each side refuses the other, so
  * a staff session can never read its alerts past the second step.
  *
- * Every lookup goes through $user->notifications(): an id that belongs to
+ * Every lookup goes through $this->visibleNotifications($user): an id that belongs to
  * someone else is simply not found.
  */
 class NotificationController extends Controller
@@ -42,7 +44,7 @@ class NotificationController extends Controller
         ]);
         $locale = $validated['locale'] ?? $user->locale;
 
-        $page = $user->notifications()
+        $page = $this->visibleNotifications($user)
             ->when(($validated['filter'] ?? 'all') === 'unread', fn ($query) => $query->whereNull('read_at'))
             ->when($validated['category'] ?? null, fn ($query, $category) => $query
                 ->whereIn('type', NotificationType::valuesInCategory($category)))
@@ -55,7 +57,7 @@ class NotificationController extends Controller
                 'last_page' => $page->lastPage(),
                 'per_page' => $page->perPage(),
                 'total' => $page->total(),
-                'unread' => $user->unreadNotifications()->count(),
+                'unread' => $this->visibleNotifications($user)->whereNull('read_at')->count(),
             ],
         ]);
     }
@@ -66,7 +68,7 @@ class NotificationController extends Controller
         $user = $this->owner($request);
         $validated = $request->validate(['locale' => ['sometimes', Rule::in(['bn', 'en'])]]);
 
-        $meta = ['unread' => $user->unreadNotifications()->count()];
+        $meta = ['unread' => $this->visibleNotifications($user)->whereNull('read_at')->count()];
 
         // Staff also get what is waiting on them - the "still to do" row and
         // the number of conversations waiting for a reply - so the one bell
@@ -79,7 +81,7 @@ class NotificationController extends Controller
         return response()
             ->json([
                 'data' => $this->present(
-                    $user->notifications()->limit(self::FEED_SIZE)->get(),
+                    $this->visibleNotifications($user)->limit(self::FEED_SIZE)->get(),
                     $validated['locale'] ?? $user->locale,
                     $user,
                 ),
@@ -124,9 +126,18 @@ class NotificationController extends Controller
         return $this->unread($request);
     }
 
+    private function visibleNotifications(User $user): MorphMany
+    {
+        return $user->notifications()->where(function ($query) {
+            $query->where('type', '!=', NotificationType::WhatsAppMessage->value)
+                ->orWhereNull('data->wa_message_id')
+                ->orWhereNotIn('data->wa_message_id', DB::table('wa_messages')->where('kind', 'reaction')->whereNotNull('wa_id')->select('wa_id'));
+        });
+    }
+
     private function unread(Request $request): JsonResponse
     {
-        return response()->json(['meta' => ['unread' => $this->owner($request)->unreadNotifications()->count()]]);
+        return response()->json(['meta' => ['unread' => $this->visibleNotifications($this->owner($request))->whereNull('read_at')->count()]]);
     }
 
     private function find(Request $request, string $id): DatabaseNotification

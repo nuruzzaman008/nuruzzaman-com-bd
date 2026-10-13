@@ -53,6 +53,7 @@ type Message = {
   error_details: string | null;
   occurred_at: string;
   actor_id: number | null;
+  reactions?: string[];
 };
 type Overview = {
   confirmation_template?: string;
@@ -127,6 +128,35 @@ function messageTime(value: string) {
       hour12: true,
     })
     .toLowerCase();
+}
+
+function MessageMedia({ message }: { message: Message }) {
+  const [failed, setFailed] = useState(false);
+  const href = '/api/v1' + base + '/messages/' + message.id + '/media';
+  return (
+    <div className={styles.media}>
+      {message.kind === 'image' && !failed && (
+        // The private session cookie must travel with this request; Next image optimization cannot forward it.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={href}
+          alt={message.filename || 'WhatsApp image'}
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      )}
+      {failed && <p className="text-xs">Image preview unavailable. Open image to retry.</p>}
+      <a
+        className="flex items-center gap-1 text-sm font-semibold underline"
+        href={href}
+        target="_blank"
+        rel="noopener"
+      >
+        <Paperclip size={14} />
+        {message.kind === 'image' ? 'Open image' : message.filename || 'Download ' + message.kind}
+      </a>
+    </div>
+  );
 }
 
 export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
@@ -756,7 +786,10 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                   {thread.data.map((m) => (
                     <article
                       key={m.id}
-                      className={m.direction === 'outbound' ? styles.outbound : styles.inbound}
+                      className={
+                        (m.direction === 'outbound' ? styles.outbound : styles.inbound) +
+                        (m.reactions?.length ? ' ' + styles.reacted : '')
+                      }
                     >
                       <span className={styles.messageText}>
                         {m.body ||
@@ -768,17 +801,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                                 ? 'Interactive response'
                                 : m.kind)}
                       </span>
-                      {m.media_id && (
-                        <a
-                          className="mt-2 flex items-center gap-1 text-sm font-semibold underline"
-                          href={'/api/v1' + base + '/messages/' + m.id + '/media'}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <Paperclip size={14} />
-                          {m.filename || 'Download ' + m.kind}
-                        </a>
-                      )}
+                      {m.media_id && <MessageMedia message={m} />}
                       <span
                         className={styles.messageStamp}
                         title={time(m.occurred_at) + ' · ' + (statusName[m.status] || m.status)}
@@ -816,6 +839,11 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                         <p className="mt-2 text-xs text-danger">
                           Error {m.error_code}: {m.error_details}
                         </p>
+                      )}
+                      {!!m.reactions?.length && (
+                        <span className={styles.reactions} aria-label="Message reactions">
+                          {m.reactions.join(' ')}
+                        </span>
                       )}
                     </article>
                   ))}

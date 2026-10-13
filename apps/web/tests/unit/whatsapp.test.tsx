@@ -209,3 +209,47 @@ it('follows latest messages unless the operator scrolls up to read history', asy
     clientHeight.mockRestore();
   }
 });
+it('shows reactions on their message and previews private images without stripping the referrer', async () => {
+  const contact = {
+    id: 7,
+    name: 'Media customer',
+    phone: '8801712345678',
+    unread: 0,
+    stage: 'open',
+  };
+  request.mockImplementation((path: string) =>
+    Promise.resolve(
+      path.endsWith('/overview')
+        ? { data: overview }
+        : path.endsWith('/messages')
+          ? {
+              data: [
+                {
+                  id: 20,
+                  kind: 'image',
+                  body: null,
+                  media_id: '123',
+                  direction: 'inbound',
+                  status: 'received',
+                  occurred_at: '2026-10-13T07:00:00Z',
+                  reactions: ['❤️'],
+                },
+              ],
+              contact,
+              reply_window_open: true,
+              older_before: null,
+            }
+          : { data: [contact], meta: { last_page: 1 } },
+    ),
+  );
+  render(<WhatsAppInbox superAdmin={false} />);
+  fireEvent.click(await screen.findByRole('button', { name: /Media customer/ }));
+  const image = await screen.findByRole('img', { name: 'WhatsApp image' });
+  expect(image).toHaveAttribute('src', '/api/v1/admin/whatsapp/messages/20/media');
+  expect(screen.getByLabelText('Message reactions')).toHaveTextContent('❤️');
+  const link = screen.getByRole('link', { name: 'Open image' });
+  expect(link).toHaveAttribute('rel', 'noopener');
+  fireEvent.error(image);
+  expect(screen.getByText(/Image preview unavailable/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open image' })).toBeInTheDocument();
+});

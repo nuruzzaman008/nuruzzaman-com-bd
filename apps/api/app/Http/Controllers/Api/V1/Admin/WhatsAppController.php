@@ -167,7 +167,16 @@ class WhatsAppController extends Controller
     {
         $r->validate(['before' => ['nullable', 'integer', 'min:1']]);
         $contact = DB::table('wa_contacts')->where('id', $id)->firstOrFail();
-        $messages = DB::table('wa_messages')->where('contact_id', $id)->when($r->integer('before'), fn ($q, $before) => $q->where('id', '<', $before))->orderByDesc('id')->limit(100)->get()->reverse()->values();
+        $messages = DB::table('wa_messages')->where('contact_id', $id)->where('kind', '!=', 'reaction')->when($r->integer('before'), fn ($q, $before) => $q->where('id', '<', $before))->orderByDesc('id')->limit(100)->get()->reverse()->values();
+        $targets = $messages->keyBy('wa_id');
+        foreach (DB::table('wa_messages')->where('contact_id', $id)->where('kind', 'reaction')->orderBy('occurred_at')->orderBy('id')->get() as $reaction) {
+            $details = json_decode($reaction->body ?? '', true);
+            $targetId = $details['message_id'] ?? null;
+            $target = is_string($targetId) && $targetId !== '' ? $targets->get($targetId) : null;
+            if ($target && is_string($details['emoji'] ?? null)) {
+                $target->reactions = $details['emoji'] === '' ? [] : [$details['emoji']];
+            }
+        }
 
         return response()->json(['data' => $messages, 'contact' => $contact, 'reply_window_open' => $contact->last_inbound_at && Carbon::parse($contact->last_inbound_at)->gt(now()->subDay()), 'older_before' => $messages->count() === 100 ? $messages->first()->id : null]);
     }
@@ -178,7 +187,7 @@ class WhatsAppController extends Controller
         DB::transaction(function () use ($id, $v) {
             DB::table('wa_contacts')->where('id', $id)->lockForUpdate()->firstOrFail();
             abort_unless(DB::table('wa_messages')->where('contact_id', $id)->where('id', $v['through'])->exists(), 422);
-            $remaining = DB::table('wa_messages')->where('contact_id', $id)->where('direction', 'inbound')->where('id', '>', $v['through'])->count();
+            $remaining = DB::table('wa_messages')->where('contact_id', $id)->where('direction', 'inbound')->where('kind', '!=', 'reaction')->where('id', '>', $v['through'])->count();
             DB::table('wa_contacts')->where('id', $id)->update(['unread' => $remaining]);
         });
 
@@ -243,7 +252,9 @@ class WhatsAppController extends Controller
         $file = Http::withToken($token)->withoutRedirecting()->timeout(25)->get($url);
         abort_unless($file->successful() && strlen($file->body()) <= 20000000, 422, 'Media download failed.');
         $name = preg_replace('/[^A-Za-z0-9._-]/', '_', $message->filename ?: 'attachment');
+        $mime = strtolower(explode(';', $file->header('Content-Type') ?: (string) $meta->json('mime_type', ''))[0]);
+        $inline = $message->kind === 'image' && in_array($mime, ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
-        return response($file->body(), 200, ['Content-Type' => 'application/octet-stream', 'Content-Disposition' => 'attachment; filename="'.$name.'"', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store']);
+        return response($file->body(), 200, ['Content-Type' => $inline ? $mime : 'application/octet-stream', 'Content-Disposition' => ($inline ? 'inline' : 'attachment').'; filename="'.$name.'"', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store']);
     }
 }

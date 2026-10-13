@@ -391,6 +391,32 @@
 .read {
   color: #53bdeb;
 }
+.reacted {
+  margin-bottom: 14px;
+}
+.reactions {
+  position: absolute;
+  bottom: -13px;
+  right: 6px;
+  padding: 0 6px;
+  border: 2px solid #0b141a;
+  border-radius: 20px;
+  background: #202c33;
+  font-size: 16px;
+  line-height: 22px;
+}
+.media {
+  padding: 4px 0;
+  max-width: 320px;
+}
+.media img {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 6px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
 .composer {
   background: #202c33;
   padding: 8px 12px;

@@ -251,6 +251,9 @@ class WhatsAppMessaging
             DB::table('wa_messages')->insert(['contact_id' => $contact->id, 'wa_id' => $message['id'], 'direction' => 'inbound', 'kind' => $kind,
                 'body' => $text, 'media_id' => $details['id'] ?? null, 'filename' => $details['filename'] ?? null, 'mime' => $details['mime_type'] ?? null,
                 'status' => 'received', 'mode' => 'reply', 'occurred_at' => $occurred, 'created_at' => now(), 'updated_at' => now()]);
+            if ($kind === 'reaction') {
+                return;
+            }
             $update = ['unread' => $contact->unread + 1, 'updated_at' => now()];
             if (! $contact->last_inbound_at || $occurred->gt(Carbon::parse($contact->last_inbound_at))) {
                 $update['last_inbound_at'] = $occurred;

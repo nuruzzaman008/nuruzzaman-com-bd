@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Notifications\NotificationType;
+use App\Services\Notifications\Notifier;
 use App\Services\WhatsApp\WhatsAppMessaging;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -219,5 +222,46 @@ class WhatsAppMessagingTest extends TestCase
         $id = DB::table('wa_messages')->insertGetId(['contact_id' => $contact, 'direction' => 'inbound', 'kind' => 'image', 'media_id' => '123456', 'status' => 'received', 'occurred_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
         $this->getJson($this->base.'/messages/'.$id.'/media')->assertUnprocessable();
         Http::assertSentCount(1);
+    }
+
+    public function test_reactions_replace_and_remove_emoji_without_alerts_unread_or_reply_window_changes(): void
+    {
+        $this->connect();
+        $admin = $this->userWithRole(Role::Admin);
+        $this->actingAs($admin);
+        $contact = $this->contact(['last_inbound_at' => now()->subDays(2), 'unread' => 0]);
+        DB::table('wa_messages')->insert(['contact_id' => $contact, 'wa_id' => 'wamid.original', 'direction' => 'outbound', 'kind' => 'text', 'body' => 'Original', 'status' => 'sent', 'occurred_at' => now()->subDay(), 'created_at' => now(), 'updated_at' => now()]);
+        $send = function (string $id, string $emoji, int $timestamp) {
+            $event = $this->event([['id' => $id, 'from' => '8801812345678', 'type' => 'reaction', 'timestamp' => $timestamp, 'reaction' => ['message_id' => 'wamid.original', 'emoji' => $emoji]]]);
+            app(WhatsAppMessaging::class)->ingest($event);
+            app(WhatsAppMessaging::class)->ingest($event);
+        };
+        $send('wamid.react1', '❤️', now()->timestamp);
+        $this->getJson($this->base.'/contacts/'.$contact.'/messages')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.reactions', ['❤️'])->assertJsonPath('reply_window_open', false);
+        $this->assertDatabaseHas('wa_contacts', ['id' => $contact, 'unread' => 0]);
+        $this->assertSame(0, $admin->notifications()->count());
+        app(Notifier::class)->toUsers(collect([$admin]), NotificationType::WhatsAppMessage, ['wa_contact_id' => $contact, 'wa_message_id' => 'wamid.react1', 'customer' => 'Contact', 'excerpt' => 'Legacy reaction']);
+        $this->getJson('/api/v1/admin/notifications/feed')->assertOk()->assertJsonCount(0, 'data')->assertJsonPath('meta.unread', 0);
+        $this->getJson('/api/v1/admin/notifications')->assertOk()->assertJsonPath('meta.total', 0)->assertJsonPath('meta.unread', 0);
+        $send('wamid.react2', '👍', now()->addSecond()->timestamp);
+        $send('wamid.stale', '😢', now()->subMinute()->timestamp);
+        $this->getJson($this->base.'/contacts/'.$contact.'/messages')->assertJsonPath('data.0.reactions', ['👍']);
+        $send('wamid.remove', '', now()->addSeconds(2)->timestamp);
+        $this->getJson($this->base.'/contacts/'.$contact.'/messages')->assertJsonPath('data.0.reactions', []);
+        $this->assertDatabaseCount('wa_messages', 5);
+    }
+
+    public function test_media_requires_authentication_and_serves_only_raster_images_inline(): void
+    {
+        $this->connect();
+        $contact = $this->contact();
+        $id = DB::table('wa_messages')->insertGetId(['contact_id' => $contact, 'direction' => 'inbound', 'kind' => 'image', 'media_id' => '123456', 'status' => 'received', 'occurred_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        $this->getJson($this->base.'/messages/'.$id.'/media')->assertUnauthorized();
+        $this->actingAs($this->userWithRole(Role::Admin));
+        Http::fake(['graph.facebook.com/*' => Http::response(['url' => 'https://lookaside.fbsbx.com/file', 'file_size' => 100, 'mime_type' => 'image/png']), 'lookaside.fbsbx.com/*' => Http::response('image-bytes', 200, ['Content-Type' => 'image/png'])]);
+        $this->getJson($this->base.'/messages/'.$id.'/media')->assertOk()->assertHeader('Content-Type', 'image/png')->assertHeader('Content-Disposition', 'inline; filename="attachment"')->assertHeader('Cache-Control', 'no-store, private');
+        Http::swap(new Factory);
+        Http::fake(['graph.facebook.com/*' => Http::response(['url' => 'https://lookaside.fbsbx.com/file', 'file_size' => 100]), 'lookaside.fbsbx.com/*' => Http::response('<svg></svg>', 200, ['Content-Type' => 'image/svg+xml'])]);
+        $this->getJson($this->base.'/messages/'.$id.'/media')->assertOk()->assertHeader('Content-Type', 'application/octet-stream')->assertHeader('Content-Disposition', 'attachment; filename="attachment"');
     }
 }
