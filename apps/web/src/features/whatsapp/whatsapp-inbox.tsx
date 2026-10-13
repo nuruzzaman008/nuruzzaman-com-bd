@@ -143,11 +143,12 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
   const sendKey = useRef<string | null>(null);
   const messagesElement = useRef<HTMLDivElement | null>(null);
   const followLatest = useRef(true);
+  const latestMessageId = thread?.data.at(-1)?.id;
   useEffect(() => {
     if (followLatest.current && messagesElement.current) {
       messagesElement.current.scrollTop = messagesElement.current.scrollHeight;
     }
-  }, [thread?.contact.id, thread?.data.at(-1)?.id]);
+  }, [thread?.contact.id, latestMessageId]);
   const [revision, setRevision] = useState(0);
   const refresh = useCallback(() => setRevision((r) => r + 1), []);
   useEffect(() => {
