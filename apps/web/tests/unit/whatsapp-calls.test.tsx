@@ -56,7 +56,7 @@ beforeEach(() => {
   request.mockImplementation(() => Promise.resolve({ data: [] }));
 });
 afterEach(() => vi.unstubAllGlobals());
-it('requires one sound activation, rings an incoming call and stops the ringtone on leaving', async () => {
+it('keeps ringtone enabled by default, rings incoming calls and stops on leaving', async () => {
   request.mockResolvedValue({
     data: [
       {
@@ -73,16 +73,45 @@ it('requires one sound activation, rings an incoming call and stops the ringtone
   });
   const view = render(<WhatsAppCalls contact={null} enabled />);
   await screen.findByRole('button', { name: 'Answer call' });
-  expect(tones.start).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Enable ringtone' }));
   await waitFor(() => expect(tones.start).toHaveBeenCalled());
   expect(microphone).not.toHaveBeenCalled();
-  expect(screen.getByRole('button', { name: 'Ringtone on · Turn off' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  expect(screen.getByText('Ringtone on')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Enable ringtone' })).not.toBeInTheDocument();
   view.unmount();
   expect(tones.stop).toHaveBeenCalled();
+});
+it('unlocks suspended browser audio on any dashboard interaction without opening the microphone', async () => {
+  let allowSound = false;
+  vi.stubGlobal(
+    'AudioContext',
+    class {
+      state = 'suspended';
+      resume = vi.fn(async () => {
+        if (allowSound) this.state = 'running';
+      });
+      close = vi.fn(async () => undefined);
+    },
+  );
+  request.mockResolvedValue({
+    data: [
+      {
+        id: 12,
+        phone: contact.phone,
+        name: 'Caller',
+        direction: 'inbound',
+        status: 'ringing',
+        ended_at: null,
+        claimable: true,
+      },
+    ],
+  });
+  render(<WhatsAppCalls contact={null} enabled />);
+  await screen.findByRole('button', { name: 'Answer call' });
+  expect(tones.start).not.toHaveBeenCalled();
+  allowSound = true;
+  fireEvent.pointerDown(window);
+  await waitFor(() => expect(tones.start).toHaveBeenCalled());
+  expect(microphone).not.toHaveBeenCalled();
 });
 it('allows microphone only on the WhatsApp dashboard while keeping other device access blocked', async () => {
   const rules = await nextConfig.headers?.();
@@ -101,10 +130,7 @@ it('allows microphone only on the WhatsApp dashboard while keeping other device 
       ?.headers.find((header) => header.key === 'Permissions-Policy')?.value,
   ).toContain('microphone=()');
 });
-it('never calls a contact or requests microphone without explicit action and Meta permission', async () => {
-  render(<WhatsAppCalls contact={contact} enabled />);
-  expect(screen.getByRole('button', { name: 'Call contact' })).toBeDisabled();
-  expect(microphone).not.toHaveBeenCalled();
+it('checks permission automatically and refuses to call or open microphone without consent', async () => {
   request.mockImplementation((path: string) =>
     Promise.resolve({
       data: path.endsWith('call-permission')
@@ -115,10 +141,64 @@ it('never calls a contact or requests microphone without explicit action and Met
         : [],
     }),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Check call permission' }));
+  render(<WhatsAppCalls contact={contact} enabled />);
   await screen.findByText('no_permission');
-  expect(screen.getByRole('button', { name: 'Call contact' })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: 'Check call permission' })).not.toBeInTheDocument();
+  expect(microphone).not.toHaveBeenCalled();
   expect(request.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Call contact' }));
+  await screen.findByRole('status');
+  expect(microphone).not.toHaveBeenCalled();
+  expect(request.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
+});
+it('requests missing call consent only after Call contact is pressed', async () => {
+  request.mockImplementation((path: string, options?: { method?: string }) =>
+    Promise.resolve({
+      data: path.endsWith('call-permission')
+        ? options?.method === 'POST'
+          ? { status: 'accepted' }
+          : {
+              permission: { status: 'no_permission' },
+              actions: [{ action_name: 'send_call_permission_request', can_perform_action: true }],
+            }
+        : [],
+    }),
+  );
+  render(<WhatsAppCalls contact={contact} enabled />);
+  await screen.findByText('no_permission');
+  expect(request.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Call contact' }));
+  expect(await screen.findByRole('status')).toHaveTextContent('স্বয়ংক্রিয়ভাবে আপডেট');
+  expect(request.mock.calls.filter(([, o]) => o?.method === 'POST')).toHaveLength(1);
+  expect(microphone).not.toHaveBeenCalled();
+});
+it('automatically verifies granted consent and starts an outbound call only after the operator clicks', async () => {
+  request.mockImplementation((path: string) =>
+    Promise.resolve({
+      data: path.endsWith('call-permission')
+        ? {
+            permission: { status: 'granted' },
+            actions: [{ action_name: 'start_call', can_perform_action: true }],
+          }
+        : path.endsWith('/call')
+          ? { id: 18 }
+          : [],
+    }),
+  );
+  render(<WhatsAppCalls contact={contact} enabled />);
+  await screen.findByText('granted');
+  expect(microphone).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Call contact' }));
+  await waitFor(() =>
+    expect(request).toHaveBeenCalledWith(
+      '/admin/whatsapp/contacts/1/call',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({ sdp: 'v=0 offer from microphone browser' }),
+      }),
+    ),
+  );
+  expect(microphone).toHaveBeenCalledTimes(1);
 });
 it('incoming answer uses the browser-generated SDP answer and stops microphone on claim conflict', async () => {
   const call = {

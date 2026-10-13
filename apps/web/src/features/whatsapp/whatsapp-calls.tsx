@@ -1,9 +1,10 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Phone, PhoneOff, Mic, MicOff } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, BellRing, History, X, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api/browser';
 import { Button } from '@/components/ui/button';
 import { startRingtone } from './call-audio';
+import styles from './whatsapp-calls.module.css';
 
 type Call = {
   id: number;
@@ -54,7 +55,7 @@ export function WhatsAppCalls({
     [permission, setPermission] = useState<Permission | null>(null),
     [active, setActive] = useState<number | null>(null),
     [audioState, setAudioState] = useState(''),
-    [ringtoneEnabled, setRingtoneEnabled] = useState(false),
+    [soundReady, setSoundReady] = useState(false),
     [expanded, setExpanded] = useState(false),
     [dismissedRequest, setDismissedRequest] = useState(0);
   const key = useRef(''),
@@ -70,11 +71,61 @@ export function WhatsAppCalls({
     .filter((call) => call.claimable && !terminal(call))
     .map((call) => call.id)
     .join(',');
+  const unlockSound = useCallback(async () => {
+    if (!window.AudioContext) return;
+    ringtoneContext.current ??= new AudioContext();
+    try {
+      await ringtoneContext.current.resume();
+      if (alive.current) setSoundReady(ringtoneContext.current.state === 'running');
+    } catch {
+      // The next dashboard interaction retries browser autoplay activation.
+    }
+  }, []);
   useEffect(() => {
-    if (!ringtoneEnabled || !ringingIds || active !== null || busy || !ringtoneContext.current)
-      return;
+    const activate = () => void unlockSound();
+    activate();
+    window.addEventListener('pointerdown', activate);
+    window.addEventListener('keydown', activate);
+    return () => {
+      window.removeEventListener('pointerdown', activate);
+      window.removeEventListener('keydown', activate);
+    };
+  }, [unlockSound]);
+  useEffect(() => {
+    if (!soundReady || !ringingIds || active !== null || busy || !ringtoneContext.current) return;
     return startRingtone(ringtoneContext.current);
-  }, [ringtoneEnabled, ringingIds, active, busy]);
+  }, [soundReady, ringingIds, active, busy]);
+  const panelOpen = !floating || expanded || openRequest > dismissedRequest;
+  const contactId = contact?.id;
+  const blocked = !!contact?.opt_out || !!contact?.suppressed;
+  useEffect(() => {
+    if (!contactId || !enabled || blocked || !panelOpen) return;
+    let disposed = false,
+      loading = false;
+    const controller = new AbortController();
+    const load = async () => {
+      if (loading) return;
+      loading = true;
+      try {
+        const r = await api<{ data: Permission }>(
+          root + '/contacts/' + contactId + '/call-permission',
+          { signal: controller.signal },
+        );
+        if (!disposed) setPermission({ ...r.data, contact_id: contactId });
+      } catch (e) {
+        if (!disposed) setError(e instanceof Error ? e.message : 'Call permission unavailable');
+      } finally {
+        loading = false;
+      }
+    };
+    void load();
+    const timer = setInterval(() => void load(), 10000);
+    return () => {
+      disposed = true;
+      controller.abort();
+      clearInterval(timer);
+    };
+  }, [contactId, enabled, blocked, panelOpen]);
   useEffect(
     () => () => {
       void ringtoneContext.current?.close();
@@ -224,21 +275,6 @@ export function WhatsAppCalls({
     };
     return pc;
   }
-  async function enableRingtone() {
-    await run(async () => {
-      if (!window.AudioContext) throw new Error('Ringtone-এর জন্য Chrome/Edge ব্যবহার করুন।');
-      ringtoneContext.current ??= new AudioContext();
-      await ringtoneContext.current.resume();
-      if (ringtoneContext.current.state !== 'running')
-        throw new Error('Browser sound চালু হয়নি। Tab mute বন্ধ করে আবার চেষ্টা করুন।');
-      setRingtoneEnabled(true);
-      if (!ringingIds) {
-        const stop = startRingtone(ringtoneContext.current);
-        setTimeout(stop, 1800);
-      }
-      setNotice('Ringtone চালু হয়েছে। Incoming call এলে সুরেলা chime বাজবে।');
-    });
-  }
   async function localSdp(pc: RTCPeerConnection, description: RTCSessionDescriptionInit) {
     await pc.setLocalDescription(description);
     if (pc.iceGatheringState !== 'complete') {
@@ -261,6 +297,25 @@ export function WhatsAppCalls({
   async function start() {
     if (!contact) return;
     await run(async () => {
+      void unlockSound();
+      const checked = await api<{ data: Permission }>(
+        root + '/contacts/' + contact.id + '/call-permission',
+      );
+      setPermission({ ...checked.data, contact_id: contact.id });
+      if (
+        !checked.data.actions?.some((a) => a.action_name === 'start_call' && a.can_perform_action)
+      ) {
+        if (
+          checked.data.actions?.some(
+            (a) => a.action_name === 'send_call_permission_request' && a.can_perform_action,
+          )
+        ) {
+          await sendPermissionRequest();
+        } else {
+          setNotice('Contact-এর call অনুমতি এখনো নেই। অনুমতি পেলে Call contact চাপুন।');
+        }
+        return;
+      }
       let id: number | null = null;
       try {
         const pc = await prepare(),
@@ -289,6 +344,7 @@ export function WhatsAppCalls({
   }
   async function answer(c: Call) {
     await run(async () => {
+      void unlockSound();
       try {
         const pc = await prepare();
         const claimed = await action(c.id, 'claim');
@@ -325,35 +381,21 @@ export function WhatsAppCalls({
       setNotice('Call ended');
     });
   }
-  async function checkPermission() {
+  async function sendPermissionRequest() {
     if (!contact) return;
-    await run(async () => {
-      const r = await api<{ data: Permission }>(
-        root + '/contacts/' + contact.id + '/call-permission',
-      );
-      setPermission({ ...r.data, contact_id: contact.id });
-    });
+    if (permissionKey.current?.contact !== contact.id)
+      permissionKey.current = { contact: contact.id, key: crypto.randomUUID() };
+    const r = await api<{ data: { status: string } }>(
+      root + '/contacts/' + contact.id + '/call-permission',
+      { method: 'POST', body: { client_key: permissionKey.current.key } },
+    );
+    setNotice(
+      r.data.status === 'accepted'
+        ? 'Call permission request পাঠানো হয়েছে। Contact Allow calls চাপলে এখানে স্বয়ংক্রিয়ভাবে আপডেট হবে।'
+        : 'Request status: ' + r.data.status,
+    );
+    setPermission(null);
   }
-  async function requestPermission() {
-    if (!contact) return;
-    await run(async () => {
-      if (permissionKey.current?.contact !== contact.id)
-        permissionKey.current = { contact: contact.id, key: crypto.randomUUID() };
-      const r = await api<{ data: { status: string } }>(
-        root + '/contacts/' + contact.id + '/call-permission',
-        { method: 'POST', body: { client_key: permissionKey.current.key } },
-      );
-      setNotice(
-        r.data.status === 'accepted'
-          ? 'Call permission request পাঠানো হয়েছে। Contact Allow calls চাপলে আবার Check permission দিন।'
-          : 'Request status: ' + r.data.status,
-      );
-      setPermission(null);
-    });
-  }
-  const can = (name: string) =>
-    permission?.contact_id === contact?.id &&
-    (permission?.actions?.some((a) => a.action_name === name && a.can_perform_action) ?? false);
   const incoming = calls.filter((c) => c.claimable && !terminal(c));
   const mine = calls.filter((c) => (c.owned || c.mine) && !terminal(c));
   if (
@@ -365,59 +407,72 @@ export function WhatsAppCalls({
   ) {
     return (
       <aside className="fixed bottom-4 right-4 z-50">
-        <Button variant="secondary" onClick={() => setExpanded(true)}>
-          WhatsApp {ringtoneEnabled ? '· 🔔' : '· Calls'}
+        <Button className={styles.launcher} variant="secondary" onClick={() => setExpanded(true)}>
+          <Phone size={17} /> WhatsApp · Calls <BellRing size={14} />
         </Button>
       </aside>
     );
   }
   return (
     <section
-      className={
-        'space-y-2 rounded-xl border border-line bg-white p-3 ' +
-        (floating
-          ? 'fixed bottom-4 right-4 z-50 max-h-[80dvh] w-[440px] max-w-[calc(100vw-2rem)] overflow-auto shadow-2xl'
-          : '')
-      }
+      className={styles.popup + ' ' + (floating ? styles.floating : '')}
       role={floating ? 'dialog' : undefined}
       aria-label="WhatsApp calls"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className={styles.header}>
         <h2 className="flex items-center gap-2 font-semibold">
           <Phone size={18} />
           WhatsApp voice call
         </h2>
-        <Button variant="secondary" onClick={() => setHistory(!history)}>
-          Call history
+        <Button
+          className={styles.iconButton}
+          variant="secondary"
+          aria-label="Call history"
+          onClick={() => setHistory(!history)}
+        >
+          <History size={18} />
         </Button>
         {floating && !incoming.length && !mine.length && (
           <Button
+            className={styles.iconButton}
+            aria-label="Close popup"
             variant="secondary"
             onClick={() => {
               setExpanded(false);
               setDismissedRequest(openRequest);
             }}
           >
-            Close popup
+            <X size={18} />
           </Button>
         )}
       </div>
-      <p className="text-sm text-muted">
-        কল receive করতে এই dashboard খোলা রাখুন। Outgoing call-এর আগে contact-এর WhatsApp permission
-        লাগবে। Voice call-এ Meta charge প্রযোজ্য হতে পারে।
-      </p>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant="secondary"
-          aria-pressed={ringtoneEnabled}
-          disabled={busy}
-          onClick={() => (ringtoneEnabled ? setRingtoneEnabled(false) : void enableRingtone())}
-        >
-          {ringtoneEnabled ? 'Ringtone on · Turn off' : 'Enable ringtone'}
-        </Button>
-        <span className="text-sm text-muted">
-          প্রথমে Enable ringtone চাপুন। Browser/tab-এর sound চালু রাখুন।
+      <div className={styles.sound}>
+        <BellRing size={15} /> <span>Ringtone on</span>
+        <small>{soundReady ? 'Sound ready' : 'যেকোনো click-এ sound চালু হবে'}</small>
+      </div>
+      <div className={styles.identity}>
+        <div className={styles.avatar + (incoming.length ? ' ' + styles.ringing : '')}>
+          {(incoming[0]?.name || mine[0]?.name || contact?.name || 'WA')
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((word) => Array.from(word)[0])
+            .join('')
+            .toUpperCase()}
+        </div>
+        <strong>
+          {incoming[0]?.name || mine[0]?.name || contact?.name || 'WhatsApp voice calls'}
+        </strong>
+        <span>
+          {incoming[0]?.phone || mine[0]?.phone || contact?.phone || 'কল এলে এখানেই popup দেখাবে'}
         </span>
+        <small>
+          {incoming.length
+            ? 'Incoming voice call'
+            : mine.length
+              ? audioState || 'Voice call in progress'
+              : 'Ready to connect'}
+        </small>
       </div>
       {error && (
         <p role="alert" className="text-sm text-danger">
@@ -430,20 +485,29 @@ export function WhatsAppCalls({
         </p>
       )}
       {incoming.map((c) => (
-        <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-emerald-50 p-3">
+        <div key={c.id} className={styles.callActions}>
           <span>
             Incoming call: {c.name || c.phone} · {c.phone}
           </span>
-          <Button disabled={busy || !!active || !enabled} onClick={() => void answer(c)}>
-            Answer call
+          <Button
+            className={styles.answer}
+            disabled={busy || !!active || !enabled}
+            onClick={() => void answer(c)}
+          >
+            <Phone size={20} /> Answer call
           </Button>
-          <Button variant="secondary" disabled={busy || !!active} onClick={() => void reject(c)}>
-            Decline call
+          <Button
+            className={styles.decline}
+            variant="secondary"
+            disabled={busy || !!active}
+            onClick={() => void reject(c)}
+          >
+            <PhoneOff size={20} /> Decline call
           </Button>
         </div>
       ))}
       {mine.map((c) => (
-        <div key={c.id} className="flex flex-wrap items-center gap-3">
+        <div key={c.id} className={styles.callActions}>
           <span>
             {c.name || c.phone} · {c.status}{' '}
             {active === c.id && audioState ? ' · ' + audioState : ''}
@@ -462,7 +526,12 @@ export function WhatsAppCalls({
               {muted ? <MicOff size={16} /> : <Mic size={16} />} {muted ? 'Unmute' : 'Mute'}
             </Button>
           )}
-          <Button variant="secondary" disabled={busy} onClick={() => void end(c.id)}>
+          <Button
+            className={styles.decline}
+            variant="secondary"
+            disabled={busy}
+            onClick={() => void end(c.id)}
+          >
             <PhoneOff size={16} />
             Hang up
           </Button>
@@ -476,34 +545,20 @@ export function WhatsAppCalls({
         aria-label="Call audio"
       />
       {contact && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm">{contact.name || contact.phone}</span>
-          <Button
-            variant="secondary"
-            disabled={busy || !enabled || contact.opt_out || contact.suppressed}
-            onClick={() => void checkPermission()}
-          >
-            Check call permission
-          </Button>
+        <div className={styles.contactActions}>
+          <p className={styles.permission}>
+            <ShieldCheck size={14} /> Permission স্বয়ংক্রিয়ভাবে যাচাই হচ্ছে
+          </p>
           {permission?.contact_id === contact.id && (
             <span className="text-sm">{permission.permission?.status || 'No permission'}</span>
           )}
-          {can('send_call_permission_request') && (
-            <Button
-              variant="secondary"
-              disabled={busy || !!active || !enabled}
-              onClick={() => void requestPermission()}
-            >
-              Request call permission
-            </Button>
-          )}
           <Button
+            className={styles.answer}
             disabled={
               busy ||
               !!active ||
               mine.length > 0 ||
               !enabled ||
-              !can('start_call') ||
               contact.opt_out ||
               contact.suppressed
             }
@@ -514,6 +569,10 @@ export function WhatsAppCalls({
           </Button>
         </div>
       )}
+      <p className={styles.footer}>
+        Answer বা Call চাপলেই microphone প্রস্তুত হবে। Contact-এর Allow calls অনুমোদন প্রয়োজন হলে
+        request পাঠানো হবে।
+      </p>
       {history && (
         <div className="overflow-auto">
           <table className="w-full text-left text-sm">

@@ -63,13 +63,7 @@ it('keeps call controls and sound enabled while moving between admin pages', asy
     </WhatsAppRuntime>,
   );
   fireEvent.click(await screen.findByRole('button', { name: 'WhatsApp · Calls' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Enable ringtone' }));
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Ringtone on · Turn off' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    ),
-  );
+  await waitFor(() => expect(screen.getByText('Sound ready')).toBeInTheDocument());
   const polls = mocks.api.mock.calls.filter(([path]) => path === '/admin/whatsapp/calls');
   const firstKey = polls[0][1].query.session_key;
   mocks.path = '/dashboard/whatsapp';
@@ -78,10 +72,7 @@ it('keeps call controls and sound enabled while moving between admin pages', asy
       <div>Inbox</div>
     </WhatsAppRuntime>,
   );
-  expect(screen.getByRole('button', { name: 'Ringtone on · Turn off' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  expect(screen.getByText('Ringtone on')).toBeInTheDocument();
   expect(
     mocks.api.mock.calls
       .filter(([path]) => path === '/admin/whatsapp/calls')
