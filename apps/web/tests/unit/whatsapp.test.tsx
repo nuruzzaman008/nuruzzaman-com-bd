@@ -134,3 +134,61 @@ it('shows chat filters and contact information while keeping a closed reply wind
   expect(screen.getByText('Requested details')).toBeInTheDocument();
   expect(request.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
 });
+it('follows latest messages unless the operator scrolls up to read history', async () => {
+  let height = 1000;
+  const scrollHeight = vi
+    .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+    .mockImplementation(() => height);
+  const clientHeight = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200);
+  try {
+    const contact = {
+      id: 9,
+      name: 'Reader',
+      phone: '8801712345678',
+      opt_in: true,
+      unread: 0,
+      stage: 'open',
+    };
+    let messages = [
+      {
+        id: 1,
+        body: 'First message',
+        kind: 'text',
+        direction: 'inbound',
+        status: 'received',
+        occurred_at: '2026-10-12T10:00:00Z',
+      },
+    ];
+    request.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/overview')
+          ? { data: { ...overview, enabled: true } }
+          : path.endsWith('/messages')
+            ? { data: messages, contact, reply_window_open: true, older_before: null }
+            : { data: [contact], meta: { last_page: 1 } },
+      ),
+    );
+    render(<WhatsAppInbox superAdmin={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Reader/ }));
+    await screen.findByText('First message');
+    const pane = screen.getByLabelText('Messages');
+    expect(pane.scrollTop + pane.clientHeight).toBeGreaterThanOrEqual(pane.scrollHeight);
+    pane.scrollTop = 100;
+    fireEvent.scroll(pane);
+    height = 1300;
+    messages = [...messages, { ...messages[0], id: 2, body: 'Second message' }];
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await screen.findByText('Second message');
+    expect(pane.scrollTop).toBe(100);
+    pane.scrollTop = 1100;
+    fireEvent.scroll(pane);
+    height = 1400;
+    messages = [...messages, { ...messages[0], id: 3, body: 'Third message' }];
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await screen.findByText('Third message');
+    expect(pane.scrollTop + pane.clientHeight).toBeGreaterThanOrEqual(pane.scrollHeight);
+  } finally {
+    scrollHeight.mockRestore();
+    clientHeight.mockRestore();
+  }
+});

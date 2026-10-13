@@ -141,6 +141,13 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
     [editor, setEditor] = useState<(typeof blank & { id?: number }) | null>(null);
   const [staff, setStaff] = useState<{ id: number; name: string }[]>([]);
   const sendKey = useRef<string | null>(null);
+  const messagesElement = useRef<HTMLDivElement | null>(null);
+  const followLatest = useRef(true);
+  useEffect(() => {
+    if (followLatest.current && messagesElement.current) {
+      messagesElement.current.scrollTop = messagesElement.current.scrollHeight;
+    }
+  }, [thread?.contact.id, thread?.data.at(-1)?.id]);
   const [revision, setRevision] = useState(0);
   const refresh = useCallback(() => setRevision((r) => r + 1), []);
   useEffect(() => {
@@ -610,6 +617,7 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                   aria-pressed={selected === c.id}
                   onClick={() => {
                     setSelected(c.id);
+                    followLatest.current = true;
                     setThread(null);
                     setBody('');
                     setAttachment(null);
@@ -711,7 +719,17 @@ export function WhatsAppInbox({ superAdmin }: { superAdmin: boolean }) {
                     </p>
                   </div>
                 </details>
-                <div className={styles.messages} aria-label="Messages" aria-live="polite">
+                <div
+                  className={styles.messages}
+                  ref={messagesElement}
+                  onScroll={(event) => {
+                    const pane = event.currentTarget;
+                    followLatest.current =
+                      pane.scrollHeight - pane.clientHeight - pane.scrollTop < 80;
+                  }}
+                  aria-label="Messages"
+                  aria-live="polite"
+                >
                   {thread.older_before && (
                     <Button variant="secondary" size="sm" disabled={busy} onClick={older}>
                       Load older messages

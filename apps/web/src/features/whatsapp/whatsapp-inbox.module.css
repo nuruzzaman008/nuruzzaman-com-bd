@@ -364,6 +364,12 @@
   }
 }
 @media (max-width: 640px) {
+  .conversationHeader > div {
+    flex-basis: calc(100% - 60px);
+  }
+  .conversationHeader > button:first-of-type {
+    margin-left: auto;
+  }
   .chatShell {
     grid-template-columns: 1fr;
     height: auto;
