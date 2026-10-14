@@ -149,5 +149,3 @@ Route::prefix('v1')->group(function () {
     require __DIR__.'/api_growth.php';
     require __DIR__.'/api_whatsapp.php';
 });
-
-require __DIR__.'/api_wallet.php';
