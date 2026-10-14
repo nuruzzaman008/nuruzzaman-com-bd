@@ -198,6 +198,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/dashboard/:path*',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(self), geolocation=(), usb=(), payment=()',
+          },
+        ],
+      },
     ];
   },
 };

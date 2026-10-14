@@ -18,6 +18,7 @@ use App\Models\SupportTicketMessage;
 use App\Models\User;
 use App\Notifications\NotificationPresenter;
 use App\Notifications\NotificationType;
+use App\Services\WhatsApp\WhatsAppOrderConfirmation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
@@ -61,6 +62,7 @@ class NotificationRouter
 
         $this->notifier->toStaff(NotificationType::OrderPaid, $data);
         $this->notifier->toUser($order->user, NotificationType::OrderConfirmed, $data);
+        app(WhatsAppOrderConfirmation::class)->queue($order);
     }
 
     public function ticketMessage(SupportTicketMessage $message): void

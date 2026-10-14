@@ -74,6 +74,7 @@ export function CheckoutForm() {
           name: form.get('name'),
           email: form.get('email'),
           phone: form.get('phone') || null,
+          accepts_whatsapp_confirmation: form.get('accepts_whatsapp_confirmation') === 'on',
           accepts_terms: form.get('accepts_terms') === 'on',
           accepts_privacy: form.get('accepts_privacy') === 'on',
           accepts_refund_policy: form.get('accepts_refund_policy') === 'on',
@@ -159,6 +160,13 @@ export function CheckoutForm() {
 
         <fieldset className="space-y-3 border-t border-line pt-5">
           <legend className="text-lg font-bold text-navy">{t.checkout.consent}</legend>
+
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="accepts_whatsapp_confirmation" className="mt-1" />
+            {locale === 'bn'
+              ? 'Payment সফল/অনুমোদিত হলে WhatsApp-এ confirmation পেতে চাই।'
+              : 'Send me a WhatsApp confirmation after payment succeeds or is approved.'}
+          </label>
 
           <Checkbox
             name="accepts_terms"
@@ -261,7 +269,11 @@ export function CheckoutForm() {
             </div>
           </dl>
 
-          <p className="mt-5 text-xs text-muted">{locale === 'en' ? 'Choose an enabled mobile banking or bank-transfer method on the next page. All payments require manual admin verification before access or refill processing.' : 'পরের পেজে চালু থাকা mobile banking বা bank transfer বেছে নিন। সব payment admin manually যাচাই ও approve করার পর access বা refill processing হবে।'}</p>
+          <p className="mt-5 text-xs text-muted">
+            {locale === 'en'
+              ? 'Choose an enabled mobile banking or bank-transfer method on the next page. All payments require manual admin verification before access or refill processing.'
+              : 'পরের পেজে চালু থাকা mobile banking বা bank transfer বেছে নিন। সব payment admin manually যাচাই ও approve করার পর access বা refill processing হবে।'}
+          </p>
         </Card>
       </aside>
     </div>

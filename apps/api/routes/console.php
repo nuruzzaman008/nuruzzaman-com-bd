@@ -66,3 +66,8 @@ Schedule::call(fn () => Artisan::call('notifications:retry-emails'))
 Schedule::call(fn () => Artisan::call('notifications:prune'))
     ->name('notifications:prune')
     ->dailyAt('02:40');
+
+Schedule::call(fn () => Artisan::call('whatsapp:dispatch', ['--max' => 5]))
+    ->name('whatsapp:dispatch')
+    ->everyMinute()
+    ->withoutOverlapping();

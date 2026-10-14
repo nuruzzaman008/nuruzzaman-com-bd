@@ -1,0 +1,218 @@
+.popup {
+  color-scheme: dark;
+  color: #e9f2ef;
+  background: linear-gradient(145deg, #14292b, #101c24 65%);
+  border: 1px solid #31524b;
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 20px 70px #0005;
+}
+:global(html[data-whatsapp-theme='light']) .popup {
+  color-scheme: light;
+  color: #1d3730;
+  background: linear-gradient(145deg, #ffffff, #f1f8f4 65%);
+  border-color: #cfdfd6;
+  box-shadow: 0 20px 70px #163c2525;
+}
+:global(html[data-whatsapp-theme='light']) .popup .iconButton {
+  color: #365f4c;
+  background: #eef5f0;
+  border-color: #dce8df;
+}
+:global(html[data-whatsapp-theme='light']) .sound {
+  color: #168352;
+}
+:global(html[data-whatsapp-theme='light']) .sound small,
+:global(html[data-whatsapp-theme='light']) .identity span,
+:global(html[data-whatsapp-theme='light']) .callActions > span,
+:global(html[data-whatsapp-theme='light']) .footer {
+  color: #60786c;
+}
+:global(html[data-whatsapp-theme='light']) .identity small {
+  color: #198553;
+}
+:global(html[data-whatsapp-theme='light']) .contactActions {
+  border-color: #dce8df;
+}
+:global(html[data-whatsapp-theme='light']) .permission,
+:global(html[data-whatsapp-theme='light']) .contactActions > span,
+:global(html[data-whatsapp-theme='light']) .popup table {
+  color: #3b6950;
+}
+:global(html[data-whatsapp-theme='light']) .popup [role='alert'] {
+  color: #a52d3c;
+}
+:global(html[data-whatsapp-theme='light']) .popup [role='status'] {
+  color: #176742;
+}
+:global(html[data-whatsapp-theme='light']) .launcher {
+  background: #ffffff;
+  color: #176742;
+  border-color: #cfe1d7;
+}
+.floating {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 60;
+  width: 380px;
+  max-width: calc(100% - 36px);
+  max-height: 85dvh;
+  overflow: auto;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header h2 {
+  margin-right: auto;
+  font-size: 14px;
+}
+.popup .iconButton {
+  background: #ffffff0a;
+  border-color: #ffffff18;
+  color: #b5cec6;
+  padding: 7px;
+}
+.sound {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: #70e2af;
+  font-size: 12px;
+}
+.sound small {
+  margin-left: auto;
+  color: #a4bdb7;
+  font-size: 10px;
+}
+.identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 0;
+}
+.avatar {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #197c5c, #29534d);
+  color: #d7fff0;
+  font-size: 25px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  box-shadow: 0 0 0 7px #34d3990b;
+}
+.identity strong {
+  font-size: 19px;
+  text-align: center;
+}
+.identity span {
+  color: #aac4be;
+  font-size: 13px;
+}
+.identity small {
+  color: #62d99e;
+  font-size: 12px;
+}
+.ringing {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 15px #34d39914;
+  }
+}
+.callActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+.callActions > span {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #abc4bd;
+}
+.popup .answer {
+  background: #18bb70;
+  border-color: #18bb70;
+  color: #061b12;
+  border-radius: 16px;
+  padding: 11px 17px;
+}
+.popup .decline {
+  background: #cb414c;
+  border-color: #cb414c;
+  color: white;
+  border-radius: 16px;
+  padding: 11px 17px;
+}
+.contactActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid #ffffff12;
+  padding-top: 14px;
+}
+.permission {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  color: #acc7bc;
+  font-size: 11px;
+}
+.contactActions > span {
+  font-size: 11px;
+  color: #97baa9;
+}
+.footer {
+  color: #89a69d;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+  padding-top: 14px;
+}
+.popup table {
+  color: #cde4db;
+  font-size: 11px;
+}
+.popup [role='alert'] {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #ef444418;
+  color: #ffb5b5;
+}
+.popup [role='status'] {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #10b98118;
+  color: #94efbb;
+  font-size: 12px;
+}
+.launcher {
+  border-radius: 18px;
+  background: #14292b;
+  color: #c4f3df;
+  border-color: #31524b;
+  box-shadow: 0 8px 30px #0003;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ringing {
+    animation: none;
+  }
+}
