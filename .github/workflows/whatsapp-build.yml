@@ -1,7 +1,7 @@
 name: WhatsApp inbox CI
 on:
   push:
-    branches: [codex/whatsapp-inbox-20261012]
+    branches: [ci/whatsapp-merged-verify-20261014]
   workflow_dispatch:
 
 permissions:
