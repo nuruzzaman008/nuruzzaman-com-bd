@@ -18,6 +18,7 @@ class CheckoutRequest extends FormRequest
             'name' => ['required', 'string', 'min:2', 'max:160'],
             'email' => ['required', 'email:rfc', 'max:191'],
             'phone' => ['nullable', 'string', 'max:32'],
+            'accepts_whatsapp_confirmation' => ['sometimes', 'boolean'],
             'accepts_terms' => ['accepted'],
             'accepts_privacy' => ['accepted'],
             'accepts_refund_policy' => ['accepted'],
@@ -25,6 +26,7 @@ class CheckoutRequest extends FormRequest
             // The referral code the browser remembered. An unknown or expired
             // code is ignored rather than refused: it must never block a sale.
             'ref' => ['nullable', 'string', 'max:64'],
+            'wallet_license_code' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -45,7 +47,7 @@ class CheckoutRequest extends FormRequest
      */
     public function acceptedTerms(): array
     {
-        return collect(['terms', 'privacy', 'refund_policy', 'eula'])
+        return collect(['terms', 'privacy', 'refund_policy', 'eula', 'whatsapp_confirmation'])
             ->filter(fn (string $key) => $this->boolean('accepts_'.$key))
             ->values()
             ->all();

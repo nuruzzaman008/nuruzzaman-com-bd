@@ -21,6 +21,7 @@ enum NotificationType: string
     case TicketOpened = 'ticket.opened';
     case TicketCustomerReplied = 'ticket.customer_replied';
     case ContactReceived = 'contact.received';
+    case WhatsAppMessage = 'whatsapp.message';
     case QuestionAsked = 'question.asked';
     case CommentPending = 'comment.pending';
     case UserRegistered = 'user.registered';
@@ -51,7 +52,7 @@ enum NotificationType: string
         return match ($this) {
             self::OrderPaid, self::PaymentSubmitted, self::OrderConfirmed => 'orders',
             self::ActivationRequested, self::ActivationUpdated => 'licences',
-            self::TicketOpened, self::TicketCustomerReplied, self::ContactReceived,
+            self::TicketOpened, self::TicketCustomerReplied, self::ContactReceived, self::WhatsAppMessage,
             self::TicketStaffReplied => 'support',
             self::QuestionAsked, self::QuestionAnswered, self::CourseAnnouncement => 'learning',
             self::CommentPending => 'content',
@@ -84,7 +85,7 @@ enum NotificationType: string
      */
     public function hasEmail(): bool
     {
-        return ! in_array($this, [self::OrderConfirmed, self::ActivationUpdated, self::QuestionAnswered], true);
+        return ! in_array($this, [self::OrderConfirmed, self::ActivationUpdated, self::QuestionAnswered, self::WhatsAppMessage], true);
     }
 
     /**

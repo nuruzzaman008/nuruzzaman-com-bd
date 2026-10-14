@@ -195,13 +195,18 @@ export function NotificationBell({
       if (document.visibilityState === 'visible') void load();
     };
     document.addEventListener('visibilitychange', onVisible);
+    const onWhatsApp = () => {
+      if (scope === 'admin') void load();
+    };
+    window.addEventListener('nb:whatsapp-notification', onWhatsApp);
 
     return () => {
       window.clearTimeout(first);
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('nb:whatsapp-notification', onWhatsApp);
     };
-  }, [load]);
+  }, [load, scope]);
 
   // The Messages tab keeps itself current while it is the one showing.
   useEffect(() => {
