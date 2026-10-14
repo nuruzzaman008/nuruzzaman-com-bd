@@ -1,0 +1,144 @@
+name: Production database migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type MIGRATE to back up production and run pending migrations on main'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-database-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main' && inputs.confirm == 'MIGRATE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Configure pinned production SSH host
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/id_deploy"
+          chmod 600 "$HOME/.ssh/id_deploy"
+          cp infra/cpanel/known_hosts "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Back up, migrate and verify production API
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/id_deploy" -p "$DEPLOY_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- ${{ github.sha }}" <<'REMOTE'
+          set -euo pipefail
+          SHA="$1"
+          REPO="$HOME/repositories/nuruzzaman-com-bd"
+          MARKER="$HOME/.nb-migration-backup-marker-$$"
+
+          [ -d "$REPO/.git" ] || { echo 'Production repository checkout is missing.' >&2; exit 1; }
+          git -C "$REPO" fetch --quiet origin main
+          test "$(git -C "$REPO" rev-parse origin/main)" = "$SHA" || {
+            echo 'Requested SHA is not the current origin/main head.' >&2
+            exit 1
+          }
+          test -z "$(git -C "$REPO" status --porcelain)" || {
+            echo 'Server checkout has local changes; preserve and review them first.' >&2
+            exit 1
+          }
+          git -C "$REPO" merge --ff-only "$SHA"
+          test "$(git -C "$REPO" rev-parse HEAD)" = "$SHA"
+
+          # The reviewed backup script dumps only this site's database, encrypts
+          # it with the server-only key, decrypts/unpacks it again, checks the
+          # mysqldump completion marker and minimum table count, then exits 0.
+          : > "$MARKER"
+          bash "$REPO/infra/cpanel/backup-db.sh"
+          test "$HOME/nb-db-backups/last-success" -nt "$MARKER" || {
+            echo 'No fresh verified database backup was recorded.' >&2
+            rm -f "$MARKER"
+            exit 1
+          }
+          DB_BACKUP="$(find "$HOME/nb-db-backups" -maxdepth 1 -type f \
+            -name 'nuruzzaman-*.sql.gz.enc' -newer "$MARKER" -size +0c -print \
+            | sort | tail -n 1)"
+          rm -f "$MARKER"
+          [ -n "$DB_BACKUP" ] && [ -s "$DB_BACKUP" ] || {
+            echo 'Fresh verified database backup file was not found.' >&2
+            exit 1
+          }
+
+          # Deploy only the API here. The normal main deployment workflow can
+          # then deploy the already-built web release without re-running DB
+          # migrations. deploy.sh independently rechecks the reviewed commit and
+          # non-empty backup guard before entering the maintenance window.
+          cd "$REPO"
+          NB_DEPLOY_SOURCE="$REPO" \
+          NB_DEPLOY_API=1 \
+          NB_DEPLOY_WEB=0 \
+          NB_RUN_MIGRATIONS=1 \
+          NB_MIGRATIONS_REVIEWED_COMMIT="$SHA" \
+          NB_DATABASE_BACKUP="$DB_BACKUP" \
+            bash infra/cpanel/deploy.sh
+
+          # Verify Laravel recorded all three WhatsApp migrations. Use the same
+          # PHP selection policy as deploy.sh rather than trusting the login
+          # shell's default PHP version.
+          PHP_BIN=''
+          if [ -f "$HOME/.nb-deploy.conf" ]; then
+            # shellcheck disable=SC1091
+            . "$HOME/.nb-deploy.conf"
+            PHP_BIN="${NB_PHP_BIN:-}"
+          fi
+          if [ -z "$PHP_BIN" ]; then
+            for candidate in \
+              /opt/cpanel/ea-php84/root/usr/bin/php \
+              /opt/alt/php84/usr/bin/php \
+              /opt/cpanel/ea-php85/root/usr/bin/php \
+              /opt/alt/php85/usr/bin/php; do
+              if [ -x "$candidate" ]; then PHP_BIN="$candidate"; break; fi
+            done
+          fi
+          [ -x "$PHP_BIN" ] || { echo 'Could not select production PHP for migration verification.' >&2; exit 1; }
+
+          STATUS="$($PHP_BIN "$HOME/api.nuruzzaman.com.bd/artisan" migrate:status --no-ansi)"
+          printf '%s\n' "$STATUS" | grep -q '2026_10_12_024402_create_whatsapp_messaging_tables'
+          printf '%s\n' "$STATUS" | grep -q '2026_10_12_035315_create_whatsapp_calls_table'
+          printf '%s\n' "$STATUS" | grep -q '2026_10_12_073500_create_whatsapp_order_confirmations_table'
+
+          # A missing/invalid webhook query should reach Laravel and be rejected
+          # as a client request, not 404/5xx. This verifies the deployed route is
+          # alive without sending a real WhatsApp event.
+          CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 \
+            https://nuruzzaman.com.bd/api/v1/whatsapp/webhook)"
+          case "$CODE" in
+            400|401|403|422) ;;
+            *) echo "Unexpected WhatsApp webhook smoke-test status: $CODE" >&2; exit 1 ;;
+          esac
+
+          echo "Production WhatsApp database migration verified for $SHA."
+          REMOTE
+
+      - name: Remove deploy key from runner
+        if: always()
+        run: rm -f "$HOME/.ssh/id_deploy"
