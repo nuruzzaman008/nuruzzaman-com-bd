@@ -22,6 +22,7 @@ final class NotificationPresenter
             'ticket.opened' => 'নতুন support ticket',
             'ticket.customer_replied' => 'গ্রাহক ticket-এ উত্তর দিয়েছেন',
             'contact.received' => 'নতুন যোগাযোগ বার্তা',
+            'whatsapp.message' => 'নতুন WhatsApp মেসেজ',
             'question.asked' => 'নতুন প্রশ্ন',
             'comment.pending' => 'মন্তব্য অনুমোদনের অপেক্ষায়',
             'user.registered' => 'নতুন অ্যাকাউন্ট খোলা হয়েছে',
@@ -44,6 +45,7 @@ final class NotificationPresenter
             'ticket.opened' => 'New support ticket',
             'ticket.customer_replied' => 'Customer replied to a ticket',
             'contact.received' => 'New contact message',
+            'whatsapp.message' => 'New WhatsApp message',
             'question.asked' => 'New student question',
             'comment.pending' => 'Comment awaiting approval',
             'user.registered' => 'New account registered',
@@ -92,6 +94,10 @@ final class NotificationPresenter
         $s = fn (string $key): ?string => self::text($data, $key);
 
         [$title, $body, $detail, $url] = match ($kind) {
+            NotificationType::WhatsAppMessage => [
+                $t['whatsapp.message'], self::join([$s('customer'), $s('excerpt')]), null,
+                '/dashboard/whatsapp?contact='.max(0, (int) ($data['wa_contact_id'] ?? 0)),
+            ],
             NotificationType::OrderPaid => [
                 self::join([$t['order.paid'], $s('number')]),
                 self::join([$s('customer'), self::money($data)]),

@@ -84,6 +84,7 @@ export function CheckoutForm() {
           email: form.get('email'),
           phone: form.get('phone') || null,
           accepts_terms: form.get('accepts_terms') === 'on',
+          accepts_whatsapp_confirmation: form.get('accepts_whatsapp_confirmation') === 'on',
           accepts_privacy: form.get('accepts_privacy') === 'on',
           accepts_refund_policy: form.get('accepts_refund_policy') === 'on',
           accepts_eula: form.get('accepts_eula') === 'on',
@@ -178,6 +179,11 @@ export function CheckoutForm() {
 
         <fieldset className="space-y-3 border-t border-line pt-5">
           <legend className="text-lg font-bold text-navy">{t.checkout.consent}</legend>
+
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="accepts_whatsapp_confirmation" className="mt-1" />
+            {locale === 'bn' ? 'Payment সফল/অনুমোদিত হলে WhatsApp-এ confirmation পেতে চাই।' : 'Send me a WhatsApp confirmation after payment succeeds or is approved.'}
+          </label>
 
           <Checkbox
             name="accepts_terms"

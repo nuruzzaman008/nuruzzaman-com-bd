@@ -10,6 +10,7 @@ import { SignOutButton } from '@/features/auth/sign-out-button';
 import { PendingPaymentAlert } from '@/features/dashboard/pending-payment-alert';
 import { UnansweredQuestionsBadge } from '@/features/dashboard/unanswered-questions-badge';
 import { NotificationBell } from '@/features/notifications/notification-bell';
+import { WhatsAppRuntime } from '@/features/whatsapp/whatsapp-runtime';
 import { ResendVerification } from '@/features/account/resend-verification';
 import { sessionApi } from '@/lib/api/server';
 import { ADMIN_SIDEBAR_COOKIE, sidebarCollapsedFrom } from '@/lib/admin-sidebar';
@@ -153,12 +154,29 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </WhenSidebarOpen>
 
         <nav aria-label={t.admin.navLabel} className="px-3 pb-6">
+          {user.roles.some((role) => ['admin', 'super_admin'].includes(role)) && (
+            <div className="mb-4">
+              <AdminNavLink
+                href="/dashboard/whatsapp"
+                icon="whatsapp"
+                label={locale === 'bn' ? 'WhatsApp মেসেজ ও ইনবক্স' : 'WhatsApp Inbox'}
+              />
+            </div>
+          )}
           {user.roles.includes('super_admin') && (
             <div className="mb-4">
               <AdminNavLink href="/dashboard/growth-hub" icon="growthHub" label="My Growth Hub" />
             </div>
           )}
-          {(user.roles.includes('super_admin') || user.permissions?.includes('wallets.view')) && <Link href="/dashboard/wallets" className="mb-4 block rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10">{locale === 'bn' ? 'ওয়ালেট ম্যানেজমেন্ট' : 'Wallet Management'}</Link>}
+          {(user.roles.includes('super_admin') || user.permissions?.includes('wallets.view')) && (
+            <div className="mb-4">
+              <AdminNavLink
+                href="/dashboard/wallets"
+                icon="wallets"
+                label={locale === 'bn' ? 'ওয়ালেট ম্যানেজমেন্ট' : 'Wallet Management'}
+              />
+            </div>
+          )}
           {dashboardNav.map((group) => (
             <AdminNavGroup key={group.headingKey} heading={t.admin.group[group.headingKey]}>
               {group.items.map((item) => (
@@ -203,7 +221,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           />
         </div>
         {user.roles.some(role => ['admin', 'super_admin'].includes(role)) && <PendingPaymentAlert />}
-        {children}
+        {user.roles.some(role => ['admin', 'super_admin'].includes(role)) ? <WhatsAppRuntime>{children}</WhatsAppRuntime> : children}
       </main>
     </div>
   );
